@@ -1,0 +1,510 @@
+{
+  "summary": "Performance-Audit für HRthis HR-App - Eine umfassende Analyse zeigt erhebliches Optimierungspotenzial in den Bereichen Database Queries, Canvas Rendering, Bundle Size und React Re-Rendering. Geschätzte Verbesserung: LCP -1200ms, FCP -400ms, JS Bundle -150KB (gzip).",
+  "framework_detection": {
+    "framework": "React 18+ mit React Router",
+    "bundler": "Vite (angenommen basierend auf Struktur)",
+    "state_management": "Zustand",
+    "backend": "Supabase (PostgreSQL + Edge Functions)",
+    "styling": "Tailwind CSS v4.0"
+  },
+  "estimated_metrics": {
+    "note": "Da kein Production Build verfügbar ist, sind dies konservative Schätzungen basierend auf Code-Analyse",
+    "current_estimated": {
+      "TTFB_ms": 300,
+      "FCP_ms": 2200,
+      "LCP_ms": 3500,
+      "INP_ms": 250,
+      "CLS": 0.05,
+      "transfer_js_kb_gzip": 280,
+      "transfer_css_kb_gzip": 35
+    },
+    "target_after_fixes": {
+      "TTFB_ms": 200,
+      "FCP_ms": 1800,
+      "LCP_ms": 2300,
+      "INP_ms": 150,
+      "CLS": 0.05,
+      "transfer_js_kb_gzip": 130,
+      "transfer_css_kb_gzip": 35
+    }
+  },
+  "findings": [
+    {
+      "id": "F001",
+      "category": "server",
+      "severity": "high",
+      "title": "Ineffiziente Database Queries mit SELECT *",
+      "evidence": "34+ Instanzen von `.select('*')` in der gesamten Codebase",
+      "files": [
+        "/screens/DashboardScreen.tsx:41-46 (org_nodes select *)",
+        "/screens/admin/OrganigramCanvasScreenV2.tsx:116 (org_nodes select *)",
+        "/screens/admin/OrganigramCanvasScreenV2.tsx:142 (org_nodes select *)",
+        "/screens/admin/OrganigramCanvasScreenV2.tsx:168 (node_connections select *)",
+        "/screens/admin/OrganigramCanvasScreenV2.tsx:188 (node_connections select *)",
+        "/components/PersonalSettings.tsx:183 (time_records select *)",
+        "/components/PersonalSettings.tsx:197 (leave_requests select *)"
+      ],
+      "lines": [
+        "OrganigramCanvasScreenV2.tsx:116: .select('*')",
+        "DashboardScreen.tsx:42: .select('*')"
+      ],
+      "root_cause": "SELECT * lädt alle Spalten aus der Datenbank, inklusive large objects (JSONB arrays für employee_ids, description fields, etc.). Dies erhöht TTFB und Netzwerk-Transfer erheblich.",
+      "fix": "Ersetzen Sie alle `.select('*')` mit spezifischen Feldern:\n\nVORHER:\n```typescript\nconst { data } = await supabase\n  .from('org_nodes')\n  .select('*')\n  .eq('organization_id', orgId);\n```\n\nNACHHER:\n```typescript\nconst { data } = await supabase\n  .from('org_nodes')\n  .select('id, node_type, title, position_x, position_y, width, height, employee_ids, is_published')\n  .eq('organization_id', orgId);\n```\n\nFür das Dashboard (read-only view) nur minimal benötigte Felder:\n```typescript\n.select('id, node_type, title, position_x, position_y, width, height')\n```",
+      "expected_gain": "TTFB: -100ms bis -200ms, Transfer Size: -30% (ca. 40KB weniger bei 50 Nodes)",
+      "confidence": "high",
+      "effort_hours": 2,
+      "priority": 1
+    },
+    {
+      "id": "F002",
+      "category": "canvas",
+      "severity": "high",
+      "title": "Canvas wird im Dashboard IMMER geladen, auch wenn collapsed",
+      "evidence": "DashboardScreen.tsx lädt komplettes Organigram (Nodes + Connections) auch wenn isOrgExpanded=false",
+      "files": [
+        "/screens/DashboardScreen.tsx:31-105"
+      ],
+      "lines": [
+        "DashboardScreen.tsx:128-130: useEffect lädt Organigram bedingungslos",
+        "DashboardScreen.tsx:31-36: loadPublishedOrganigram wird immer aufgerufen"
+      ],
+      "root_cause": "Der useEffect in Zeile 128 ruft `loadPublishedOrganigram()` IMMER auf, unabhängig von `isOrgExpanded`. Das bedeutet 2 DB-Queries (org_nodes + node_connections) und Full-React-Rendering des Canvas, auch wenn der User es nie sieht.",
+      "fix": "Lazy-laden des Organigrams nur wenn erweitert:\n\n```typescript\n// VORHER\nuseEffect(() => {\n  loadPublishedOrganigram();\n}, [profile?.organization_id]);\n\n// NACHHER\nuseEffect(() => {\n  if (isOrgExpanded) {\n    loadPublishedOrganigram();\n  }\n}, [profile?.organization_id, isOrgExpanded]);\n```\n\nOder noch besser: Organigram-Komponente komplett lazy-loaden:\n```typescript\nconst LazyOrganigramView = lazy(() => import('../components/DashboardOrganigramSection'));\n\n{isOrgExpanded && (\n  <Suspense fallback={<div>Lädt Organigram...</div>}>\n    <LazyOrganigramView organizationId={profile.organization_id} />\n  </Suspense>\n)}\n```",
+      "expected_gain": "Initial Load: -2 DB Queries, -80-120ms TTFB, -20KB Transfer, FCP -200ms (kein Canvas-Rendering)",
+      "confidence": "high",
+      "effort_hours": 1,
+      "priority": 1
+    },
+    {
+      "id": "F003",
+      "category": "render",
+      "severity": "high",
+      "title": "OrganigramCanvasScreenV2 lädt 4 separate Queries statt 1 optimierte Query",
+      "evidence": "4x separate Supabase calls für Draft Nodes, Published Nodes, Draft Connections, Published Connections",
+      "files": [
+        "/screens/admin/OrganigramCanvasScreenV2.tsx:86-207"
+      ],
+      "lines": [
+        "Line 114-119: Draft nodes query",
+        "Line 140-145: Published nodes query",
+        "Line 166-170: Draft connections query",
+        "Line 186-190: Published connections query"
+      ],
+      "root_cause": "4 sequenzielle DB-Roundtrips statt 1 optimierter Query. Jeder Roundtrip hat ~30-50ms Latenz. Total: 120-200ms Overhead nur für Netzwerk-Roundtrips.",
+      "fix": "Kombinieren in 2 Queries (1 für Nodes, 1 für Connections) mit OR-Filter:\n\n```typescript\n// NODES: Lade beide Versionen in 1 Query\nconst { data: allNodes } = await supabase\n  .from('org_nodes')\n  .select('id, node_type, title, description, position_x, position_y, width, height, employee_ids, primary_user_id, backup_user_id, backup_backup_user_id, team_lead_id, is_published')\n  .eq('organization_id', profile.organization_id)\n  .order('created_at', { ascending: true });\n\n// Client-side split\nconst draftNodes = allNodes?.filter(n => !n.is_published) || [];\nconst publishedNodes = allNodes?.filter(n => n.is_published) || [];\n\n// CONNECTIONS: Lade beide Versionen in 1 Query  \nconst { data: allConnections } = await supabase\n  .from('node_connections')\n  .select('id, source_node_id, source_position, target_node_id, target_position, line_style, color, is_published')\n  .eq('organization_id', profile.organization_id);\n\nconst draftConnections = allConnections?.filter(c => !c.is_published) || [];\nconst publishedConnections = allConnections?.filter(c => c.is_published) || [];\n```",
+      "expected_gain": "TTFB: -100ms bis -150ms (2 statt 4 Roundtrips), Perceived Load Time: -200ms",
+      "confidence": "high",
+      "effort_hours": 1,
+      "priority": 2
+    },
+    {
+      "id": "F004",
+      "category": "render",
+      "severity": "high",
+      "title": "Duplicate Data Transformation Logic (DRY Violation)",
+      "evidence": "Identische Node/Connection Transformation in 4+ Dateien",
+      "files": [
+        "/screens/admin/OrganigramCanvasScreenV2.tsx:122-135 (draft nodes transform)",
+        "/screens/admin/OrganigramCanvasScreenV2.tsx:148-161 (published nodes transform)",
+        "/screens/DashboardScreen.tsx:55-71 (dashboard nodes transform)",
+        "/screens/DashboardScreen.tsx:90-98 (dashboard connections transform)"
+      ],
+      "root_cause": "Jede Screen-Komponente hat ihre eigene Kopie der Transformation-Logik. Dies führt zu: 1) Code-Duplikation, 2) Inkonsistenz-Risiko, 3) Größerer Bundle (wiederholter Code).",
+      "fix": "Erstellen Sie eine zentrale Utility-Datei:\n\n```typescript\n// /utils/organigramTransformers.ts\nimport type { OrgNodeData } from '../components/OrgNode';\nimport type { Connection } from '../components/canvas/hr_CanvasTypes';\n\nexport function transformDbNodeToOrgNode(dbNode: any): OrgNodeData {\n  return {\n    id: dbNode.id,\n    type: dbNode.node_type,\n    title: dbNode.title,\n    description: dbNode.description || undefined,\n    position: { \n      x: Number(dbNode.position_x) || 0, \n      y: Number(dbNode.position_y) || 0 \n    },\n    width: Number(dbNode.width) || 280,\n    height: Number(dbNode.height) || 180,\n    employeeIds: dbNode.employee_ids || [],\n    primaryUserId: dbNode.primary_user_id || undefined,\n    backupUserId: dbNode.backup_user_id || undefined,\n    backupBackupUserId: dbNode.backup_backup_user_id || undefined,\n    teamLeadId: dbNode.team_lead_id || undefined,\n  };\n}\n\nexport function transformDbConnectionToConnection(dbConn: any): Connection {\n  return {\n    id: dbConn.id,\n    sourceNodeId: dbConn.source_node_id,\n    sourcePosition: dbConn.source_position,\n    targetNodeId: dbConn.target_node_id,\n    targetPosition: dbConn.target_position,\n    style: dbConn.line_style || 'solid',\n    color: dbConn.color || '#6B7280',\n  };\n}\n\n// Batch transformers\nexport function transformDbNodesToOrgNodes(dbNodes: any[]): OrgNodeData[] {\n  return dbNodes.map(transformDbNodeToOrgNode);\n}\n\nexport function transformDbConnectionsToConnections(dbConns: any[]): Connection[] {\n  return dbConns.map(transformDbConnectionToConnection);\n}\n```\n\nDann in allen Screens:\n```typescript\nimport { transformDbNodesToOrgNodes, transformDbConnectionsToConnections } from '../utils/organigramTransformers';\n\nconst nodes = transformDbNodesToOrgNodes(nodesData || []);\nconst connections = transformDbConnectionsToConnections(connectionsData || []);\n```",
+      "expected_gain": "Bundle Size: -8KB (uncompressed), -2KB (gzip), Maintainability: Hoch",
+      "confidence": "medium",
+      "effort_hours": 1.5,
+      "priority": 3
+    },
+    {
+      "id": "F005",
+      "category": "render",
+      "severity": "medium",
+      "title": "Stores triggern unnötige Re-Renders durch Object Identity Changes",
+      "evidence": "Zustand stores setzen neue Object-Referenzen auch wenn Daten identisch sind",
+      "files": [
+        "/stores/authStore.ts:35-36 (setProfile, setOrganization)",
+        "/stores/gamificationStore.ts:73-76 (avatar updates)",
+        "/stores/timeStore.ts (multiple set operations)"
+      ],
+      "root_cause": "Zustand vergleicht State via Object.is() (referentielle Gleichheit). Wenn `setProfile({ ...oldProfile })` aufgerufen wird, wird ein neues Object erstellt, auch wenn die Daten identisch sind. Dies triggert Re-Renders in allen Komponenten die `useAuthStore()` nutzen.",
+      "fix": "Implementieren Sie shallow equality checks:\n\n```typescript\n// stores/authStore.ts\nimport { create } from 'zustand';\nimport { shallow } from 'zustand/shallow';\n\n// Option 1: Custom equality in setProfile\nsetProfile: (profile) => {\n  const current = get().profile;\n  // Nur updaten wenn wirklich unterschiedlich\n  if (JSON.stringify(current) !== JSON.stringify(profile)) {\n    set({ profile });\n  }\n},\n\n// Option 2: In Komponenten shallow compare nutzen\nimport { useAuthStore } from './stores/authStore';\n\nconst profile = useAuthStore(\n  state => state.profile,\n  shallow // Nur re-render wenn sich profile-Felder ändern\n);\n```\n\nOder nutzen Sie Zustand's `subscribeWithSelector` middleware für granulare Subscriptions:\n```typescript\nimport { subscribeWithSelector } from 'zustand/middleware';\n\nexport const useAuthStore = create(\n  subscribeWithSelector<AuthState>((set, get) => ({\n    // ... state\n  }))\n);\n\n// In Komponente: Nur re-render wenn user.email ändert\nconst userEmail = useAuthStore(state => state.user?.email);\n```",
+      "expected_gain": "Re-Renders: -40-60%, INP: -30ms bis -50ms (weniger Arbeit beim Tippen/Interagieren)",
+      "confidence": "medium",
+      "effort_hours": 3,
+      "priority": 4
+    },
+    {
+      "id": "F006",
+      "category": "canvas",
+      "severity": "medium",
+      "title": "Canvas Event Listeners ohne Cleanup und Debouncing",
+      "evidence": "hr_CanvasOrgChart.tsx: wheel, mousemove, mouseup Listener ohne throttle/debounce",
+      "files": [
+        "/components/canvas/hr_CanvasOrgChart.tsx:150-190 (wheel handler)",
+        "/components/canvas/hr_CanvasOrgChart.tsx (mousemove während drag)"
+      ],
+      "lines": [
+        "Line 150: handleWheel - kein throttle",
+        "Mousemove Events während connection drag - potentiell 60+ Events/Sekunde"
+      ],
+      "root_cause": "Wheel- und Mousemove-Events feuern sehr häufig (30-60 FPS). Jeder Event triggert State-Updates (setZoom, setPan, setMousePosition), was React Re-Renders auslöst. Bei großen Organigrams (50+ Nodes) kann dies zu Lag führen.",
+      "fix": "Implementieren Sie Throttling und requestAnimationFrame:\n\n```typescript\nimport { useRef, useCallback } from 'react';\n\n// Throttle helper\nfunction useThrottle<T extends (...args: any[]) => any>(\n  callback: T,\n  delay: number\n): T {\n  const lastRan = useRef(Date.now());\n  \n  return useCallback((...args: Parameters<T>) => {\n    const now = Date.now();\n    if (now - lastRan.current >= delay) {\n      callback(...args);\n      lastRan.current = now;\n    }\n  }, [callback, delay]) as T;\n}\n\n// In hr_CanvasOrgChart.tsx\nconst handleWheelThrottled = useThrottle((e: WheelEvent) => {\n  // Zoom logic\n  const delta = -e.deltaY;\n  const newZoom = Math.max(0.1, Math.min(3, zoom + delta * 0.001));\n  setZoom(newZoom);\n}, 16); // Max 60fps\n\n// Für mousemove während drag\nconst rafRef = useRef<number>();\nconst handleMouseMove = (e: MouseEvent) => {\n  if (rafRef.current) {\n    cancelAnimationFrame(rafRef.current);\n  }\n  \n  rafRef.current = requestAnimationFrame(() => {\n    setMousePosition({ x: e.clientX, y: e.clientY });\n  });\n};\n\n// Cleanup\nuseEffect(() => {\n  return () => {\n    if (rafRef.current) {\n      cancelAnimationFrame(rafRef.current);\n    }\n  };\n}, []);\n```",
+      "expected_gain": "INP: -50ms bis -100ms bei Canvas-Interaktion, Smoother UX bei großen Organigrams",
+      "confidence": "high",
+      "effort_hours": 2,
+      "priority": 5
+    },
+    {
+      "id": "F007",
+      "category": "bundle",
+      "severity": "medium",
+      "title": "Potentiell große Third-Party Dependencies",
+      "evidence": "Keine package.json verfügbar, aber Code-Analyse zeigt: lucide-react (gut), recharts (potenziell groß), react-router-dom, zustand, @supabase/supabase-js",
+      "files": [
+        "Alle Screen-Komponenten importieren lucide-react Icons",
+        "Geschätzte Dependencies basierend auf Imports"
+      ],
+      "root_cause": "Ohne Analyse des tatsächlichen Bundles können wir nicht genau sagen welche Dependencies zu groß sind. Typische Kandidaten: recharts (wenn genutzt), date-libs, icon-packs.",
+      "fix": "1. Erstellen Sie eine Vite Bundle Analyzer Config:\n\n```bash\nnpm install -D rollup-plugin-visualizer\n```\n\n```typescript\n// vite.config.ts\nimport { visualizer } from 'rollup-plugin-visualizer';\n\nexport default defineConfig({\n  plugins: [\n    react(),\n    visualizer({\n      open: true,\n      gzipSize: true,\n      brotliSize: true,\n    }),\n  ],\n});\n```\n\n2. Build und analysieren:\n```bash\nnpm run build\n```\n\n3. Typische Optimierungen:\n- **lucide-react**: ✅ Bereits optimal (tree-shakeable)\n- **@supabase/supabase-js**: Eventuell auf spezifische Subpaths importieren\n- **Falls recharts genutzt wird**: Prüfen ob alle Features benötigt werden\n- **Tailwind CSS**: ✅ V4 ist optimal (sehr klein)\n\n4. Code-Splitting für Admin-Bereich:\n```typescript\n// App.tsx - Bereits implementiert ✅\nconst AdminLayout = lazy(() => import('./layouts/AdminLayout'));\n```\n\n5. Prüfen Sie ob folgende Libs genutzt werden und ersetzen Sie sie:\n- ❌ `moment` → ✅ `date-fns` oder native `Intl.DateTimeFormat`\n- ❌ `lodash` (default import) → ✅ `lodash-es` mit named imports\n- ❌ `axios` → ✅ native `fetch` (bereits via Supabase)",
+      "expected_gain": "Bundle Size: -50KB bis -150KB (gzip), abhängig von gefundenen Problemen, LCP: -200ms bis -500ms",
+      "confidence": "medium",
+      "effort_hours": 3,
+      "priority": 6
+    },
+    {
+      "id": "F008",
+      "category": "network",
+      "severity": "medium",
+      "title": "Fehlende HTTP Caching Headers für statische Assets",
+      "evidence": "Keine Konfiguration für Asset-Caching sichtbar (würde in Vite/Server Config sein)",
+      "files": [
+        "Vite config (nicht vorhanden in Codebase)",
+        "Supabase Edge Function config"
+      ],
+      "root_cause": "Ohne explizite Cache-Headers werden JS/CSS/Images bei jedem Besuch neu geladen, auch wenn sie sich nicht geändert haben.",
+      "fix": "Konfigurieren Sie Vite für optimales Caching:\n\n```typescript\n// vite.config.ts\nimport { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\n\nexport default defineConfig({\n  plugins: [react()],\n  build: {\n    // Generate sourcemaps nur für Production-Debugging\n    sourcemap: false,\n    \n    // Rollup optimizations\n    rollupOptions: {\n      output: {\n        // Hash-based naming für langfristiges Caching\n        entryFileNames: 'assets/[name].[hash].js',\n        chunkFileNames: 'assets/[name].[hash].js',\n        assetFileNames: 'assets/[name].[hash].[ext]',\n        \n        // Manual chunk splitting\n        manualChunks: {\n          'vendor': [\n            'react',\n            'react-dom',\n            'react-router-dom',\n          ],\n          'supabase': [\n            '@supabase/supabase-js',\n          ],\n          'ui': [\n            'lucide-react',\n          ],\n        },\n      },\n    },\n    \n    // Chunk size warnings\n    chunkSizeWarningLimit: 1000,\n  },\n});\n```\n\nFür Deployment (z.B. Vercel/Netlify):\n```json\n// netlify.toml oder vercel.json\n{\n  \"headers\": [\n    {\n      \"source\": \"/assets/(.*)\",\n      \"headers\": [\n        {\n          \"key\": \"Cache-Control\",\n          \"value\": \"public, max-age=31536000, immutable\"\n        }\n      ]\n    },\n    {\n      \"source\": \"/(.*)\",\n      \"headers\": [\n        {\n          \"key\": \"Cache-Control\",\n          \"value\": \"public, max-age=0, must-revalidate\"\n        }\n      ]\n    }\n  ]\n}\n```",
+      "expected_gain": "Repeat Visits: TTFB -100ms, LCP -300ms, Transfer -100%",
+      "confidence": "high",
+      "effort_hours": 1,
+      "priority": 7
+    },
+    {
+      "id": "F009",
+      "category": "render",
+      "severity": "low",
+      "title": "Fehlende Virtualisierung bei großen Listen",
+      "evidence": "Keine react-window oder react-virtualized Nutzung erkennbar",
+      "files": [
+        "Potentiell: TeamManagementScreen (User-Listen)",
+        "Potentiell: DocumentsScreen (Dokument-Listen)",
+        "Canvas Nodes (keine Viewport-Culling)"
+      ],
+      "root_cause": "Wenn Listen >50 Items haben, werden alle DOM-Nodes gleichzeitig gerendert. Dies kann zu Slow Initial Render und hohem Memory-Verbrauch führen.",
+      "fix": "Implementieren Sie Virtualisierung für große Listen:\n\n```bash\nnpm install @tanstack/react-virtual\n```\n\n```typescript\n// Beispiel: TeamManagementScreen mit Virtual Scrolling\nimport { useVirtualizer } from '@tanstack/react-virtual';\n\nfunction TeamManagementScreen() {\n  const parentRef = useRef<HTMLDivElement>(null);\n  const [users, setUsers] = useState<User[]>([]);\n  \n  const rowVirtualizer = useVirtualizer({\n    count: users.length,\n    getScrollElement: () => parentRef.current,\n    estimateSize: () => 80, // Geschätzte Höhe pro Row\n    overscan: 5, // Render 5 extra items außerhalb viewport\n  });\n  \n  return (\n    <div ref={parentRef} style={{ height: '600px', overflow: 'auto' }}>\n      <div\n        style={{\n          height: `${rowVirtualizer.getTotalSize()}px`,\n          position: 'relative',\n        }}\n      >\n        {rowVirtualizer.getVirtualItems().map((virtualRow) => {\n          const user = users[virtualRow.index];\n          return (\n            <div\n              key={virtualRow.key}\n              style={{\n                position: 'absolute',\n                top: 0,\n                left: 0,\n                width: '100%',\n                height: `${virtualRow.size}px`,\n                transform: `translateY(${virtualRow.start}px)`,\n              }}\n            >\n              <UserCard user={user} />\n            </div>\n          );\n        })}\n      </div>\n    </div>\n  );\n}\n```\n\nFür Canvas: Viewport Culling\n```typescript\n// In hr_CanvasOrgChart.tsx\nconst visibleNodes = useMemo(() => {\n  if (!canvasRef.current) return nodes;\n  \n  const rect = canvasRef.current.getBoundingClientRect();\n  const viewportBounds = {\n    minX: -pan.x / zoom,\n    maxX: (-pan.x + rect.width) / zoom,\n    minY: -pan.y / zoom,\n    maxY: (-pan.y + rect.height) / zoom,\n  };\n  \n  return nodes.filter(node => {\n    const nodeRight = node.position.x + (node.width || 280);\n    const nodeBottom = node.position.y + (node.height || 180);\n    \n    return !(\n      nodeRight < viewportBounds.minX ||\n      node.position.x > viewportBounds.maxX ||\n      nodeBottom < viewportBounds.minY ||\n      node.position.y > viewportBounds.maxY\n    );\n  });\n}, [nodes, pan, zoom]);\n```",
+      "expected_gain": "Bei >100 Items: Initial Render -300ms, Memory -50%, Scroll Performance: 60fps konstant",
+      "confidence": "medium",
+      "effort_hours": 4,
+      "priority": 8
+    },
+    {
+      "id": "F010",
+      "category": "assets",
+      "severity": "low",
+      "title": "Profile Pictures als Base64 in DB statt optimierte Bilder",
+      "evidence": "PersonalSettings.tsx speichert cropped images als Base64 in database",
+      "files": [
+        "/components/PersonalSettings.tsx:153-155"
+      ],
+      "lines": [
+        "Line 152: profile_picture_url: croppedImage (Base64 string)"
+      ],
+      "root_cause": "Base64 Bilder sind ~33% größer als binary und werden bei jedem User-Query mitgeladen. Bei 100 Users mit je 50KB Base64 Profilbild = 5MB extra Transfer.",
+      "fix": "Nutzen Sie Supabase Storage statt Base64:\n\n```typescript\n// PersonalSettings.tsx - handleCroppedImage\nconst handleCroppedImage = async (croppedImage: string) => {\n  if (!profile?.id) return;\n  \n  try {\n    // Convert Base64 to Blob\n    const response = await fetch(croppedImage);\n    const blob = await response.blob();\n    \n    // Upload to Supabase Storage\n    const fileName = `${profile.id}-${Date.now()}.jpg`;\n    const { data: uploadData, error: uploadError } = await supabase.storage\n      .from('profile-pictures') // Bucket erstellen via Supabase Dashboard\n      .upload(fileName, blob, {\n        contentType: 'image/jpeg',\n        upsert: true,\n      });\n    \n    if (uploadError) throw uploadError;\n    \n    // Get public URL\n    const { data: { publicUrl } } = supabase.storage\n      .from('profile-pictures')\n      .getPublicUrl(fileName);\n    \n    // Save URL (nicht Base64!) in DB\n    const { error } = await supabase\n      .from('users')\n      .update({ profile_picture_url: publicUrl })\n      .eq('id', profile.id);\n    \n    if (error) throw error;\n    \n    toast.success('Profilbild aktualisiert');\n    await refreshProfile();\n  } catch (error) {\n    console.error('Error uploading profile picture:', error);\n    toast.error('Fehler beim Hochladen');\n  }\n};\n```\n\nBucket Policy (einmalig in Supabase ausführen):\n```sql\n-- Erstelle Storage Bucket\nINSERT INTO storage.buckets (id, name, public)\nVALUES ('profile-pictures', 'profile-pictures', true);\n\n-- RLS Policy\nCREATE POLICY \"Users can upload own profile picture\"\nON storage.objects\nFOR INSERT\nTO authenticated\nWITH CHECK (\n  bucket_id = 'profile-pictures' AND\n  (storage.foldername(name))[1] = auth.uid()::text\n);\n\nCREATE POLICY \"Profile pictures are publicly readable\"\nON storage.objects\nFOR SELECT\nTO public\nUSING (bucket_id = 'profile-pictures');\n```",
+      "expected_gain": "User-Query Transfer: -33% (50KB Base64 → 35KB JPEG URL), DB Size: -90%, CDN Caching möglich",
+      "confidence": "high",
+      "effort_hours": 2,
+      "priority": 9
+    }
+  ],
+  "prioritized_action_plan": [
+    {
+      "step": "1. Quick Wins: Database Query Optimization (F001 + F003)",
+      "why": "Höchster Impact bei niedrigem Aufwand. TTFB-Verbesserung ist sofort spürbar für alle User.",
+      "tasks": [
+        "F001: Ersetze alle `select('*')` mit spezifischen Feldern",
+        "F003: Kombiniere 4 Queries in 2 Queries (OrganigramCanvasScreenV2)"
+      ],
+      "files_to_modify": [
+        "/screens/admin/OrganigramCanvasScreenV2.tsx",
+        "/screens/DashboardScreen.tsx",
+        "/components/PersonalSettings.tsx"
+      ],
+      "commands": [
+        "# 1. Finde alle select('*') Instanzen",
+        "grep -r \"\\.select\\('\\*'\\)\" --include='*.tsx' --include='*.ts' .",
+        "# 2. Ersetze mit spezifischen Feldern (siehe F001 fix)",
+        "# 3. Teste mit: npm run dev",
+        "# 4. Verifiziere Network Tab: Payload-Größen sollten kleiner sein"
+      ],
+      "owner": "Backend Developer",
+      "eta_hours": 2,
+      "success_criteria": "Network Tab zeigt: Organigram queries <20KB (vorher ~60KB), TTFB <200ms"
+    },
+    {
+      "step": "2. Dashboard Lazy Loading (F002)",
+      "why": "Eliminiert unnötige DB-Queries und Canvas-Rendering für 80% der Dashboard-Besuche.",
+      "tasks": [
+        "F002: Lazy-load Organigram nur wenn isOrgExpanded=true"
+      ],
+      "files_to_modify": [
+        "/screens/DashboardScreen.tsx"
+      ],
+      "commands": [
+        "# Ändere useEffect wie in F002 beschrieben",
+        "# Test: Dashboard laden → Network Tab sollte KEINE org_nodes/node_connections Queries zeigen",
+        "# Erst nach Klick auf \"Organigram erweitern\" sollten Queries erscheinen"
+      ],
+      "owner": "Frontend Developer",
+      "eta_hours": 1,
+      "success_criteria": "Dashboard Initial Load: -2 DB Queries, FCP -200ms (gemessen via Lighthouse)"
+    },
+    {
+      "step": "3. Code Deduplication & Utils (F004)",
+      "why": "Reduziert Bundle Size und verbessert Maintainability. Vorbereitung für weitere Optimierungen.",
+      "tasks": [
+        "F004: Erstelle /utils/organigramTransformers.ts",
+        "Refactor alle Screens um zentrale Transformers zu nutzen"
+      ],
+      "files_to_modify": [
+        "Neu: /utils/organigramTransformers.ts",
+        "/screens/admin/OrganigramCanvasScreenV2.tsx",
+        "/screens/DashboardScreen.tsx",
+        "Andere Screens die Organigram-Daten laden"
+      ],
+      "commands": [
+        "# 1. Erstelle utils file (siehe F004)",
+        "# 2. Suche nach duplicate transformation code:",
+        "grep -r \"position_x\\|position_y\" --include='*.tsx' screens/",
+        "# 3. Ersetze mit transformDbNodesToOrgNodes()",
+        "# 4. Bundle-Größe sollte kleiner sein: npm run build && du -h dist/"
+      ],
+      "owner": "Frontend Developer",
+      "eta_hours": 1.5,
+      "success_criteria": "Build Output: dist/assets/*.js insgesamt -2KB (gzip), keine duplicate transform logic"
+    },
+    {
+      "step": "4. Canvas Performance: Throttling & RAF (F006)",
+      "why": "Verbessert Canvas UX erheblich, besonders bei großen Organigrams. Kritisch für Interaktivität.",
+      "tasks": [
+        "F006: Implementiere useThrottle Hook",
+        "Throttle wheel events (16ms)",
+        "requestAnimationFrame für mousemove während drag"
+      ],
+      "files_to_modify": [
+        "/components/canvas/hr_CanvasOrgChart.tsx",
+        "Neu: /hooks/useThrottle.ts"
+      ],
+      "commands": [
+        "# 1. Erstelle useThrottle hook",
+        "# 2. Wrap wheel handler",
+        "# 3. Test: Großes Organigram (20+ nodes), zoom/pan sollte smooth sein",
+        "# 4. Chrome DevTools Performance: Keine langen Tasks während zoom/pan"
+      ],
+      "owner": "Frontend Developer",
+      "eta_hours": 2,
+      "success_criteria": "Chrome Performance Tab: Keine Tasks >50ms während Canvas-Interaktion, konstante 60fps"
+    },
+    {
+      "step": "5. Zustand Re-Render Optimization (F005)",
+      "why": "Reduziert unnötige Re-Renders in der gesamten App. Bessere INP (Interaction to Next Paint).",
+      "tasks": [
+        "F005: Implementiere shallow equality in authStore",
+        "Optional: subscribeWithSelector middleware",
+        "Identifiziere Hot-Path Components und optimiere selectors"
+      ],
+      "files_to_modify": [
+        "/stores/authStore.ts",
+        "/stores/gamificationStore.ts",
+        "Hot-Path Components (Dashboard, Navigation)"
+      ],
+      "commands": [
+        "# 1. Install React DevTools Profiler",
+        "# 2. Vor Änderung: Record Profile beim Navigation zwischen Screens",
+        "# 3. Implementiere shallow equality",
+        "# 4. Nach Änderung: Record erneut → sollte weniger Re-Renders zeigen"
+      ],
+      "owner": "Frontend Developer",
+      "eta_hours": 3,
+      "success_criteria": "React DevTools Profiler: -40% Re-Renders bei Store-Updates, INP <150ms"
+    },
+    {
+      "step": "6. Bundle Analysis & Optimization (F007)",
+      "why": "Identifiziert größte Dependencies. Kann zu massiven Bundle-Size-Reduktionen führen.",
+      "tasks": [
+        "F007: Setup rollup-plugin-visualizer",
+        "Generiere Bundle Report",
+        "Identifiziere Top 5 größte Dependencies",
+        "Ersetze/Optimiere wo möglich"
+      ],
+      "files_to_modify": [
+        "vite.config.ts (oder erstellen)",
+        "package.json (eventuell Dependencies ersetzen)"
+      ],
+      "commands": [
+        "npm install -D rollup-plugin-visualizer",
+        "# Füge plugin zu vite.config.ts hinzu (siehe F007)",
+        "npm run build",
+        "# Öffne stats.html → Analysiere Top-Dependencies",
+        "# Typische Kandidaten: date-libs, recharts, icon-packs"
+      ],
+      "owner": "Tech Lead",
+      "eta_hours": 3,
+      "success_criteria": "Bundle Report zeigt: Kein einzelnes Package >80KB (gzip), Total JS <180KB (gzip)"
+    },
+    {
+      "step": "7. HTTP Caching & Build Config (F008)",
+      "why": "Repeat visitors laden keine Assets neu. Massive Verbesserung für Returning Users.",
+      "tasks": [
+        "F008: Erstelle/Update vite.config.ts",
+        "Konfiguriere Hash-based Filenames",
+        "Setup Cache-Headers im Hosting (Vercel/Netlify/etc.)"
+      ],
+      "files_to_modify": [
+        "vite.config.ts",
+        "vercel.json oder netlify.toml (je nach Hosting)"
+      ],
+      "commands": [
+        "# 1. Update vite.config.ts (siehe F008)",
+        "npm run build",
+        "# 2. Prüfe dist/ → Alle files sollten hashes haben (main.a8b3c9d2.js)",
+        "# 3. Deploy",
+        "# 4. Test: Lighthouse → Cache-Control headers sollten sichtbar sein"
+      ],
+      "owner": "DevOps / Tech Lead",
+      "eta_hours": 1,
+      "success_criteria": "Lighthouse Audit: 'Serve static assets with efficient cache policy' = PASS"
+    },
+    {
+      "step": "8. Profile Pictures zu Supabase Storage (F010)",
+      "why": "Reduziert DB-Transfer und ermöglicht CDN-Caching. Wichtig bei vielen Usern.",
+      "tasks": [
+        "F010: Migriere Base64 Profilbilder zu Supabase Storage",
+        "Update PersonalSettings.tsx Upload-Logic",
+        "Erstelle Storage Bucket + RLS Policies"
+      ],
+      "files_to_modify": [
+        "/components/PersonalSettings.tsx",
+        "SQL Migration für Storage Bucket"
+      ],
+      "commands": [
+        "# 1. Supabase Dashboard → Storage → Create Bucket 'profile-pictures'",
+        "# 2. Führe SQL aus (siehe F010)",
+        "# 3. Update handleCroppedImage (siehe F010)",
+        "# 4. Test: Upload neues Bild → Sollte in Storage landen, nicht als Base64"
+      ],
+      "owner": "Backend Developer",
+      "eta_hours": 2,
+      "success_criteria": "User-Query: profile_picture_url ist URL (nicht data:image/...), Transfer -30KB"
+    },
+    {
+      "step": "9. Virtualisierung für große Listen (F009)",
+      "why": "Nur relevant bei >50 Items. Kann später implementiert werden wenn Liste wächst.",
+      "tasks": [
+        "F009: Identifiziere Screens mit großen Listen",
+        "Implementiere @tanstack/react-virtual für Top 2 Listen",
+        "Optional: Canvas Viewport Culling"
+      ],
+      "files_to_modify": [
+        "/screens/admin/TeamManagementScreen.tsx",
+        "Andere Screens mit Listen",
+        "/components/canvas/hr_CanvasOrgChart.tsx (Viewport Culling)"
+      ],
+      "commands": [
+        "npm install @tanstack/react-virtual",
+        "# Implementiere wie in F009 beschrieben",
+        "# Test mit 100+ Items: Scroll sollte smooth sein (60fps)"
+      ],
+      "owner": "Frontend Developer",
+      "eta_hours": 4,
+      "success_criteria": "Listen mit 100+ Items: Scroll 60fps konstant, Initial Render <200ms"
+    },
+    {
+      "step": "10. Monitoring & Verification",
+      "why": "Verifiziere dass alle Optimierungen den erwarteten Impact haben.",
+      "tasks": [
+        "Setup Lighthouse CI",
+        "Vor/Nach Metriken vergleichen",
+        "Setup Production Monitoring (Optional: Sentry Performance, Vercel Analytics)"
+      ],
+      "commands": [
+        "npm install -D @lhci/cli",
+        "# Lighthouse CI Config erstellen",
+        "npx lhci autorun --collect.url=http://localhost:5173",
+        "# Vergleiche Scores: Vor-Optimierung vs. Nach-Optimierung"
+      ],
+      "owner": "Tech Lead",
+      "eta_hours": 2,
+      "success_criteria": "Lighthouse Scores: Performance >90, FCP <1.8s, LCP <2.5s, INP <200ms"
+    }
+  ],
+  "estimated_total_gains": {
+    "TTFB": "300ms → 180ms (-120ms, -40%)",
+    "FCP": "2200ms → 1700ms (-500ms, -23%)",
+    "LCP": "3500ms → 2200ms (-1300ms, -37%)",
+    "INP": "250ms → 130ms (-120ms, -48%)",
+    "JS_Bundle_gzip": "280KB → 130KB (-150KB, -54%)",
+    "Repeat_Visit_Speedup": "3x faster (via Caching)"
+  },
+  "canvas_editor_specific_findings": {
+    "current_issues": [
+      "Auto-fit runs on every node addition (line 140-147) - sollte nur manuell getriggert werden",
+      "Keine Spatial Indexing - alle Connections werden bei jedem Render durchlaufen",
+      "Grid ist als DOM-Element implementiert - sollte CSS background-image sein",
+      "Pin Points werden für ALLE Nodes gerendert, auch wenn nicht hover"
+    ],
+    "recommended_fixes": [
+      {
+        "issue": "Grid Performance",
+        "fix": "Ersetze DOM-Grid mit CSS:\n```css\n.canvas-background {\n  background-size: 20px 20px;\n  background-image:\n    linear-gradient(to right, #e5e7eb 1px, transparent 1px),\n    linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);\n}\n```"
+      },
+      {
+        "issue": "Connection Rendering",
+        "fix": "Nur visible Connections rendern:\n```typescript\nconst visibleConnections = useMemo(() => {\n  const visibleNodeIds = new Set(visibleNodes.map(n => n.id));\n  return connections.filter(c => \n    visibleNodeIds.has(c.sourceNodeId) && \n    visibleNodeIds.has(c.targetNodeId)\n  );\n}, [connections, visibleNodes]);\n```"
+      },
+      {
+        "issue": "Auto-fit triggert zu oft",
+        "fix": "Entferne Auto-fit aus useEffect, nur bei User-Action:\n```typescript\n// REMOVE from useEffect\n// useEffect(() => { if (nodes.length > 0) handleFitToScreen() }, [nodes.length]);\n\n// Nur via Button\n<Button onClick={handleFitToScreen}>Fit to Screen</Button>\n```"
+      }
+    ]
+  },
+  "next_steps_recommendation": [
+    "1. **Sofort (Heute)**: F001 + F003 (Database Queries) - 2h, massive TTFB-Verbesserung",
+    "2. **Diese Woche**: F002 + F004 + F006 (Dashboard Lazy Load + Code Dedup + Canvas Throttling) - 4.5h",
+    "3. **Nächste Woche**: F005 + F007 + F008 (Re-Renders + Bundle Analysis + Caching) - 7h",
+    "4. **Später**: F009 + F010 (Virtualisierung + Storage Migration) - 6h, nur wenn Listen groß werden",
+    "5. **Monitoring**: F007 Bundle Analyzer sollte Teil des CI/CD werden (automatisch bei jedem Build)"
+  ],
+  "measurement_recommendations": {
+    "tools": [
+      "Chrome DevTools Performance Tab - für INP und Long Tasks",
+      "Chrome DevTools Network Tab - für TTFB und Transfer Sizes",
+      "Lighthouse CI - für automatisierte Metriken bei jedem Deploy",
+      "React DevTools Profiler - für Component Re-Renders",
+      "Bundle Visualizer - für Dependency-Größen"
+    ],
+    "baseline_measurements": [
+      "VOR allen Änderungen: Lighthouse Report speichern (npm run build && npx serve dist, dann Lighthouse)",
+      "Network Tab Screenshot mit allen Requests",
+      "React Profiler Recording einer typischen User-Journey"
+    ],
+    "success_metrics": [
+      "Lighthouse Performance Score: >85 (Target: >90)",
+      "FCP: <1800ms (Mobile 3G)",
+      "LCP: <2500ms (Mobile 3G)",
+      "INP: <200ms",
+      "Total JS (gzip): <180KB",
+      "TTFB (Organigram Queries): <200ms"
+    ]
+  }
+}

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supabase Connection Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f7;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #1a1a1a;
+      margin-top: 0;
+    }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+    .success {
+      background: #d1fae5;
+      border: 2px solid #10b981;
+      color: #065f46;
+    }
+    .error {
+      background: #fee2e2;
+      border: 2px solid #ef4444;
+      color: #991b1b;
+    }
+    .info {
+      background: #dbeafe;
+      border: 2px solid #3b82f6;
+      color: #1e40af;
+    }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .step {
+      margin: 15px 0;
+      padding: 10px;
+      background: #f9fafb;
+      border-left: 4px solid #3b82f6;
+      border-radius: 4px;
+    }
+    .step strong {
+      color: #1e40af;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Supabase Connection Test</h1>
+    
+    <p><strong>Project ID:</strong> azmtojgikubegzusvhra</p>
+    <p><strong>URL:</strong> https://azmtojgikubegzusvhra.supabase.co</p>
+    
+    <button id="testBtn" onclick="testConnection()">
+      Test Connection
+    </button>
+    
+    <div id="result"></div>
+    
+    <div class="step" style="margin-top: 30px;">
+      <strong>📖 Was macht dieser Test?</strong>
+      <ol>
+        <li>Versucht eine Verbindung zu deinem Supabase Projekt herzustellen</li>
+        <li>Prüft ob das Projekt erreichbar ist</li>
+        <li>Zeigt dir genau was schief geht</li>
+      </ol>
+    </div>
+    
+    <div class="step">
+      <strong>✅ Wenn Test ERFOLGREICH:</strong>
+      <p>Supabase funktioniert! Das Problem liegt woanders.</p>
+    </div>
+    
+    <div class="step">
+      <strong>❌ Wenn Test FEHLSCHLÄGT:</strong>
+      <p>Supabase ist pausiert oder nicht erreichbar!</p>
+      <p><strong>Lösung:</strong></p>
+      <ol>
+        <li>Gehe zu: <a href="https://supabase.com/dashboard" target="_blank">https://supabase.com/dashboard</a></li>
+        <li>Finde dein Projekt: azmtojgikubegzusvhra</li>
+        <li>Klicke "Unpause Project" falls sichtbar</li>
+        <li>Warte 30-60 Sekunden</li>
+        <li>Teste nochmal</li>
+      </ol>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+    
+    const projectId = 'azmtojgikubegzusvhra';
+    const publicAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6bXRvamdpa3ViZWd6dXN2aHJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzODQzOTEsImV4cCI6MjA3NDk2MDM5MX0.bls9aJ-M1Wi-387R9mveOuiQCkmVPjTc6IntZjM1YMk';
+    const supabaseUrl = `https://${projectId}.supabase.co`;
+    
+    window.testConnection = async function() {
+      const resultDiv = document.getElementById('result');
+      const testBtn = document.getElementById('testBtn');
+      
+      testBtn.disabled = true;
+      resultDiv.innerHTML = '<div class="result info"><div class="loading"></div>Testing connection...</div>';
+      
+      const startTime = Date.now();
+      
+      try {
+        console.log('🔄 Creating Supabase client...');
+        const supabase = createClient(supabaseUrl, publicAnonKey);
+        
+        console.log('🔄 Testing auth.getSession()...');
+        
+        // 5 second timeout
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('TIMEOUT')), 5000);
+        });
+        
+        const result = await Promise.race([
+          supabase.auth.getSession(),
+          timeoutPromise
+        ]);
+        
+        const duration = Date.now() - startTime;
+        
+        if (result.error) {
+          throw result.error;
+        }
+        
+        // SUCCESS!
+        resultDiv.innerHTML = `
+          <div class="result success">
+            ✅ <strong>CONNECTION SUCCESSFUL!</strong>
+            
+            Duration: ${duration}ms
+            
+            Supabase ist erreichbar!
+            Das Projekt läuft!
+            
+            Session: ${result.data.session ? 'Active session found' : 'No active session (normal)'}
+            
+            <strong>NÄCHSTER SCHRITT:</strong>
+            Falls HRthis trotzdem nicht lädt, liegt es an einem anderen Problem.
+            Öffne die Browser Console (F12) und schicke mir die Fehler!
+          </div>
+        `;
+        
+        console.log('✅ Connection test successful:', result);
+        
+      } catch (error) {
+        const duration = Date.now() - startTime;
+        
+        console.error('❌ Connection test failed:', error);
+        
+        let errorMessage = '';
+        
+        if (error.message === 'TIMEOUT') {
+          errorMessage = `
+            ❌ <strong>TIMEOUT ERROR!</strong>
+            
+            Duration: ${duration}ms (exceeded 5000ms limit)
+            
+            <strong>URSACHE:</strong>
+            Supabase antwortet nicht innerhalb von 5 Sekunden.
+            Das bedeutet höchstwahrscheinlich:
+            
+            1. 🔴 <strong>Projekt ist PAUSIERT</strong> (häufigste Ursache!)
+            2. 🔴 Netzwerk-Problem
+            3. 🔴 Firewall blockiert Zugriff
+            
+            <strong>LÖSUNG:</strong>
+            1. Gehe zu: https://supabase.com/dashboard
+            2. Login mit deinem Account
+            3. Finde Projekt: azmtojgikubegzusvhra
+            4. Falls "Unpause Project" Button sichtbar → KLICKEN!
+            5. Warte 30-60 Sekunden
+            6. Teste nochmal
+          `;
+        } else if (error.message && error.message.includes('fetch')) {
+          errorMessage = `
+            ❌ <strong>NETWORK ERROR!</strong>
+            
+            Duration: ${duration}ms
+            Error: ${error.message}
+            
+            <strong>URSACHE:</strong>
+            Browser kann Supabase nicht erreichen.
+            
+            <strong>MÖGLICHE GRÜNDE:</strong>
+            1. 🔴 Projekt ist PAUSIERT
+            2. 🔴 Keine Internet-Verbindung
+            3. 🔴 VPN/Proxy blockiert Zugriff
+            4. 🔴 CORS Problem
+            
+            <strong>LÖSUNG:</strong>
+            1. Prüfe Internet-Verbindung
+            2. Deaktiviere VPN/Proxy
+            3. Gehe zu Supabase Dashboard und unpause Project
+          `;
+        } else {
+          errorMessage = `
+            ❌ <strong>UNKNOWN ERROR!</strong>
+            
+            Duration: ${duration}ms
+            Error: ${error.message || 'Unknown error'}
+            
+            <strong>FULL ERROR:</strong>
+            ${JSON.stringify(error, null, 2)}
+          `;
+        }
+        
+        resultDiv.innerHTML = `<div class="result error">${errorMessage}</div>`;
+      } finally {
+        testBtn.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

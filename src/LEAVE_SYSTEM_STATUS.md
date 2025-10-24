@@ -1,0 +1,46 @@
+-- ============================================
+-- LEAVE SYSTEM - STATUS & INFO
+-- ============================================
+--
+-- AKTUELLER STATUS:
+-- Das Leave System funktioniert in 2 Modi:
+--
+-- 1. Basis-Modus (OHNE Migration 036):
+--    - Urlaubsanträge erstellen/genehmigen/ablehnen
+--    - Urlaubsquota anzeigen
+--    - Kalender-Visualisierung
+--    - Personal/Team View
+--
+-- 2. Vollständiger Modus (MIT Migration 036):
+--    - Alle Basis-Features +
+--    - User kann PENDING Anträge zurückziehen
+--    - Admin kann APPROVED Anträge mit User-Bestätigung stornieren
+--    - Halbtagsurlaub möglich
+--    - Krankschreibung hochladen
+--    - Übertrag ins nächste Jahr bis März
+--    - Reminder-System
+--
+-- ============================================
+-- MIGRATION AUSFÜHREN (empfohlen):
+-- Kopiere den Code aus /QUICK_FIX_LEAVE_SYSTEM.md
+-- und führe ihn im Supabase SQL Editor aus
+-- ============================================
+--
+-- Die App funktioniert AUCH OHNE Migration (backwards-compatible)!
+-- Du kannst die Migration jetzt oder später ausführen.
+--
+-- NEUE SPALTEN nach Migration 036:
+-- - withdrawn_at (User zieht Antrag zurück)
+-- - cancelled_by (Admin storniert)
+-- - cancelled_at (Wann storniert)
+-- - cancellation_confirmed (User bestätigt Stornierung)
+-- - is_half_day (Halbtagsurlaub)
+-- - file_url (Krankschreibung Upload)
+-- - federal_state (Bundesland für Feiertage)
+-- - reminder_sent (Reminder verschickt)
+-- - created_by (Wer hat erstellt)
+-- ============================================
+
+-- Diese Datei ist nur zur Information
+-- Kein SQL Code zum Ausführen hier
+-- Siehe /QUICK_FIX_LEAVE_SYSTEM.md für die eigentliche Migration

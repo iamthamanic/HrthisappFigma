@@ -1,0 +1,8 @@
+SELECT 
+  id,
+  email,
+  first_name,
+  last_name,
+  role as global_role
+FROM public.users
+ORDER BY email;

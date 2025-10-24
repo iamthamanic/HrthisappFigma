@@ -1,0 +1,86 @@
+========================================
+TEAMLEAD SETUP - 3 SCHRITTE
+========================================
+
+PROBLEM:
+Anna Admin kann Tina's Urlaubsantrag nicht genehmigen.
+
+GRUND:
+Anna ist kein TEAMLEAD in Tina's Team.
+(Das System prüft team_members.role, nicht users.role!)
+
+========================================
+LÖSUNG - 3 SCHRITTE
+========================================
+
+SCHRITT 1: LISTE ALLE USER
+---------------------------
+1. Öffne: STEP1_LIST_USERS.txt
+2. Cmd+A (alles markieren)
+3. Cmd+C (kopieren)
+4. Supabase SQL Editor öffnen
+5. Cmd+V (einfügen)
+6. Run klicken ▶️
+
+ERGEBNIS:
+Du siehst alle User mit ihren Emails.
+Kopiere die beiden Emails die du brauchst:
+- Email des MITARBEITERS (der den Antrag gestellt hat)
+- Email des TEAMLEADS (der genehmigen soll)
+
+========================================
+
+SCHRITT 2: EMAILS ANPASSEN UND AUSFÜHREN
+-----------------------------------------
+1. Öffne: STEP2_MAKE_TEAMLEAD.txt
+2. Finde Zeile 6-7:
+   v_member_email text := 'MEMBER_EMAIL_HERE';
+   v_teamlead_email text := 'TEAMLEAD_EMAIL_HERE';
+
+3. ERSETZE die Platzhalter mit den echten Emails aus SCHRITT 1:
+   v_member_email text := 'max@example.com';
+   v_teamlead_email text := 'anna@admin.com';
+
+4. Cmd+A (alles markieren)
+5. Cmd+C (kopieren)
+6. Supabase SQL Editor öffnen
+7. Cmd+V (einfügen)
+8. Run klicken ▶️
+
+ERGEBNIS:
+Du siehst:
+✅ SUCCESS!
+✅ anna@admin.com is now TEAMLEAD (Primary) in team <uuid>
+✅ max@example.com is MEMBER in team <uuid>
+
+========================================
+
+SCHRITT 3: VERIFY
+------------------
+1. Öffne: STEP3_VERIFY.txt
+2. Cmd+A (alles markieren)
+3. Cmd+C (kopieren)
+4. Supabase SQL Editor öffnen
+5. Cmd+V (einfügen)
+6. Run klicken ▶️
+
+ERGEBNIS:
+Du siehst eine Tabelle mit allen Users und ihren Team-Rollen:
+
+email              | name        | global_role | team_role | priority_tag | team_name
+-------------------+-------------+-------------+-----------+--------------+-------------
+anna@admin.com     | Anna Admin  | ADMIN       | TEAMLEAD  | 1            | Standard Team
+max@example.com    | Max M.      | USER        | MEMBER    | null         | Standard Team
+
+========================================
+
+FERTIG!
+Jetzt kann Anna die Urlaubsanträge genehmigen!
+
+TEST:
+1. Login als Anna Admin
+2. Zeit & Urlaub → Mein Team
+3. Der Urlaubsantrag sollte sichtbar sein
+4. "Genehmigen" Button sollte funktionieren ✅
+
+========================================

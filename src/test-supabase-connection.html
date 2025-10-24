@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Connection Test - HRthis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .test-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .result {
+            margin-top: 16px;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .result-success {
+            border-left-color: #10b981;
+        }
+
+        .result-error {
+            border-left-color: #ef4444;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .info-box {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .info-box h3 {
+            color: #1e40af;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .info-box p {
+            color: #1e40af;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .info-box ul {
+            margin-top: 12px;
+            padding-left: 20px;
+        }
+
+        .info-box li {
+            color: #1e40af;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #f3f4f6;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .config-info {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .config-row {
+            display: flex;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .config-label {
+            font-weight: 600;
+            color: #4b5563;
+            min-width: 120px;
+        }
+
+        .config-value {
+            color: #1f2937;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Supabase Connection Test</h1>
+        <p class="subtitle">HRthis v3.10.3 - Diagnose Tool</p>
+
+        <!-- Config Info -->
+        <div class="config-info">
+            <div class="config-row">
+                <span class="config-label">Project ID:</span>
+                <span class="config-value" id="projectId">-</span>
+            </div>
+            <div class="config-row">
+                <span class="config-label">Supabase URL:</span>
+                <span class="config-value" id="supabaseUrl">-</span>
+            </div>
+            <div class="config-row">
+                <span class="config-label">API Key:</span>
+                <span class="config-value" id="apiKey">-</span>
+            </div>
+        </div>
+
+        <!-- Test 1: REST API -->
+        <div class="test-section">
+            <div class="test-title">
+                <span>Test 1: REST API Endpoint</span>
+                <span class="status status-pending" id="test1-status">
+                    <span class="spinner"></span>
+                    Ausstehend
+                </span>
+            </div>
+            <div class="result" id="test1-result">Warte auf Test...</div>
+        </div>
+
+        <!-- Test 2: Auth Session -->
+        <div class="test-section">
+            <div class="test-title">
+                <span>Test 2: Auth Session Check</span>
+                <span class="status status-pending" id="test2-status">
+                    <span class="spinner"></span>
+                    Ausstehend
+                </span>
+            </div>
+            <div class="result" id="test2-result">Warte auf Test...</div>
+        </div>
+
+        <!-- Test 3: Database Query -->
+        <div class="test-section">
+            <div class="test-title">
+                <span>Test 3: Database Query (users table)</span>
+                <span class="status status-pending" id="test3-status">
+                    <span class="spinner"></span>
+                    Ausstehend
+                </span>
+            </div>
+            <div class="result" id="test3-result">Warte auf Test...</div>
+        </div>
+
+        <!-- Run Tests Button -->
+        <button onclick="runAllTests()" id="testButton">
+            🚀 Tests Starten
+        </button>
+
+        <!-- Info Box -->
+        <div class="info-box">
+            <h3>💡 Hilfe bei Fehlern:</h3>
+            <p><strong>Wenn Test 1 fehlschlägt:</strong></p>
+            <ul>
+                <li>Projekt ist wahrscheinlich <strong>pausiert</strong> → Resume in Supabase Dashboard</li>
+                <li>Check Netzwerkverbindung</li>
+                <li>Check Firewall/Proxy Settings</li>
+            </ul>
+            <p style="margin-top: 12px;"><strong>Wenn Test 2 fehlschlägt:</strong></p>
+            <ul>
+                <li>CORS Problem → Check allowed origins in Supabase</li>
+                <li>API Key könnte ungültig sein</li>
+            </ul>
+            <p style="margin-top: 12px;"><strong>Wenn Test 3 fehlschlägt:</strong></p>
+            <ul>
+                <li>RLS Policies könnten zu strikt sein</li>
+                <li>Tabelle existiert nicht → Run migrations</li>
+            </ul>
+        </div>
+    </div>
+
+    <script type="module">
+        // Supabase Config
+        const PROJECT_ID = 'azmtojgikubegzusvhra';
+        const PUBLIC_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6bXRvamdpa3ViZWd6dXN2aHJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzODQzOTEsImV4cCI6MjA3NDk2MDM5MX0.bls9aJ-M1Wi-387R9mveOuiQCkmVPjTc6IntZjM1YMk';
+        const SUPABASE_URL = `https://${PROJECT_ID}.supabase.co`;
+
+        // Display config
+        document.getElementById('projectId').textContent = PROJECT_ID;
+        document.getElementById('supabaseUrl').textContent = SUPABASE_URL;
+        document.getElementById('apiKey').textContent = PUBLIC_ANON_KEY.substring(0, 40) + '...';
+
+        // Import Supabase
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        
+        const supabase = createClient(SUPABASE_URL, PUBLIC_ANON_KEY);
+
+        window.runAllTests = async function() {
+            const button = document.getElementById('testButton');
+            button.disabled = true;
+            button.textContent = '⏳ Tests laufen...';
+
+            await test1RestAPI();
+            await test2AuthSession();
+            await test3DatabaseQuery();
+
+            button.disabled = false;
+            button.textContent = '✅ Tests Abgeschlossen - Erneut Starten';
+        };
+
+        // Test 1: REST API Endpoint
+        async function test1RestAPI() {
+            const statusEl = document.getElementById('test1-status');
+            const resultEl = document.getElementById('test1-result');
+
+            statusEl.innerHTML = '<span class="spinner"></span> Läuft...';
+            resultEl.textContent = 'Teste REST API...';
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+                    headers: {
+                        'apikey': PUBLIC_ANON_KEY,
+                        'Authorization': `Bearer ${PUBLIC_ANON_KEY}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    statusEl.innerHTML = '✅ Erfolgreich';
+                    statusEl.className = 'status status-success';
+                    resultEl.className = 'result result-success';
+                    resultEl.textContent = `✅ REST API ist erreichbar!\n\nResponse:\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                statusEl.innerHTML = '❌ Fehlgeschlagen';
+                statusEl.className = 'status status-error';
+                resultEl.className = 'result result-error';
+                resultEl.textContent = `❌ REST API nicht erreichbar!\n\nError: ${error.message}\n\n🔧 Lösung:\n1. Check ob Supabase Projekt PAUSIERT ist\n2. Resume Project in Dashboard\n3. Warte 30-60 Sekunden\n4. Tests erneut starten`;
+            }
+        }
+
+        // Test 2: Auth Session
+        async function test2AuthSession() {
+            const statusEl = document.getElementById('test2-status');
+            const resultEl = document.getElementById('test2-result');
+
+            statusEl.innerHTML = '<span class="spinner"></span> Läuft...';
+            resultEl.textContent = 'Teste Auth Session...';
+
+            try {
+                const { data, error } = await supabase.auth.getSession();
+
+                if (error) throw error;
+
+                statusEl.innerHTML = '✅ Erfolgreich';
+                statusEl.className = 'status status-success';
+                resultEl.className = 'result result-success';
+                
+                if (data.session) {
+                    resultEl.textContent = `✅ Session gefunden!\n\nUser: ${data.session.user.email}\nExpires: ${new Date(data.session.expires_at * 1000).toLocaleString('de-DE')}`;
+                } else {
+                    resultEl.textContent = `✅ Auth funktioniert!\n\nKeine aktive Session (das ist OK - nicht eingeloggt)`;
+                }
+            } catch (error) {
+                statusEl.innerHTML = '❌ Fehlgeschlagen';
+                statusEl.className = 'status status-error';
+                resultEl.className = 'result result-error';
+                resultEl.textContent = `❌ Auth Session Check fehlgeschlagen!\n\nError: ${error.message}\n\n🔧 Lösung:\n1. Check CORS Settings in Supabase\n2. API Key könnte ungültig sein\n3. Projekt könnte pausiert sein`;
+            }
+        }
+
+        // Test 3: Database Query
+        async function test3DatabaseQuery() {
+            const statusEl = document.getElementById('test3-status');
+            const resultEl = document.getElementById('test3-result');
+
+            statusEl.innerHTML = '<span class="spinner"></span> Läuft...';
+            resultEl.textContent = 'Teste Database Query...';
+
+            try {
+                const { data, error, count } = await supabase
+                    .from('users')
+                    .select('id, email, full_name', { count: 'exact' })
+                    .limit(5);
+
+                if (error) throw error;
+
+                statusEl.innerHTML = '✅ Erfolgreich';
+                statusEl.className = 'status status-success';
+                resultEl.className = 'result result-success';
+                resultEl.textContent = `✅ Database Query erfolgreich!\n\nTotal Users: ${count}\nFirst 5 Users:\n${JSON.stringify(data, null, 2)}`;
+            } catch (error) {
+                statusEl.innerHTML = '❌ Fehlgeschlagen';
+                statusEl.className = 'status status-error';
+                resultEl.className = 'result result-error';
+                resultEl.textContent = `❌ Database Query fehlgeschlagen!\n\nError: ${error.message}\n\n🔧 Mögliche Ursachen:\n1. Tabelle 'users' existiert nicht → Run migrations\n2. RLS Policies zu strikt → Check policies\n3. API Key hat keine Berechtigung`;
+            }
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                runAllTests();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

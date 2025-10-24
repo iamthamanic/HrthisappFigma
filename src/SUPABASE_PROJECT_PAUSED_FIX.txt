@@ -1,0 +1,78 @@
+========================================
+SUPABASE PROJECT PAUSED - QUICK FIX
+========================================
+
+PROBLEM:
+--------
+Du bekommst "Failed to fetch" oder "AuthRetryableFetchError" Fehler.
+Die App zeigt jetzt eine Connection Error Seite mit Hilfe.
+
+URSACHE:
+--------
+Supabase pausiert KOSTENLOSE Projekte automatisch nach 1 Woche Inaktivität!
+
+LÖSUNG:
+-------
+
+SCHRITT 1: SUPABASE DASHBOARD ÖFFNEN
+-------------------------------------
+https://supabase.com/dashboard
+
+SCHRITT 2: PROJEKT FINDEN
+--------------------------
+- Suche dein Projekt: "azmtojgikubegzusvhra"
+- Oder: Klicke auf dein Projekt in der Liste
+
+SCHRITT 3: PROJEKT REAKTIVIEREN
+--------------------------------
+- Wenn pausiert: Siehst du einen "Unpause Project" Button
+- Klick drauf
+- Warte 30-60 Sekunden bis Projekt läuft
+
+SCHRITT 4: APP NEU LADEN
+-------------------------
+- Gehe zurück zu HRthis
+- Drücke F5 oder klicke "Erneut versuchen"
+- ✅ App sollte jetzt funktionieren!
+
+========================================
+WARUM PASSIERT DAS?
+========================================
+
+Supabase Free Tier:
+- Pausiert Projekte nach 7 Tagen Inaktivität
+- Spart Server-Ressourcen
+- Ist bei kostenlosen Accounts normal
+
+Um das zu verhindern:
+- Nutze die App regelmäßig (mind. 1x pro Woche)
+- ODER: Upgrade auf Paid Plan ($25/Monat)
+
+========================================
+ANDERE MÖGLICHE URSACHEN:
+========================================
+
+1. NETZWERK PROBLEME
+   - Prüfe deine Internet-Verbindung
+   - Prüfe ob Firewall Supabase blockiert
+
+2. CORS FEHLER
+   - Öffne Browser Console (F12)
+   - Siehst du "CORS" Errors?
+   - Check Supabase Dashboard → Settings → API → URL
+
+3. FALSCHE CREDENTIALS
+   - Prüfe /utils/supabase/info.tsx
+   - projectId sollte sein: azmtojgikubegzusvhra
+   - publicAnonKey sollte ein langer JWT Token sein
+
+========================================
+HILFE GEBRAUCHT?
+========================================
+
+1. Öffne Browser Console (F12)
+2. Kopiere alle Fehler-Meldungen
+3. Screenshot vom Connection Error Screen
+4. Teile diese Infos mit mir!
+
+========================================
