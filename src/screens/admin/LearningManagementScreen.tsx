@@ -19,14 +19,14 @@ import {
   Video,
   GraduationCap,
   Search
-} from '../../components/icons/HRTHISIcons';
-import { useLearningStore } from '../../stores/HRTHIS_learningStore';
-import { useAuthStore } from '../../stores/HRTHIS_authStore';
+} from '../../components/icons/BrowoKoIcons';
+import { useLearningStore } from '../../stores/BrowoKo_learningStore';
+import { useAuthStore } from '../../stores/BrowoKo_authStore';
 import CreateVideoDialog from '../../components/CreateVideoDialog';
 import EditVideoDialog from '../../components/EditVideoDialog';
 import DeleteVideoDialog from '../../components/DeleteVideoDialog';
-import VideoListItem from '../../components/HRTHIS_VideoListItem';
-import { LearningEmptyState } from '../../components/HRTHIS_LearningEmptyState';
+import VideoListItem from '../../components/BrowoKo_VideoListItem';
+import { LearningEmptyState } from '../../components/BrowoKo_LearningEmptyState';
 import LoadingState from '../../components/LoadingState';
 
 // Lazy load AvatarSystemAdminScreen

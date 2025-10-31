@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MapPin, UserCog, Building2, Layers, X } from './icons/HRTHISIcons';
+import { MapPin, UserCog, Building2, Layers, X } from './icons/BrowoKoIcons';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';

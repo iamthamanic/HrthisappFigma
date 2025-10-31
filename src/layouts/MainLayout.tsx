@@ -1,16 +1,20 @@
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { User, Clock, GraduationCap, Gift, FileText, LogOut, RefreshCw, Layers, UserCog } from '../components/icons/HRTHISIcons';
+import { User, Clock, GraduationCap, Gift, FileText, LogOut, RefreshCw, Layers, UserCog } from '../components/icons/BrowoKoIcons';
+import { MessageCircle } from 'lucide-react';
 import { useState } from 'react';
-import { useAuthStore } from '../stores/HRTHIS_authStore';
-import { useLearningStore } from '../stores/HRTHIS_learningStore';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
+import { useLearningStore } from '../stores/BrowoKo_learningStore';
 import { useGamificationStore } from '../stores/gamificationStore';
-import { useNotifications } from '../hooks/HRTHIS_useNotifications';
-import { useNavRouting } from '../hooks/HRTHIS_useNavRouting';
-import { NotificationBadge } from '../components/HRTHIS_NotificationBadge';
+import { useNotifications } from '../hooks/BrowoKo_useNotifications';
+import { useNavRouting } from '../hooks/BrowoKo_useNavRouting';
+import { NotificationBadge } from '../components/BrowoKo_NotificationBadge';
 import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
 import AdminMobileMenu from '../components/AdminMobileMenu';
 import Logo from '../components/Logo';
 import MobileNav from '../components/MobileNav';
+import BrowoKoChatFloatingWindow from '../components/BrowoKo_ChatFloatingWindow';
 import { toast } from 'sonner@2.0.3';
 
 export default function MainLayout() {
@@ -22,6 +26,7 @@ export default function MainLayout() {
   const { badgeCounts } = useNotifications(); // New notification system
   const [isReloading, setIsReloading] = useState(false);
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const isAdmin = profile?.role === 'HR' || profile?.role === 'ADMIN' || profile?.role === 'SUPERADMIN';
   const isExtern = profile?.role === 'EXTERN';
@@ -90,7 +95,7 @@ export default function MainLayout() {
     <div className="min-h-screen bg-[#f5f5f7]">
       {/* Desktop Header - Hidden on mobile */}
       <header className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50 hidden md:block">
-        <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between">
+        <div className="max-w-[1400px] mx-auto px-6 py-2 flex items-center justify-between">
           {/* Logo */}
           <Logo size="sm" showText={true} />
 
@@ -101,7 +106,7 @@ export default function MainLayout() {
                 key={item.route}
                 to={item.route}
                 className={({ isActive }) =>
-                  `flex items-center gap-2 px-4 py-2 rounded-lg transition-colors relative ${
+                  `flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors relative ${
                     isActive
                       ? 'bg-blue-50 text-blue-600'
                       : 'text-gray-600 hover:bg-gray-50'
@@ -121,7 +126,7 @@ export default function MainLayout() {
               <Sheet open={isAdminMenuOpen} onOpenChange={setIsAdminMenuOpen}>
                 <SheetTrigger asChild>
                   <button
-                    className={`p-2 rounded-lg transition-colors ${
+                    className={`p-1.5 rounded-lg transition-colors ${
                       location.pathname.startsWith('/admin')
                         ? 'bg-blue-50 text-blue-600'
                         : 'text-gray-600 hover:bg-gray-50'
@@ -139,14 +144,14 @@ export default function MainLayout() {
             <button
               onClick={handleSmartReload}
               disabled={isReloading}
-              className="p-2 hover:bg-gray-50 rounded-lg transition-colors text-gray-600 disabled:opacity-50"
+              className="p-1.5 hover:bg-gray-50 rounded-lg transition-colors text-gray-600 disabled:opacity-50"
               title="Daten neu laden"
             >
               <RefreshCw className={`w-5 h-5 ${isReloading ? 'animate-spin' : ''}`} />
             </button>
             <button
               onClick={handleLogout}
-              className="p-2 hover:bg-gray-50 rounded-lg transition-colors"
+              className="p-1.5 hover:bg-gray-50 rounded-lg transition-colors"
               title="Abmelden"
             >
               <LogOut className="w-5 h-5 text-gray-600" />
@@ -208,6 +213,25 @@ export default function MainLayout() {
 
       {/* Mobile Bottom Navigation */}
       <MobileNav />
+
+      {/* Global Floating Chat Button */}
+      <Button
+        onClick={() => setIsChatOpen(!isChatOpen)}
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[rgb(38,82,188)] hover:bg-purple-700 shadow-lg z-50 transition-all hover:scale-110 active:scale-95"
+        size="icon"
+        title={isChatOpen ? "Chat schließen" : "Chat öffnen"}
+      >
+        <MessageCircle className="w-6 h-6 text-white" />
+        {/* Unread Badge - TODO: Replace with real unread count */}
+        {badgeCounts.total > 0 && (
+          <Badge className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center p-0 border-2 border-white">
+            {badgeCounts.total > 9 ? '9+' : badgeCounts.total}
+          </Badge>
+        )}
+      </Button>
+
+      {/* Chat Floating Window */}
+      <BrowoKoChatFloatingWindow open={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>
   );
 }

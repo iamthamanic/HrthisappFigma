@@ -3,9 +3,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Label } from './ui/label';
-import { Loader2, MapPin, Building2 } from './icons/HRTHISIcons';
+import { Loader2, MapPin, Building2 } from './icons/BrowoKoIcons';
 import { User, Location, Department } from '../types/database';
-import sanitize from '../utils/security/HRTHIS_sanitization';
+import sanitize from '../utils/security/BrowoKo_sanitization';
 
 type BulkEditType = 'location' | 'department';
 

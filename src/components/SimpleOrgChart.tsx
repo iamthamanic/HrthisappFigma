@@ -9,7 +9,7 @@ import {
   UserCircle,
   Minimize2,
   RotateCcw
-} from './icons/HRTHISIcons';
+} from './icons/BrowoKoIcons';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';

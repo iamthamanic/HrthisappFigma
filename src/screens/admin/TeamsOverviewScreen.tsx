@@ -1,4 +1,4 @@
-import { Users, Plus, Building2, AlertCircle } from '../../components/icons/HRTHISIcons';
+import { Users, Plus, Building2, AlertCircle } from '../../components/icons/BrowoKoIcons';
 import { Card, CardContent } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { Alert, AlertDescription } from '@components/ui/alert';

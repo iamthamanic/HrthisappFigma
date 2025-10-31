@@ -5,9 +5,9 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Switch } from './ui/switch';
-import { Save, X } from './icons/HRTHISIcons';
+import { Save, X } from './icons/BrowoKoIcons';
 import { Department, User } from '../types/database';
-import { useOrganigramStore } from '../stores/HRTHIS_organigramStore';
+import { useOrganigramStore } from '../stores/BrowoKo_organigramStore';
 import { toast } from 'sonner@2.0.3';
 
 interface EditDepartmentDialogProps {

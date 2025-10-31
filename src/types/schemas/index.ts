@@ -12,22 +12,22 @@
  */
 
 // User Schemas
-export * from './HRTHIS_userSchemas';
+export * from './BrowoKo_userSchemas';
 
 // Leave Schemas
-export * from './HRTHIS_leaveSchemas';
+export * from './BrowoKo_leaveSchemas';
 
 // Team Schemas
-export * from './HRTHIS_teamSchemas';
+export * from './BrowoKo_teamSchemas';
 
 // Learning Schemas
-export * from './HRTHIS_learningSchemas';
+export * from './BrowoKo_learningSchemas';
 
 // Document Schemas
-export * from './HRTHIS_documentSchemas';
+export * from './BrowoKo_documentSchemas';
 
 // Benefit Schemas
-export * from './HRTHIS_benefitSchemas';
+export * from './BrowoKo_benefitSchemas';
 
 /**
  * VALIDATION HELPER TYPES

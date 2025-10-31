@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, Suspense, lazy } from 'react';
 import { Toaster } from 'sonner@2.0.3';
-import { useAuthStore } from './stores/HRTHIS_authStore';
-import { applySecurityHeaders } from './utils/security/HRTHIS_securityHeaders';
+import { useAuthStore } from './stores/BrowoKo_authStore';
+import { applySecurityHeaders } from './utils/security/BrowoKo_securityHeaders';
 import './utils/supabase/diagnostics'; // Auto-run diagnostics in dev mode
 import Login from './components/Login';
 import Register from './components/Register';
@@ -16,7 +16,7 @@ import LoadingState from './components/LoadingState';
 import ErrorBoundary from './components/ErrorBoundary';
 import ConnectionError from './components/ConnectionError';
 import DebugVersionChecker from './components/DebugVersionChecker';
-import { HRTHIS_MigrationWarning } from './components/HRTHIS_MigrationWarning';
+import { BrowoKo_MigrationWarning } from './components/BrowoKo_MigrationWarning';
 
 // Lazy load screens for better performance
 const DashboardScreen = lazy(() => import('./screens/DashboardScreen'));
@@ -34,6 +34,7 @@ const DocumentsScreen = lazy(() => import('./screens/DocumentsScreen'));
 const SettingsScreen = lazy(() => import('./screens/SettingsScreen'));
 const OrganigramViewScreen = lazy(() => import('./screens/OrganigramViewScreen'));
 const FieldScreen = lazy(() => import('./screens/FieldScreen'));
+const ChatScreen = lazy(() => import('./screens/ChatScreen'));
 
 // Admin Screens
 const TeamUndMitarbeiterverwaltung = lazy(() => import('./screens/admin/TeamUndMitarbeiterverwaltung'));
@@ -51,6 +52,8 @@ const DashboardAnnouncementsScreen = lazy(() => import('./screens/admin/Dashboar
 const LearningManagementScreen = lazy(() => import('./screens/admin/LearningManagementScreen'));
 const TimeAccountTestScreen = lazy(() => import('./screens/admin/TimeAccountTestScreen'));
 const TimesheetManagementScreen = lazy(() => import('./screens/admin/TimesheetManagementScreen'));
+const AutomationManagementScreen = lazy(() => import('./screens/admin/AutomationManagementScreen'));
+const SystemHealthScreen = lazy(() => import('./screens/admin/SystemHealthScreen'));
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -114,16 +117,37 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Version: 4.10.17 - DYNAMIC NAV ROUTING SYSTEM! 🧭🔗✨
-// Cache bust: 2025-01-21-150-DYNAMIC-NAV-ROUTING
+// Version: 4.11.1 - AUTOMATION SYSTEM! 🤖⚡
+// Cache bust: 2025-01-28-HEALTH-DASHBOARD
 export default function App() {
   const { initialize } = useAuthStore();
 
   // Initialize auth and security on mount - ONLY ONCE
   useEffect(() => {
-    console.log('🚀 Starting HRthis v4.10.17 - DYNAMIC NAV ROUTING SYSTEM! 🧭🔗✨');
-    console.log('🔥 Cache bust: 2025-01-21-150-DYNAMIC-NAV-ROUTING');
+    console.log('🚀 Starting Browo Koordinator v4.11.2 - SYSTEM HEALTH DASHBOARD! 📊🔍');
+    console.log('🔥 Cache bust: 2025-01-28-HEALTH-DASHBOARD');
     console.log('🔥 Current time:', new Date().toISOString());
+    console.log('✅ v4.11.2: System Health Dashboard - Edge Functions Monitoring!');
+    console.log('✅ v4.11.2: 14 Functions Health Check & Response Times!');
+    console.log('✅ v4.11.2: Auto-Refresh alle 60 Sekunden!');
+    console.log('📊 Health Dashboard Features:');
+    console.log('  • Health Check für alle 14 Edge Functions');
+    console.log('  • Response Time Monitoring (ms)');
+    console.log('  • Error Rate Tracking');
+    console.log('  • Last Check Timestamp');
+    console.log('  • Auto-Refresh alle 60 Sekunden');
+    console.log('  • Manual Check Button pro Function');
+    console.log('  • Color-coded Status Cards');
+    console.log('✅ v4.11.1: Automation Admin Panel - API Key Management!');
+    console.log('✅ v4.11.1: n8n Integration mit API Keys!');
+    console.log('✅ v4.11.1: RLS Policy Case-Insensitive Fix!');
+    console.log('✅ v4.11.1: 14. Edge Function deployed: BrowoKoordinator-Automation!');
+    console.log('🤖 Automation Features:');
+    console.log('  • API Keys erstellen mit "browoko-" Prefix');
+    console.log('  • API Key Stats & Nutzungsverfolgung');
+    console.log('  • API Keys umbenennen & löschen');
+    console.log('  • n8n Integration Guide');
+    console.log('  • Secure RLS Policies (case-insensitive)');
     console.log('✅ v4.10.17: Dynamic Navigation Routing System!');
     console.log('✅ v4.10.17: useNavRouting Hook für Top Nav Bar!');
     console.log('✅ v4.10.17: Auto-Route-Generation aus Labels!');
@@ -208,7 +232,7 @@ export default function App() {
     <ErrorBoundary>
       <Toaster position="top-right" richColors />
       <DebugVersionChecker />
-      <HRTHIS_MigrationWarning />
+      <BrowoKo_MigrationWarning />
       
       <BrowserRouter>
         <Routes>
@@ -300,6 +324,11 @@ export default function App() {
           <Route path="arbeit" element={
             <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
               <FieldScreen />
+            </Suspense>
+          } />
+          <Route path="chat" element={
+            <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
+              <ChatScreen />
             </Suspense>
           } />
         </Route>
@@ -421,6 +450,18 @@ export default function App() {
           <Route path="timesheet-management" element={
             <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
               <TimesheetManagementScreen />
+            </Suspense>
+          } />
+          {/* NEW v4.11.0: Automationenverwaltung (n8n Integration) */}
+          <Route path="automationenverwaltung" element={
+            <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
+              <AutomationManagementScreen />
+            </Suspense>
+          } />
+          {/* NEW v4.11.2: System Health Dashboard (Edge Functions Monitoring) */}
+          <Route path="system-health" element={
+            <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
+              <SystemHealthScreen />
             </Suspense>
           } />
         </Route>

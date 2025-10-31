@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAdminStore } from '../../stores/HRTHIS_adminStore';
-import { ArrowLeft, UserPlus } from '../../components/icons/HRTHISIcons';
+import { useAdminStore } from '../../stores/BrowoKo_adminStore';
+import { ArrowLeft, UserPlus } from '../../components/icons/BrowoKoIcons';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Alert, AlertDescription } from '../../components/ui/alert';
-import { useAuthStore } from '../../stores/HRTHIS_authStore';
-import AddEmployeeLoginSection from '../../components/admin/HRTHIS_AddEmployeeLoginSection';
-import AddEmployeePersonalSection from '../../components/admin/HRTHIS_AddEmployeePersonalSection';
-import AddEmployeeRoleSection from '../../components/admin/HRTHIS_AddEmployeeRoleSection';
-import sanitize from '../../utils/security/HRTHIS_sanitization';
+import { useAuthStore } from '../../stores/BrowoKo_authStore';
+import AddEmployeeLoginSection from '../../components/admin/BrowoKo_AddEmployeeLoginSection';
+import AddEmployeePersonalSection from '../../components/admin/BrowoKo_AddEmployeePersonalSection';
+import AddEmployeeRoleSection from '../../components/admin/BrowoKo_AddEmployeeRoleSection';
+import sanitize from '../../utils/security/BrowoKo_sanitization';
 import DebugVersionChecker from '../../components/DebugVersionChecker';
 
 export default function AddEmployeeScreen() {

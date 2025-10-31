@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Users } from './icons/HRTHISIcons';
+import { Users } from './icons/BrowoKoIcons';
 import { supabase } from '../utils/supabase/client';
 import { getServices } from '../services';
-import { useAuthStore } from '../stores/HRTHIS_authStore';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import AvatarDisplay from './AvatarDisplay';

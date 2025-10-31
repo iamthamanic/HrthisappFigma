@@ -6,8 +6,8 @@
  * Original: ~240 lines → Refactored: ~100 lines (58% reduction)
  */
 
-import { useAuthStore } from '../stores/HRTHIS_authStore';
-import { Video, Plus, Play, Clock } from '../components/icons/HRTHISIcons';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
+import { Video, Plus, Play, Clock } from '../components/icons/BrowoKoIcons';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -16,8 +16,8 @@ import LoadingState from '../components/LoadingState';
 import CreateVideoDialog from '../components/CreateVideoDialog';
 import EditVideoDialog from '../components/EditVideoDialog';
 import DeleteVideoDialog from '../components/DeleteVideoDialog';
-import VideosListTab from '../components/HRTHIS_VideosListTab';
-import { useLearningAdmin } from '../hooks/HRTHIS_useLearningAdmin';
+import VideosListTab from '../components/BrowoKo_VideosListTab';
+import { useLearningAdmin } from '../hooks/BrowoKo_useLearningAdmin';
 
 export default function LearningAdminScreen() {
   const { profile } = useAuthStore();

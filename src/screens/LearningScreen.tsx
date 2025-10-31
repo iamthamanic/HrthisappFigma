@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Button } from '../components/ui/button';
 import LoadingState from '../components/LoadingState';
-import { LearningStatsGrid } from '../components/HRTHIS_LearningStatsGrid';
-import { VideoCardWithProgress } from '../components/HRTHIS_VideoCardWithProgress';
-import { QuizCard } from '../components/HRTHIS_QuizCard';
-import { LearningEmptyState } from '../components/HRTHIS_LearningEmptyState';
-import HRTHIS_LearningAvatarWidget from '../components/HRTHIS_LearningAvatarWidget';
-import { useLearningScreen } from '../hooks/HRTHIS_useLearningScreen';
+import { LearningStatsGrid } from '../components/BrowoKo_LearningStatsGrid';
+import { VideoCardWithProgress } from '../components/BrowoKo_VideoCardWithProgress';
+import { QuizCard } from '../components/BrowoKo_QuizCard';
+import { LearningEmptyState } from '../components/BrowoKo_LearningEmptyState';
+import BrowoKo_LearningAvatarWidget from '../components/BrowoKo_LearningAvatarWidget';
+import { useLearningScreen } from '../hooks/BrowoKo_useLearningScreen';
 
 export default function LearningScreen() {
   const navigate = useNavigate();
@@ -45,7 +45,7 @@ export default function LearningScreen() {
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           {/* Avatar Widget (v3.9.0) */}
-          <HRTHIS_LearningAvatarWidget />
+          <BrowoKo_LearningAvatarWidget />
         </div>
       </div>
 

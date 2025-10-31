@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { FileText, Search, Calendar, X } from '../components/icons/HRTHISIcons';
+import { FileText, Search, Calendar, X } from '../components/icons/BrowoKoIcons';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -17,10 +17,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../components/ui/alert-dialog';
-import { DocumentCard } from '../components/HRTHIS_DocumentCard';
-import { DocumentCategoryCards } from '../components/HRTHIS_DocumentCategoryCards';
-import { DocumentViewDialog } from '../components/HRTHIS_DocumentViewDialog';
-import { useDocumentsScreen } from '../hooks/HRTHIS_useDocumentsScreen';
+import { DocumentCard } from '../components/BrowoKo_DocumentCard';
+import { DocumentCategoryCards } from '../components/BrowoKo_DocumentCategoryCards';
+import { DocumentViewDialog } from '../components/BrowoKo_DocumentViewDialog';
+import { useDocumentsScreen } from '../hooks/BrowoKo_useDocumentsScreen';
 
 export default function DocumentsScreen() {
   const {

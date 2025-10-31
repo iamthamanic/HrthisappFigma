@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Network, Info, ExternalLink, Copy, Check } from '../../components/icons/HRTHISIcons';
+import { Network, Info, ExternalLink, Copy, Check } from '../../components/icons/BrowoKoIcons';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Button } from '../../components/ui/button';
-import CanvasOrgChart, { type Connection } from '../../components/canvas/HRTHIS_CanvasOrgChart';
+import CanvasOrgChart, { type Connection } from '../../components/canvas/BrowoKo_CanvasOrgChart';
 import type { OrgNodeData } from '../../components/OrgNode';
-import { useAuthStore } from '../../stores/HRTHIS_authStore';
+import { useAuthStore } from '../../stores/BrowoKo_authStore';
 import { supabase } from '../../utils/supabase/client';
 import { toast } from 'sonner@2.0.3';
 

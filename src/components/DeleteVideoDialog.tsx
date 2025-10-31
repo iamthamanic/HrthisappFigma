@@ -8,7 +8,7 @@ import {
   AlertDialogTitle,
 } from './ui/alert-dialog';
 import { Button } from './ui/button';
-import { Trash2, Loader2, AlertTriangle } from './icons/HRTHISIcons';
+import { Trash2, Loader2, AlertTriangle } from './icons/BrowoKoIcons';
 import { toast } from 'sonner@2.0.3';
 
 interface Video {

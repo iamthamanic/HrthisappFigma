@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react';
-import { Lock, Check } from './icons/HRTHISIcons';
+import { Lock, Check } from './icons/BrowoKoIcons';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';

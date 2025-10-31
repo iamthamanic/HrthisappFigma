@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Check, Play, RotateCcw, Clock } from './icons/HRTHISIcons';
+import { Check, Play, RotateCcw, Clock } from './icons/BrowoKoIcons';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';

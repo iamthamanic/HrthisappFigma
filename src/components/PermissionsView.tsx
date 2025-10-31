@@ -1,4 +1,4 @@
-import { Shield, Check, X } from './icons/HRTHISIcons';
+import { Shield, Check, X } from './icons/BrowoKoIcons';
 import { Card, CardContent } from './ui/card';
 import { usePermissions, UserRole } from '../hooks/usePermissions';
 

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, Check } from './icons/HRTHISIcons';
+import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, Check } from './icons/BrowoKoIcons';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { Card } from './ui/card';

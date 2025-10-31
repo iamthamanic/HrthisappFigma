@@ -1,4 +1,4 @@
-import { Loader2 } from './icons/HRTHISIcons';
+import { Loader2 } from './icons/BrowoKoIcons';
 import SkeletonLoader from './SkeletonLoader';
 
 interface LoadingStateProps {

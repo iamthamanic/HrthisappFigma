@@ -1,5 +1,5 @@
 import { useState, memo } from 'react';
-import { MapPin, UserCog, Building2, Layers, Edit2, Trash2, Users } from './icons/HRTHISIcons';
+import { MapPin, UserCog, Building2, Layers, Edit2, Trash2, Users } from './icons/BrowoKoIcons';
 import { cn } from './ui/utils';
 import ConnectionPoint, { PinPosition } from './ConnectionPoint';
 import { useRAF } from '../hooks/useThrottle';

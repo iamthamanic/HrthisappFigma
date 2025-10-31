@@ -14,7 +14,7 @@ import {
   Save,
   GitBranch,
   List
-} from '../../components/icons/HRTHISIcons';
+} from '../../components/icons/BrowoKoIcons';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
@@ -25,7 +25,7 @@ import { Badge } from '../../components/ui/badge';
 import { Separator } from '../../components/ui/separator';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { useOrganigramStore } from '../../stores/HRTHIS_organigramStore';
+import { useOrganigramStore } from '../../stores/BrowoKo_organigramStore';
 import { Department, OrganigramPosition } from '../../types/database';
 import { toast } from 'sonner@2.0.3';
 import SimpleOrgChart from '../../components/SimpleOrgChart';

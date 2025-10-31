@@ -14,7 +14,7 @@ import {
   Users,
   UserCircle,
   Minimize2
-} from './icons/HRTHISIcons';
+} from './icons/BrowoKoIcons';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card } from './ui/card';

@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {  ArrowLeft, Truck, Calendar, Weight, FileText, Wrench, AlertTriangle, Image as ImageIcon, Package, Edit, X, Save } from '../../components/icons/HRTHISIcons';
+import {  ArrowLeft, Truck, Calendar, Weight, FileText, Wrench, AlertTriangle, Image as ImageIcon, Package, Edit, X, Save } from '../../components/icons/BrowoKoIcons';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
@@ -16,7 +16,7 @@ import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
 import { Calendar as CalendarUI } from '../../components/ui/calendar';
-import { EquipmentAddDialog, type EquipmentFormData } from '../../components/HRTHIS_EquipmentAddDialog';
+import { EquipmentAddDialog, type EquipmentFormData } from '../../components/BrowoKo_EquipmentAddDialog';
 import { toast } from 'sonner@2.0.3';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';

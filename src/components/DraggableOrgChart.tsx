@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { Plus, Info } from './icons/HRTHISIcons';
+import { Plus, Info } from './icons/BrowoKoIcons';
 import { Department, User } from '../types/database';
-import { useOrganigramStore } from '../stores/HRTHIS_organigramStore';
+import { useOrganigramStore } from '../stores/BrowoKo_organigramStore';
 import svgPaths from '../imports/svg-pkwhrqe2rm';
 
 interface DraggableOrgChartProps {

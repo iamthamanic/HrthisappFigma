@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Users, Building2, UserCircle, Shield, Star } from './icons/HRTHISIcons';
+import { ChevronDown, ChevronRight, Users, Building2, UserCircle, Shield, Star } from './icons/BrowoKoIcons';
 import { OrganigramPosition, User, Department } from '../types/database';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 

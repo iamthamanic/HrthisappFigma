@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { Gift, Plus, Trophy } from '../../components/icons/HRTHISIcons';
+import { Gift, Plus, Trophy } from '../../components/icons/BrowoKoIcons';
 import { toast } from 'sonner@2.0.3';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import AdminBenefitsList from '../../components/admin/HRTHIS_AdminBenefitsList';
-import BenefitDialog from '../../components/admin/HRTHIS_BenefitDialog';
-import AchievementDialog from '../../components/admin/HRTHIS_AchievementDialog';
-import AdminAchievementsList from '../../components/admin/HRTHIS_AdminAchievementsList';
-import { useBenefitsManagement } from '../../hooks/HRTHIS_useBenefitsManagement';
-import { useAchievementsManagement } from '../../hooks/HRTHIS_useAchievementsManagement';
+import AdminBenefitsList from '../../components/admin/BrowoKo_AdminBenefitsList';
+import BenefitDialog from '../../components/admin/BrowoKo_BenefitDialog';
+import AchievementDialog from '../../components/admin/BrowoKo_AchievementDialog';
+import AdminAchievementsList from '../../components/admin/BrowoKo_AdminAchievementsList';
+import { useBenefitsManagement } from '../../hooks/BrowoKo_useBenefitsManagement';
+import { useAchievementsManagement } from '../../hooks/BrowoKo_useAchievementsManagement';
 import { Button } from '../../components/ui/button';
 
 export default function BenefitsManagementScreen() {

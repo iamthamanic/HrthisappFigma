@@ -1,4 +1,5 @@
-import logoImage from 'figma:asset/a2823359c8c61b8fadbc2fde9a656aa35cfcc7a7.png';
+import logoImage from 'figma:asset/5218c77a6c85486efc0c8140c04aa2e0705a9753.png';
+import iconImage from 'figma:asset/977ce9b38176278196339fab0cfdee728f38c4d1.png';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -8,24 +9,19 @@ interface LogoProps {
 export default function Logo({ size = 'md', showText = true }: LogoProps) {
   // Sizes for the logo image
   const imageSizes = {
-    sm: 'w-8 h-8',     // 32px
-    md: 'w-12 h-12',   // 48px
-    lg: 'w-16 h-16',   // 64px
+    sm: 'h-10',    // 40px height, auto width - optimal für Top Navbar
+    md: 'h-12',    // 48px height, auto width
+    lg: 'h-16',    // 64px height, auto width
   };
 
   return (
     <div className="flex items-center gap-2">
-      {/* Logo Image - HRthis with lightning bolt */}
+      {/* Logo Image - Browo Koordinator */}
       <img 
         src={logoImage} 
-        alt="HRthis Logo" 
-        className={`${imageSizes[size]} object-contain scale-125`}
+        alt="Browo Koordinator Logo" 
+        className={`${imageSizes[size]} object-contain`}
       />
-
-      {/* Optional text "HRthis" */}
-      {showText && (
-        <span className="font-semibold text-gray-900">HRthis</span>
-      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Trophy, Award, Star, TrendingUp } from '../components/icons/HRTHISIcons';
-import { useAuthStore } from '../stores/HRTHIS_authStore';
+import { Trophy, Award, Star, TrendingUp } from '../components/icons/BrowoKoIcons';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
 import { useGamificationStore } from '../stores/gamificationStore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';

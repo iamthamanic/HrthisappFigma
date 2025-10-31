@@ -1,7 +1,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
-import { ArrowUpDown, ArrowUp, ArrowDown } from './icons/HRTHISIcons';
+import { ArrowUpDown, ArrowUp, ArrowDown } from './icons/BrowoKoIcons';
 
 export interface SortConfig {
   key: SortableColumn;

@@ -8,10 +8,10 @@
  */
 
 import { NavLink, useLocation } from 'react-router-dom';
-import { User, Clock, GraduationCap, Gift, FileText, Layers } from './icons/HRTHISIcons';
-import { NotificationBadge } from './HRTHIS_NotificationBadge';
-import { useNotifications } from '../hooks/HRTHIS_useNotifications';
-import { useAuthStore } from '../stores/HRTHIS_authStore';
+import { User, Clock, GraduationCap, Gift, FileText, Layers } from './icons/BrowoKoIcons';
+import { NotificationBadge } from './BrowoKo_NotificationBadge';
+import { useNotifications } from '../hooks/BrowoKo_useNotifications';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
 
 export default function MobileNav() {
   const location = useLocation();

@@ -23,9 +23,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import { Upload, X, FileText, Plus } from './icons/HRTHISIcons';
+import { Upload, X, FileText, Plus } from './icons/BrowoKoIcons';
 import { Badge } from './ui/badge';
-import sanitize from '../utils/security/HRTHIS_sanitization';
+import sanitize from '../utils/security/BrowoKo_sanitization';
 import { toast } from 'sonner@2.0.3';
 import type { User } from '../types/database';
 

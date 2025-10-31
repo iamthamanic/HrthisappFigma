@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '../../components/ui/badge';
-import { useAuthStore } from '../../stores/HRTHIS_authStore';
-import { useAdminStore } from '../../stores/HRTHIS_adminStore';
+import { useAuthStore } from '../../stores/BrowoKo_authStore';
+import { useAdminStore } from '../../stores/BrowoKo_adminStore';
 import { Organization } from '../../types/database';
 import { supabase } from '../../utils/supabase/client';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import StorageDiagnostics from '../../components/StorageDiagnostics';
-import { ChevronDown, ChevronUp } from '../../components/icons/HRTHISIcons';
+import { ChevronDown, ChevronUp } from '../../components/icons/BrowoKoIcons';
 import { Button } from '../../components/ui/button';
 import { toast } from 'sonner@2.0.3';
-import CompanyBasicSettings from '../../components/admin/HRTHIS_CompanyBasicSettings';
-import CompanyLogoUpload from '../../components/admin/HRTHIS_CompanyLogoUpload';
-import LocationManager from '../../components/admin/HRTHIS_LocationManager';
-import DepartmentManager from '../../components/admin/HRTHIS_DepartmentManager';
+import CompanyBasicSettings from '../../components/admin/BrowoKo_CompanyBasicSettings';
+import CompanyLogoUpload from '../../components/admin/BrowoKo_CompanyLogoUpload';
+import LocationManager from '../../components/admin/BrowoKo_LocationManager';
+import DepartmentManager from '../../components/admin/BrowoKo_DepartmentManager';
 
 export default function CompanySettingsScreen() {
   const navigate = useNavigate();

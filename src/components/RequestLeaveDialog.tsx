@@ -18,18 +18,18 @@ import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Switch } from './ui/switch';
-import { Calendar, Upload, AlertCircle, Info, Umbrella, Heart } from './icons/HRTHISIcons';
+import { Calendar, Upload, AlertCircle, Info, Umbrella, Heart } from './icons/BrowoKoIcons';
 import { Alert, AlertDescription } from './ui/alert';
-import { useAuthStore } from '../stores/HRTHIS_authStore';
-import { useAdminStore } from '../stores/HRTHIS_adminStore';
-import { useLeaveManagement } from '../hooks/HRTHIS_useLeaveManagement';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
+import { useAdminStore } from '../stores/BrowoKo_adminStore';
+import { useLeaveManagement } from '../hooks/BrowoKo_useLeaveManagement';
 import { useBusinessDays } from '../hooks/useBusinessDays';
 import { FEDERAL_STATES } from '../hooks/useGermanHolidays';
 import { LeaveType } from '../types/database';
 import { toast } from 'sonner@2.0.3';
 import { supabase } from '../utils/supabase/client';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import sanitize from '../utils/security/HRTHIS_sanitization';
+import sanitize from '../utils/security/BrowoKo_sanitization';
 
 interface RequestLeaveDialogProps {
   open: boolean;

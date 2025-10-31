@@ -11,7 +11,7 @@ import {
   Briefcase,
   UserCheck,
   UserX
-} from './icons/HRTHISIcons';
+} from './icons/BrowoKoIcons';
 import { User } from '../types/database';
 
 export type BulkActionType = 

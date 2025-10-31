@@ -1,10 +1,12 @@
 /**
  * @file FieldManagementScreen.tsx
- * @version 4.5.8
- * @description Field Management Admin Screen with Vehicle Management System + List Layout
+ * @version 4.12.0
+ * @description Field Management Admin Screen - EINSATZPLANUNG with Schichtplanung!
  * 
  * Features:
- * - Tab 1: Tourenplanung
+ * - Tab 1: Einsatzplanung (umbenannt von Tourenplanung)
+ *   - Sub-Tab 1.1: Tourenplanung
+ *   - Sub-Tab 1.2: Schichtplanung (NEU! Drag & Drop Timeline)
  * - Tab 2: Fahrzeuge (MIT KOMPLETTEM FAHRZEUGVERWALTUNGSSYSTEM!)
  * - Tab 3: Sonstige Arbeiten
  * - Desktop Responsive (pt-20 md:pt-6 for top nav)
@@ -18,14 +20,15 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Truck, Wrench, Search, X, Trash2 } from '../../components/icons/HRTHISIcons';
+import { MapPin, Truck, Wrench, Search, X, Trash2, Calendar as CalendarIcon } from '../../components/icons/BrowoKoIcons';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Input } from '../../components/ui/input';
 import { Checkbox } from '../../components/ui/checkbox';
-import { VehicleAddDialog, type VehicleFormData } from '../../components/HRTHIS_VehicleAddDialog';
-import { VehicleListItem } from '../../components/HRTHIS_VehicleListItem';
+import { VehicleAddDialog, type VehicleFormData } from '../../components/BrowoKo_VehicleAddDialog';
+import { VehicleListItem } from '../../components/BrowoKo_VehicleListItem';
+import { BrowoKo_ShiftPlanningTab } from '../../components/BrowoKo_ShiftPlanningTab'; // ✅ ECHTE VERSION mit Backend!
 import { toast } from 'sonner@2.0.3';
 
 interface Vehicle {
@@ -46,7 +49,8 @@ interface Vehicle {
 
 export default function FieldManagementScreen() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('tourenplanung');
+  const [activeTab, setActiveTab] = useState('einsatzplanung'); // Changed from 'tourenplanung'
+  const [einsatzSubTab, setEinsatzSubTab] = useState('tourenplanung'); // NEW: Sub-tab state
   const [vehicleDialogOpen, setVehicleDialogOpen] = useState(false);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -191,7 +195,7 @@ export default function FieldManagementScreen() {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-4">
           <h1 className="text-2xl font-semibold text-gray-900">Fieldverwaltung</h1>
-          <p className="text-sm text-gray-500 mt-1">Touren, Fahrzeuge und sonstige Arbeiten verwalten</p>
+          <p className="text-sm text-gray-500 mt-1">Einsatzplanung, Fahrzeuge und sonstige Arbeiten verwalten</p>
         </div>
       </div>
 
@@ -200,9 +204,9 @@ export default function FieldManagementScreen() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Tabs Navigation */}
           <TabsList className="grid w-full grid-cols-3 h-auto mb-6">
-            <TabsTrigger value="tourenplanung" className="tab-trigger-responsive">
-              <MapPin className="w-4 h-4" />
-              <span>Tourenplanung</span>
+            <TabsTrigger value="einsatzplanung" className="tab-trigger-responsive">
+              <CalendarIcon className="w-4 h-4" />
+              <span>Einsatzplanung</span>
             </TabsTrigger>
             <TabsTrigger value="fahrzeuge" className="tab-trigger-responsive">
               <Truck className="w-4 h-4" />
@@ -214,47 +218,75 @@ export default function FieldManagementScreen() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Tab 1: Tourenplanung */}
-          <TabsContent value="tourenplanung" className="space-y-6">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center py-12">
-                  <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-4">
-                    <MapPin className="w-10 h-10 text-blue-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Tourenplanung</h3>
-                  <p className="text-gray-500 mb-8 max-w-md mx-auto">
-                    Hier kannst du Touren planen und verwalten
-                  </p>
-                  <div className="inline-flex flex-col gap-3 text-left max-w-sm">
-                    <div className="flex items-center gap-3 text-gray-700">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <span className="text-blue-600 font-semibold">📍</span>
+          {/* Tab 1: Einsatzplanung (with Sub-Tabs) */}
+          <TabsContent value="einsatzplanung" className="space-y-6">
+            <Tabs value={einsatzSubTab} onValueChange={setEinsatzSubTab} className="w-full">
+              {/* Sub-Tabs Navigation */}
+              <TabsList className="grid w-full grid-cols-2 h-auto mb-6">
+                <TabsTrigger value="tourenplanung" className="tab-trigger-responsive">
+                  <MapPin className="w-4 h-4" />
+                  <span>Tourenplanung</span>
+                </TabsTrigger>
+                <TabsTrigger value="schichtplanung" className="tab-trigger-responsive">
+                  <CalendarIcon className="w-4 h-4" />
+                  <span>Schichtplanung</span>
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Sub-Tab 1.1: Tourenplanung */}
+              <TabsContent value="tourenplanung" className="space-y-6">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center py-12">
+                      <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-4">
+                        <MapPin className="w-10 h-10 text-blue-600" />
                       </div>
-                      <span>Touren erstellen und bearbeiten</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-gray-700">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <span className="text-blue-600 font-semibold">🗺️</span>
-                      </div>
-                      <span>Routen planen und optimieren</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-gray-700">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <span className="text-blue-600 font-semibold">👥</span>
-                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Tourenplanung</h3>
+                      <p className="text-gray-500 mb-8 max-w-md mx-auto">
+                        Hier kannst du Touren planen und verwalten
+                      </p>
+                      <div className="inline-flex flex-col gap-3 text-left max-w-sm">
+                        <div className="flex items-center gap-3 text-gray-700">
+                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <span className="text-blue-600 font-semibold">📍</span>
+                          </div>
+                          <span>Touren erstellen und bearbeiten</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-gray-700">
+                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <span className="text-blue-600 font-semibold">🗺️</span>
+                          </div>
+                          <span>Routen planen und optimieren</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-gray-700">
+                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <span className="text-blue-600 font-semibold">👥</span>
+                          </div>
                       <span>Mitarbeiter zuweisen</span>
                     </div>
                     <div className="flex items-center gap-3 text-gray-700">
                       <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                         <span className="text-blue-600 font-semibold">📅</span>
                       </div>
-                      <span>Termine verwalten</span>
+                          <span>Mitarbeiter zuweisen</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-gray-700">
+                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <span className="text-blue-600 font-semibold">📅</span>
+                          </div>
+                          <span>Termine verwalten</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Sub-Tab 1.2: Schichtplanung (NEW!) */}
+              <TabsContent value="schichtplanung" className="space-y-6">
+                <BrowoKo_ShiftPlanningTab />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           {/* Tab 2: Fahrzeuge (MIT KOMPLETTEM SYSTEM!) */}

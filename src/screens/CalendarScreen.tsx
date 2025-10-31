@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, Coffee } from '../components/icons/HRTHISIcons';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, Coffee } from '../components/icons/BrowoKoIcons';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -10,11 +10,11 @@ import { de } from 'date-fns/locale';
 import MonthYearPicker from '../components/MonthYearPicker';
 import { useMonthYearPicker } from '../hooks/useMonthYearPicker';
 import RequestLeaveDialog from '../components/RequestLeaveDialog';
-import { CalendarDayCell } from '../components/HRTHIS_CalendarDayCell';
-import { CalendarExportMenu } from '../components/HRTHIS_CalendarExportMenu';
+import { CalendarDayCell } from '../components/BrowoKo_CalendarDayCell';
+import { CalendarExportMenu } from '../components/BrowoKo_CalendarExportMenu';
 import { TeamAbsenceAvatar } from '../components/TeamAbsenceAvatar';
-import { useCalendarScreen } from '../hooks/HRTHIS_useCalendarScreen';
-import { useAuthStore } from '../stores/HRTHIS_authStore';
+import { useCalendarScreen } from '../hooks/BrowoKo_useCalendarScreen';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
 
 export default function CalendarScreen() {
   const { profile } = useAuthStore();

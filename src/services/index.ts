@@ -19,29 +19,29 @@ export * from './base/ApiError';
 export * from './base/ApiService';
 
 // Domain service exports
-export { AuthService } from './HRTHIS_authService';
-export { UserService } from './HRTHIS_userService';
-export { TeamService } from './HRTHIS_teamService';
-export { LeaveService } from './HRTHIS_leaveService';
-export { LearningService } from './HRTHIS_learningService';
-export { OrganigramService } from './HRTHIS_organigramService';
-export { DocumentService } from './HRTHIS_documentService';
-export { DocumentAuditService } from './HRTHIS_documentAuditService';
-export { AnnouncementService } from './HRTHIS_announcementService';
-export { RealtimeService } from './HRTHIS_realtimeService';
+export { AuthService } from './BrowoKo_authService';
+export { UserService } from './BrowoKo_userService';
+export { TeamService } from './BrowoKo_teamService';
+export { LeaveService } from './BrowoKo_leaveService';
+export { LearningService } from './BrowoKo_learningService';
+export { OrganigramService } from './BrowoKo_organigramService';
+export { DocumentService } from './BrowoKo_documentService';
+export { DocumentAuditService } from './BrowoKo_documentAuditService';
+export { AnnouncementService } from './BrowoKo_announcementService';
+export { RealtimeService } from './BrowoKo_realtimeService';
 
 // Services container type
 export interface Services {
-  auth: import('./HRTHIS_authService').AuthService;
-  user: import('./HRTHIS_userService').UserService;
-  team: import('./HRTHIS_teamService').TeamService;
-  leave: import('./HRTHIS_leaveService').LeaveService;
-  learning: import('./HRTHIS_learningService').LearningService;
-  organigram: import('./HRTHIS_organigramService').OrganigramService;
-  document: import('./HRTHIS_documentService').DocumentService;
-  documentAudit: import('./HRTHIS_documentAuditService').DocumentAuditService;
-  announcement: import('./HRTHIS_announcementService').AnnouncementService;
-  realtime: import('./HRTHIS_realtimeService').RealtimeService;
+  auth: import('./BrowoKo_authService').AuthService;
+  user: import('./BrowoKo_userService').UserService;
+  team: import('./BrowoKo_teamService').TeamService;
+  leave: import('./BrowoKo_leaveService').LeaveService;
+  learning: import('./BrowoKo_learningService').LearningService;
+  organigram: import('./BrowoKo_organigramService').OrganigramService;
+  document: import('./BrowoKo_documentService').DocumentService;
+  documentAudit: import('./BrowoKo_documentAuditService').DocumentAuditService;
+  announcement: import('./BrowoKo_announcementService').AnnouncementService;
+  realtime: import('./BrowoKo_realtimeService').RealtimeService;
 }
 
 /**
@@ -52,16 +52,16 @@ export interface Services {
  * This ensures all services share the same Supabase client instance.
  */
 export function createServices(supabase: SupabaseClient): Services {
-  const { AuthService } = require('./HRTHIS_authService');
-  const { UserService } = require('./HRTHIS_userService');
-  const { TeamService } = require('./HRTHIS_teamService');
-  const { LeaveService } = require('./HRTHIS_leaveService');
-  const { LearningService } = require('./HRTHIS_learningService');
-  const { OrganigramService } = require('./HRTHIS_organigramService');
-  const { DocumentService } = require('./HRTHIS_documentService');
-  const { DocumentAuditService } = require('./HRTHIS_documentAuditService');
-  const { AnnouncementService } = require('./HRTHIS_announcementService');
-  const { RealtimeService } = require('./HRTHIS_realtimeService');
+  const { AuthService } = require('./BrowoKo_authService');
+  const { UserService } = require('./BrowoKo_userService');
+  const { TeamService } = require('./BrowoKo_teamService');
+  const { LeaveService } = require('./BrowoKo_leaveService');
+  const { LearningService } = require('./BrowoKo_learningService');
+  const { OrganigramService } = require('./BrowoKo_organigramService');
+  const { DocumentService } = require('./BrowoKo_documentService');
+  const { DocumentAuditService } = require('./BrowoKo_documentAuditService');
+  const { AnnouncementService } = require('./BrowoKo_announcementService');
+  const { RealtimeService } = require('./BrowoKo_realtimeService');
   
   return {
     auth: new AuthService(supabase),

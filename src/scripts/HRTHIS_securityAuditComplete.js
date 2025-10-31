@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * COMPREHENSIVE SECURITY AUDIT - HRthis System
- * =============================================
+ * COMPREHENSIVE SECURITY AUDIT - Browo Koordinator
+ * ==================================================
  * 
  * Complete security audit covering:
  * - Authentication & Authorization
@@ -15,7 +15,7 @@
  * Part of Phase 4 - Priority 6 - Security Audit
  * 
  * Usage:
- *   node scripts/HRTHIS_securityAuditComplete.js
+ *   node scripts/BrowoKo_securityAuditComplete.js
  * 
  * Output:
  *   - Console report with color-coded results
@@ -210,16 +210,16 @@ const OWASP_CHECKLIST = [
     checks: [
       { name: 'Password hashing (Supabase)', implemented: true },
       { name: 'HTTPS enforced', file: '/vite-plugin-csp.ts', pattern: 'upgrade-insecure-requests' },
-      { name: 'Secure session storage', file: '/utils/security/HRTHIS_sessionManager.ts', pattern: 'sessionStorage' },
+      { name: 'Secure session storage', file: '/utils/security/BrowoKo_sessionManager.ts', pattern: 'sessionStorage' },
     ],
   },
   {
     id: 'A03:2021',
     name: 'Injection',
     checks: [
-      { name: 'Input sanitization', file: '/utils/security/HRTHIS_sanitization.ts', pattern: 'sanitize' },
+      { name: 'Input sanitization', file: '/utils/security/BrowoKo_sanitization.ts', pattern: 'sanitize' },
       { name: 'Parameterized queries (Supabase)', implemented: true },
-      { name: 'HTML sanitization', file: '/utils/security/HRTHIS_sanitization.ts', pattern: 'DOMPurify' },
+      { name: 'HTML sanitization', file: '/utils/security/BrowoKo_sanitization.ts', pattern: 'DOMPurify' },
     ],
   },
   {
@@ -235,7 +235,7 @@ const OWASP_CHECKLIST = [
     id: 'A05:2021',
     name: 'Security Misconfiguration',
     checks: [
-      { name: 'Security headers', file: '/utils/security/HRTHIS_securityHeaders.ts', pattern: 'applySecurityHeaders' },
+      { name: 'Security headers', file: '/utils/security/BrowoKo_securityHeaders.ts', pattern: 'applySecurityHeaders' },
       { name: 'CSP configured', file: '/vite-plugin-csp.ts', pattern: 'Content-Security-Policy' },
       { name: 'Error messages sanitized', file: '/utils/errors', pattern: 'ErrorHandler' },
     ],
@@ -245,23 +245,23 @@ const OWASP_CHECKLIST = [
     name: 'Vulnerable and Outdated Components',
     checks: [
       { name: 'npm audit', command: 'npm audit --audit-level=moderate' },
-      { name: 'Dependency scanning', file: '/scripts/HRTHIS_dependencyScanner.js', pattern: 'npm audit' },
+      { name: 'Dependency scanning', file: '/scripts/BrowoKo_dependencyScanner.js', pattern: 'npm audit' },
     ],
   },
   {
     id: 'A07:2021',
     name: 'Identification and Authentication Failures',
     checks: [
-      { name: 'Brute force protection', file: '/utils/security/HRTHIS_bruteForceProtection.ts', pattern: 'RateLimiter' },
-      { name: 'Session management', file: '/utils/security/HRTHIS_sessionManager.ts', pattern: 'SessionManager' },
-      { name: 'Password policies', file: '/utils/security/HRTHIS_passwordPolicies.ts', pattern: 'validatePassword' },
+      { name: 'Brute force protection', file: '/utils/security/BrowoKo_bruteForceProtection.ts', pattern: 'RateLimiter' },
+      { name: 'Session management', file: '/utils/security/BrowoKo_sessionManager.ts', pattern: 'SessionManager' },
+      { name: 'Password policies', file: '/utils/security/BrowoKo_passwordPolicies.ts', pattern: 'validatePassword' },
     ],
   },
   {
     id: 'A08:2021',
     name: 'Software and Data Integrity Failures',
     checks: [
-      { name: 'Input validation', file: '/utils/security/HRTHIS_validation.ts', pattern: 'validate' },
+      { name: 'Input validation', file: '/utils/security/BrowoKo_validation.ts', pattern: 'validate' },
       { name: 'Type checking', file: '/types', pattern: 'Zod' },
     ],
   },
@@ -277,7 +277,7 @@ const OWASP_CHECKLIST = [
     id: 'A10:2021',
     name: 'Server-Side Request Forgery',
     checks: [
-      { name: 'URL validation', file: '/utils/security/HRTHIS_sanitization.ts', pattern: 'sanitizeUrl' },
+      { name: 'URL validation', file: '/utils/security/BrowoKo_sanitization.ts', pattern: 'sanitizeUrl' },
       { name: 'SSRF protection', implemented: false },
     ],
   },
@@ -473,15 +473,15 @@ function checkSecurityFiles() {
   console.log(colorize('\n🔒 Checking Security Implementation Files...', 'cyan'));
   
   const requiredFiles = [
-    '/utils/security/HRTHIS_sanitization.ts',
-    '/utils/security/HRTHIS_validation.ts',
-    '/utils/security/HRTHIS_securityHeaders.ts',
-    '/utils/security/HRTHIS_sessionManager.ts',
-    '/utils/security/HRTHIS_bruteForceProtection.ts',
-    '/utils/security/HRTHIS_passwordPolicies.ts',
-    '/utils/resilience/HRTHIS_retry.ts',
-    '/utils/resilience/HRTHIS_circuitBreaker.ts',
-    '/utils/resilience/HRTHIS_timeout.ts',
+    '/utils/security/BrowoKo_sanitization.ts',
+    '/utils/security/BrowoKo_validation.ts',
+    '/utils/security/BrowoKo_securityHeaders.ts',
+    '/utils/security/BrowoKo_sessionManager.ts',
+    '/utils/security/BrowoKo_bruteForceProtection.ts',
+    '/utils/security/BrowoKo_passwordPolicies.ts',
+    '/utils/resilience/BrowoKo_retry.ts',
+    '/utils/resilience/BrowoKo_circuitBreaker.ts',
+    '/utils/resilience/BrowoKo_timeout.ts',
     '/vite-plugin-csp.ts',
     '/SECURITY_BASELINE.md',
   ];
@@ -684,7 +684,7 @@ function generateReports(results) {
 function generateMarkdownReport(results) {
   const date = new Date().toISOString().split('T')[0];
   
-  let md = `# Security Audit Report - HRthis\n\n`;
+  let md = `# Security Audit Report - Browo Koordinator\n\n`;
   md += `**Date:** ${date}  \n`;
   md += `**Score:** ${results.score} / 10.0  \n`;
   md += `**Status:** ${parseFloat(results.score) >= 7.0 ? '✅ PASSED' : '❌ FAILED'}  \n\n`;
@@ -753,7 +753,7 @@ function generateMarkdownReport(results) {
   }
   
   md += `\n---\n\n`;
-  md += `*Generated by HRthis Security Audit v1.0.0*\n`;
+  md += `*Generated by Browo Koordinator Security Audit v1.0.0*\n`;
   
   return md;
 }
@@ -764,7 +764,7 @@ function generateMarkdownReport(results) {
 
 async function main() {
   console.log(colorize('\n🔒 Starting Comprehensive Security Audit...', 'bright'));
-  console.log(colorize('   HRthis System - Phase 4 Priority 6\n', 'cyan'));
+  console.log(colorize('   Browo Koordinator - Phase 4 Priority 6\n', 'cyan'));
   
   const startTime = Date.now();
   

@@ -12,10 +12,10 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAdminStore } from '../../stores/HRTHIS_adminStore';
-import { useAuthStore } from '../../stores/HRTHIS_authStore';
+import { useAdminStore } from '../../stores/BrowoKo_adminStore';
+import { useAuthStore } from '../../stores/BrowoKo_authStore';
 import type { OrgNodeData } from '../../components/OrgNode';
-import type { Connection } from '../../components/canvas/HRTHIS_CanvasTypes';
+import type { Connection } from '../../components/canvas/BrowoKo_CanvasTypes';
 import type { Location, Department } from '../../types/database';
 import { toast } from 'sonner@2.0.3';
 import { 
@@ -25,27 +25,27 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings,
-} from '../../components/icons/HRTHISIcons';
+} from '../../components/icons/BrowoKoIcons';
 import { Button } from '../../components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '../../components/ui/sheet';
 import { ScrollArea } from '../../components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../components/ui/collapsible';
 
 // Organigram Components
-import { OrganigramErrorAlerts } from '../../components/organigram/HRTHIS_OrganigramErrorAlerts';
-import { OrganigramToolbar } from '../../components/organigram/HRTHIS_OrganigramToolbar';
-import CanvasOrgChart from '../../components/canvas/HRTHIS_CanvasOrgChart';
+import { OrganigramErrorAlerts } from '../../components/organigram/BrowoKo_OrganigramErrorAlerts';
+import { OrganigramToolbar } from '../../components/organigram/BrowoKo_OrganigramToolbar';
+import CanvasOrgChart from '../../components/canvas/BrowoKo_CanvasOrgChart';
 
 // Company Settings Components  
-import CompanyBasicSettings from '../../components/admin/HRTHIS_CompanyBasicSettings';
-import LocationManager from '../../components/admin/HRTHIS_LocationManager';
-import DepartmentManager from '../../components/admin/HRTHIS_DepartmentManager';
+import CompanyBasicSettings from '../../components/admin/BrowoKo_CompanyBasicSettings';
+import LocationManager from '../../components/admin/BrowoKo_LocationManager';
+import DepartmentManager from '../../components/admin/BrowoKo_DepartmentManager';
 
 // Hooks
-import { useOrganigramData } from '../../hooks/HRTHIS_useOrganigramData';
-import { useOrganigramAutoSave } from '../../hooks/HRTHIS_useOrganigramAutoSave';
-import { useOrganigramHistory } from '../../hooks/HRTHIS_useOrganigramHistory';
-import { useOrganigramPublish } from '../../hooks/HRTHIS_useOrganigramPublish';
+import { useOrganigramData } from '../../hooks/BrowoKo_useOrganigramData';
+import { useOrganigramAutoSave } from '../../hooks/BrowoKo_useOrganigramAutoSave';
+import { useOrganigramHistory } from '../../hooks/BrowoKo_useOrganigramHistory';
+import { useOrganigramPublish } from '../../hooks/BrowoKo_useOrganigramPublish';
 
 export default function OrganigramUnifiedScreen() {
   const navigate = useNavigate();

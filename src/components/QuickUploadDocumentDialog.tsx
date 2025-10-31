@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Upload, Loader2, FileText, CheckCircle2 } from './icons/HRTHISIcons';
+import { Upload, Loader2, FileText, CheckCircle2 } from './icons/BrowoKoIcons';
 import { User } from '../types/database';
 
 type DocumentCategory = 'VERTRAG' | 'ZERTIFIKAT' | 'LOHN' | 'AU' | 'PERSONALDOKUMENTE' | 'BEWERBUNGSUNTERLAGEN' | 'SONSTIGES';

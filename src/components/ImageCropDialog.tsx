@@ -3,7 +3,7 @@ import Cropper from "react-easy-crop@5.0.8";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Slider } from "./ui/slider";
-import { ZoomIn, ZoomOut } from "./icons/HRTHISIcons";
+import { ZoomIn, ZoomOut } from "./icons/BrowoKoIcons";
 
 interface ImageCropDialogProps {
   open: boolean;

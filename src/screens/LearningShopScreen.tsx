@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useGamificationStore } from '../stores/gamificationStore';
-import { ShoppingBag, Sparkles, Coins, Star } from '../components/icons/HRTHISIcons';
+import { ShoppingBag, Sparkles, Coins, Star } from '../components/icons/BrowoKoIcons';
 import { Card, CardContent } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import LoadingState from '../components/LoadingState';
-import ShopItemCard from '../components/HRTHIS_ShopItemCard';
-import ShopEmptyState from '../components/HRTHIS_ShopEmptyState';
-import ShopInfoBox from '../components/HRTHIS_ShopInfoBox';
-import { useLearningShop } from '../hooks/HRTHIS_useLearningShop';
+import ShopItemCard from '../components/BrowoKo_ShopItemCard';
+import ShopEmptyState from '../components/BrowoKo_ShopEmptyState';
+import ShopInfoBox from '../components/BrowoKo_ShopInfoBox';
+import { useLearningShop } from '../hooks/BrowoKo_useLearningShop';
 
 export default function LearningShopScreen() {
   const { coins } = useGamificationStore();

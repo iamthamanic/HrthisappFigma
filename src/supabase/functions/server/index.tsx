@@ -3,7 +3,8 @@ import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";
 import { createClient } from "npm:@supabase/supabase-js";
 import * as kv from "./kv_store.tsx";
-import { calculateTimeAccount, calculateTimeAccountsForAllUsers } from "./timeAccountCalculation.ts";
+// TODO: Re-enable when timeAccountCalculation.ts is implemented
+// import { calculateTimeAccount, calculateTimeAccountsForAllUsers } from "./timeAccountCalculation.ts";
 
 const app = new Hono();
 
@@ -504,8 +505,10 @@ app.delete("/make-server-f659121d/profile-picture/:userId", async (c) => {
 
 // ============================================
 // TIME ACCOUNT SYSTEM (Phase 1 - Woche 1)
+// TODO: Re-enable when timeAccountCalculation.ts is implemented
 // ============================================
 
+/*
 // Calculate time account for a specific user and month
 app.post("/make-server-f659121d/time-account/calculate", async (c) => {
   try {
@@ -585,6 +588,7 @@ app.post("/make-server-f659121d/time-account/calculate-all", async (c) => {
     }, 500);
   }
 });
+*/
 
 // Get time account for a user
 app.get("/make-server-f659121d/time-account/:userId/:month/:year", async (c) => {

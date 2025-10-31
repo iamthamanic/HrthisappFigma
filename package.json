@@ -1,6 +1,6 @@
 
   {
-      "name": "HRThis App",
+      "name": "Browo Koordinator",
       "version": "0.1.0",
       "private": true,
       "dependencies": {
@@ -48,12 +48,14 @@
           "date-fns": "*",
           "dompurify": "*",
           "embla-carousel-react": "^8.6.0",
-          "hono": "*",
+          "fs": "*",
+          "hono": "^4",
           "html2canvas": "*",
           "input-otp": "^1.4.2",
           "jspdf": "*",
           "lucide-react": "^0.487.0",
           "next-themes": "^0.4.6",
+          "path": "*",
           "react": "^18.3.1",
           "react-day-picker": "^8.10.1",
           "react-dnd": "*",

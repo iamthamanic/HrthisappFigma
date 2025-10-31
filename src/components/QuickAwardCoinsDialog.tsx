@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Slider } from './ui/slider';
-import { Coins, Loader2, Sparkles } from './icons/HRTHISIcons';
+import { Coins, Loader2, Sparkles } from './icons/BrowoKoIcons';
 import { User } from '../types/database';
 
 interface QuickAwardCoinsDialogProps {

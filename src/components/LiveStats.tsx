@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { TrendingUp, Users, Award, Zap } from './icons/HRTHISIcons';
+import { TrendingUp, Users, Award, Zap } from './icons/BrowoKoIcons';
 import { supabase } from '../utils/supabase/client';
 import { getServices } from '../services';
 import { Card, CardContent } from './ui/card';

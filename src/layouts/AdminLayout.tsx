@@ -15,16 +15,21 @@ import {
   MapPin,
   Megaphone,
   Package
-} from '../components/icons/HRTHISIcons';
+} from '../components/icons/BrowoKoIcons';
+import { MessageCircle } from 'lucide-react';
 import { useState } from 'react';
-import { useAuthStore } from '../stores/HRTHIS_authStore';
-import { useLearningStore } from '../stores/HRTHIS_learningStore';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
+import { useLearningStore } from '../stores/BrowoKo_learningStore';
 import { useGamificationStore } from '../stores/gamificationStore';
-import { useNavRouting } from '../hooks/HRTHIS_useNavRouting';
+import { useNavRouting } from '../hooks/BrowoKo_useNavRouting';
+import { useNotifications } from '../hooks/BrowoKo_useNotifications';
 import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
 import AdminMobileMenu from '../components/AdminMobileMenu';
 import MobileNav from '../components/MobileNav';
 import Logo from '../components/Logo';
+import BrowoKoChatFloatingWindow from '../components/BrowoKo_ChatFloatingWindow';
 import { toast } from 'sonner@2.0.3';
 
 export default function AdminLayout() {
@@ -33,8 +38,10 @@ export default function AdminLayout() {
   const { profile, logout } = useAuthStore();
   const { loadQuizzes, loadVideos } = useLearningStore();
   const { loadAvatar, loadCoinBalance } = useGamificationStore();
+  const { badgeCounts } = useNotifications();
   const [isReloading, setIsReloading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const handleSmartReload = async () => {
     setIsReloading(true);
@@ -211,6 +218,25 @@ export default function AdminLayout() {
           MOBILE BOTTOM NAVIGATION (<768px)
           ======================================== */}
       <MobileNav />
+
+      {/* Global Floating Chat Button */}
+      <Button
+        onClick={() => setIsChatOpen(!isChatOpen)}
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[rgb(38,82,188)] hover:bg-purple-700 shadow-lg z-50 transition-all hover:scale-110 active:scale-95"
+        size="icon"
+        title={isChatOpen ? "Chat schließen" : "Chat öffnen"}
+      >
+        <MessageCircle className="w-6 h-6 text-white" />
+        {/* Unread Badge - TODO: Replace with real unread count */}
+        {badgeCounts.total > 0 && (
+          <Badge className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center p-0 border-2 border-white">
+            {badgeCounts.total > 9 ? '9+' : badgeCounts.total}
+          </Badge>
+        )}
+      </Button>
+
+      {/* Chat Floating Window */}
+      <BrowoKoChatFloatingWindow open={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>
   );
 }

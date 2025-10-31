@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useAuthStore } from '../stores/HRTHIS_authStore';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
 import Logo from './Logo';
-import { Key, CheckCircle } from './icons/HRTHISIcons';
+import { Key, CheckCircle } from './icons/BrowoKoIcons';
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('');

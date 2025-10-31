@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react';
-import { Star, TrendingUp } from './icons/HRTHISIcons';
+import { Star, TrendingUp } from './icons/BrowoKoIcons';
 import { Progress } from './ui/progress';
 import { Card, CardContent } from './ui/card';
 

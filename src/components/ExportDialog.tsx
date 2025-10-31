@@ -6,7 +6,7 @@ import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { ScrollArea } from './ui/scroll-area';
-import { Download, FileSpreadsheet, FileText } from './icons/HRTHISIcons';
+import { Download, FileSpreadsheet, FileText } from './icons/BrowoKoIcons';
 import { User, Location, Department } from '../types/database';
 
 export interface ExportColumn {

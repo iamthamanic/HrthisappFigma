@@ -14,7 +14,7 @@
  */
 
 import React, { Component, ReactNode, ErrorInfo } from 'react';
-import { AlertTriangle, RefreshCcw, Home, Bug } from './icons/HRTHISIcons';
+import { AlertTriangle, RefreshCcw, Home, Bug } from './icons/BrowoKoIcons';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { logError, getErrorLogger } from '../utils/errors/ErrorLogger';

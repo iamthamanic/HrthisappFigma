@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Automation API Key Generation</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px 0;
+            font-weight: 600;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Automation API Key Generation Test</h1>
+        
+        <div class="test-section">
+            <h2>Step 1: Configuration</h2>
+            <label>Supabase Project ID:</label>
+            <input type="text" id="projectId" placeholder="xxxxxxxxxxxxxxxxxxxxxx">
+            
+            <label>Supabase Anon Key:</label>
+            <input type="text" id="anonKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+            
+            <label>User Email (for login):</label>
+            <input type="email" id="email" placeholder="admin@example.com">
+            
+            <label>User Password:</label>
+            <input type="password" id="password" placeholder="password">
+            
+            <div id="configResult" class="result info" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Step 2: Login</h2>
+            <button onclick="testLogin()">🔐 Login</button>
+            <div id="loginResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Step 3: Test Edge Function Health</h2>
+            <button onclick="testHealth()">❤️ Health Check</button>
+            <div id="healthResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Step 4: Generate API Key</h2>
+            <label>API Key Name:</label>
+            <input type="text" id="apiKeyName" placeholder="Test Key" value="Test Key v4.11.1">
+            <button onclick="testGenerateAPIKey()">🔑 Generate API Key</button>
+            <div id="generateResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Step 5: Diagnose Error</h2>
+            <button onclick="diagnoseError()">🔍 Full Diagnosis</button>
+            <div id="diagnoseResult" class="result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        window.supabaseClient = null;
+        window.accessToken = null;
+
+        async function testLogin() {
+            const projectId = document.getElementById('projectId').value;
+            const anonKey = document.getElementById('anonKey').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            const resultDiv = document.getElementById('loginResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '⏳ Logging in...';
+
+            try {
+                const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+                
+                const supabaseUrl = `https://${projectId}.supabase.co`;
+                window.supabaseClient = createClient(supabaseUrl, anonKey);
+
+                const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (error) throw error;
+
+                window.accessToken = data.session.access_token;
+
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Login successful!\n\nUser ID: ${data.user.id}\nEmail: ${data.user.email}\nAccess Token: ${window.accessToken.substring(0, 50)}...`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Login failed:\n${error.message}\n\n${JSON.stringify(error, null, 2)}`;
+            }
+        }
+
+        async function testHealth() {
+            const projectId = document.getElementById('projectId').value;
+            const resultDiv = document.getElementById('healthResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '⏳ Checking health...';
+
+            try {
+                const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Automation/make-server-f659121d/automation/health`;
+                
+                resultDiv.textContent += `\n\n📍 URL: ${url}`;
+
+                const response = await fetch(url);
+                const text = await response.text();
+                
+                resultDiv.textContent += `\n\n📥 Status: ${response.status}`;
+                resultDiv.textContent += `\n📥 Headers: ${JSON.stringify(Object.fromEntries(response.headers), null, 2)}`;
+                
+                try {
+                    const data = JSON.parse(text);
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent += `\n\n✅ Response:\n${JSON.stringify(data, null, 2)}`;
+                } catch (e) {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent += `\n\n❌ Not JSON! Response:\n${text}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent += `\n\n❌ Error:\n${error.message}\n${error.stack}`;
+            }
+        }
+
+        async function testGenerateAPIKey() {
+            const projectId = document.getElementById('projectId').value;
+            const apiKeyName = document.getElementById('apiKeyName').value;
+            const resultDiv = document.getElementById('generateResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '⏳ Generating API Key...';
+
+            if (!window.accessToken) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ Please login first!';
+                return;
+            }
+
+            try {
+                const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Automation/make-server-f659121d/automation/api-keys/generate`;
+                
+                resultDiv.textContent += `\n\n📍 URL: ${url}`;
+                resultDiv.textContent += `\n📤 Request Body: ${JSON.stringify({ name: apiKeyName }, null, 2)}`;
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${window.accessToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: apiKeyName })
+                });
+
+                resultDiv.textContent += `\n\n📥 Status: ${response.status} ${response.statusText}`;
+                resultDiv.textContent += `\n📥 Headers: ${JSON.stringify(Object.fromEntries(response.headers), null, 2)}`;
+
+                const text = await response.text();
+                resultDiv.textContent += `\n\n📥 Raw Response (first 500 chars):\n${text.substring(0, 500)}`;
+                
+                try {
+                    const data = JSON.parse(text);
+                    if (data.success) {
+                        resultDiv.className = 'result success';
+                        resultDiv.textContent += `\n\n✅ Success! API Key Generated:\n${JSON.stringify(data, null, 2)}`;
+                        resultDiv.textContent += `\n\n🔑 API Key: ${data.api_key}`;
+                        resultDiv.textContent += `\n⚠️ Copy this now! It won't be shown again.`;
+                    } else {
+                        resultDiv.className = 'result error';
+                        resultDiv.textContent += `\n\n❌ Failed:\n${JSON.stringify(data, null, 2)}`;
+                    }
+                } catch (e) {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent += `\n\n❌ JSON Parse Error: ${e.message}`;
+                    resultDiv.textContent += `\n\nFull Response:\n${text}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent += `\n\n❌ Fetch Error:\n${error.message}\n${error.stack}`;
+            }
+        }
+
+        async function diagnoseError() {
+            const resultDiv = document.getElementById('diagnoseResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '🔍 Running full diagnosis...\n\n';
+
+            // Check configuration
+            const projectId = document.getElementById('projectId').value;
+            const anonKey = document.getElementById('anonKey').value;
+            
+            if (!projectId || !anonKey) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent += '❌ Missing configuration! Fill in Project ID and Anon Key first.';
+                return;
+            }
+
+            resultDiv.textContent += '✅ Configuration present\n';
+            resultDiv.textContent += `   Project ID: ${projectId}\n`;
+            resultDiv.textContent += `   Anon Key: ${anonKey.substring(0, 30)}...\n\n`;
+
+            // Check access token
+            if (!window.accessToken) {
+                resultDiv.textContent += '❌ Not logged in! Please login first.\n';
+                return;
+            }
+            resultDiv.textContent += '✅ Access token present\n\n';
+
+            // Check Edge Function URL
+            const baseUrl = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Automation`;
+            resultDiv.textContent += `📍 Edge Function Base URL:\n   ${baseUrl}\n\n`;
+
+            // Try to call the endpoint with detailed logging
+            const url = `${baseUrl}/make-server-f659121d/automation/api-keys/generate`;
+            resultDiv.textContent += `🎯 Target URL:\n   ${url}\n\n`;
+
+            try {
+                resultDiv.textContent += '📤 Sending request...\n';
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${window.accessToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: 'Diagnosis Test' })
+                });
+
+                resultDiv.textContent += `\n📥 Response received:\n`;
+                resultDiv.textContent += `   Status: ${response.status} ${response.statusText}\n`;
+                resultDiv.textContent += `   Content-Type: ${response.headers.get('content-type')}\n`;
+                
+                const text = await response.text();
+                resultDiv.textContent += `   Body Length: ${text.length} bytes\n`;
+                resultDiv.textContent += `   First 10 chars: "${text.substring(0, 10)}"\n\n`;
+
+                if (!text.trim().startsWith('{')) {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent += '❌ Response is NOT JSON!\n';
+                    resultDiv.textContent += `   Response starts with: "${text.substring(0, 100)}"\n\n`;
+                    resultDiv.textContent += '💡 This means the Edge Function is not returning JSON.\n';
+                    resultDiv.textContent += '   Possible causes:\n';
+                    resultDiv.textContent += '   1. Edge Function not deployed\n';
+                    resultDiv.textContent += '   2. Wrong URL\n';
+                    resultDiv.textContent += '   3. Edge Function crashed\n';
+                    resultDiv.textContent += '   4. CORS error returning HTML\n\n';
+                    resultDiv.textContent += `Full response:\n${text}`;
+                } else {
+                    const data = JSON.parse(text);
+                    if (data.success) {
+                        resultDiv.className = 'result success';
+                        resultDiv.textContent += '✅ Everything works!\n\n';
+                        resultDiv.textContent += JSON.stringify(data, null, 2);
+                    } else {
+                        resultDiv.className = 'result error';
+                        resultDiv.textContent += '❌ Edge Function returned error:\n\n';
+                        resultDiv.textContent += JSON.stringify(data, null, 2);
+                    }
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent += `\n❌ Exception occurred:\n${error.message}\n\n`;
+                resultDiv.textContent += `Stack trace:\n${error.stack}`;
+            }
+        }
+
+        // Make functions global
+        window.testLogin = testLogin;
+        window.testHealth = testHealth;
+        window.testGenerateAPIKey = testGenerateAPIKey;
+        window.diagnoseError = diagnoseError;
+    </script>
+</body>
+</html>

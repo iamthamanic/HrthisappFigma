@@ -1,15 +1,15 @@
 import { useState, useRef } from 'react';
 import { toast } from 'sonner@2.0.3';
-import CanvasOrgChart, { type CanvasOrgChartHandle } from '../../components/canvas/HRTHIS_CanvasOrgChart';
-import { OrganigramToolbar } from '../../components/organigram/HRTHIS_OrganigramToolbar';
-import { OrganigramErrorAlerts } from '../../components/organigram/HRTHIS_OrganigramErrorAlerts';
-import { useAuthStore } from '../../stores/HRTHIS_authStore';
-import { useOrganigramData } from '../../hooks/HRTHIS_useOrganigramData';
-import { useOrganigramHistory } from '../../hooks/HRTHIS_useOrganigramHistory';
-import { useOrganigramAutoSave } from '../../hooks/HRTHIS_useOrganigramAutoSave';
-import { useOrganigramPublish } from '../../hooks/HRTHIS_useOrganigramPublish';
+import CanvasOrgChart, { type CanvasOrgChartHandle } from '../../components/canvas/BrowoKo_CanvasOrgChart';
+import { OrganigramToolbar } from '../../components/organigram/BrowoKo_OrganigramToolbar';
+import { OrganigramErrorAlerts } from '../../components/organigram/BrowoKo_OrganigramErrorAlerts';
+import { useAuthStore } from '../../stores/BrowoKo_authStore';
+import { useOrganigramData } from '../../hooks/BrowoKo_useOrganigramData';
+import { useOrganigramHistory } from '../../hooks/BrowoKo_useOrganigramHistory';
+import { useOrganigramAutoSave } from '../../hooks/BrowoKo_useOrganigramAutoSave';
+import { useOrganigramPublish } from '../../hooks/BrowoKo_useOrganigramPublish';
 import type { OrgNodeData } from '../../components/OrgNode';
-import type { Connection } from '../../components/canvas/HRTHIS_CanvasOrgChart';
+import type { Connection } from '../../components/canvas/BrowoKo_CanvasOrgChart';
 
 /**
  * ORGANIGRAM CANVAS SCREEN V2 (REFACTORED)

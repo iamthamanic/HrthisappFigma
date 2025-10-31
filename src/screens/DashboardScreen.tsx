@@ -6,14 +6,14 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../stores/HRTHIS_authStore';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
 import LoadingState from '../components/LoadingState';
-import { DashboardWelcomeHeader } from '../components/HRTHIS_DashboardWelcomeHeader';
-import { QuickStatsGrid } from '../components/HRTHIS_QuickStatsGrid';
-import { DashboardOrganigramCard } from '../components/HRTHIS_DashboardOrganigramCard';
-import HRTHIS_DashboardAnnouncementCard from '../components/HRTHIS_DashboardAnnouncementCard';
-import { useDashboardStats } from '../hooks/HRTHIS_useDashboardStats';
-import { useDashboardOrganigram } from '../hooks/HRTHIS_useDashboardOrganigram';
+import { DashboardWelcomeHeader } from '../components/BrowoKo_DashboardWelcomeHeader';
+import { QuickStatsGrid } from '../components/BrowoKo_QuickStatsGrid';
+import { DashboardOrganigramCard } from '../components/BrowoKo_DashboardOrganigramCard';
+import BrowoKo_DashboardAnnouncementCard from '../components/BrowoKo_DashboardAnnouncementCard';
+import { useDashboardStats } from '../hooks/BrowoKo_useDashboardStats';
+import { useDashboardOrganigram } from '../hooks/BrowoKo_useDashboardOrganigram';
 import { getServices } from '../services';
 import { toast } from 'sonner@2.0.3';
 
@@ -98,7 +98,7 @@ export default function DashboardScreen() {
 
       {/* Dashboard Announcement */}
       {!announcementLoading && liveAnnouncement && (
-        <HRTHIS_DashboardAnnouncementCard
+        <BrowoKo_DashboardAnnouncementCard
           announcement={liveAnnouncement}
           onVideoClick={(videoId) => navigate(`/learning/video/${videoId}`)}
           onBenefitClick={() => navigate('/benefits')}

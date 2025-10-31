@@ -4,9 +4,9 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
-import { FileText, Loader2 } from './icons/HRTHISIcons';
+import { FileText, Loader2 } from './icons/BrowoKoIcons';
 import { User } from '../types/database';
-import sanitize from '../utils/security/HRTHIS_sanitization';
+import sanitize from '../utils/security/BrowoKo_sanitization';
 
 interface QuickNoteDialogProps {
   user: User | null;

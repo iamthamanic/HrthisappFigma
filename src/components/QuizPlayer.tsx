@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Check, X, ChevronRight, RotateCcw, Award, Trophy } from './icons/HRTHISIcons';
+import { Check, X, ChevronRight, RotateCcw, Award, Trophy } from './icons/BrowoKoIcons';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Progress } from './ui/progress';

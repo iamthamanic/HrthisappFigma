@@ -1,0 +1,228 @@
+-- ============================================================================
+-- BROWO KOORDINATOR - CHAT SYSTEM (NUCLEAR OPTION)
+-- ============================================================================
+-- This version drops EVERYTHING and recreates from scratch
+-- Use this if the previous migrations failed
+-- ============================================================================
+
+-- STEP 1: DROP ALL POLICIES FIRST
+DROP POLICY IF EXISTS "chat_conversations_access" ON BrowoKo_conversations;
+DROP POLICY IF EXISTS "chat_members_access" ON BrowoKo_conversation_members;
+DROP POLICY IF EXISTS "chat_messages_access" ON BrowoKo_messages;
+DROP POLICY IF EXISTS "chat_attachments_access" ON BrowoKo_message_attachments;
+DROP POLICY IF EXISTS "chat_reactions_access" ON BrowoKo_message_reactions;
+DROP POLICY IF EXISTS "chat_reads_access" ON BrowoKo_message_reads;
+DROP POLICY IF EXISTS "chat_typing_access" ON BrowoKo_typing_indicators;
+DROP POLICY IF EXISTS "chat_status_access" ON BrowoKo_user_status;
+DROP POLICY IF EXISTS "knowledge_categories_access" ON BrowoKo_knowledge_categories;
+DROP POLICY IF EXISTS "knowledge_articles_access" ON BrowoKo_knowledge_articles;
+DROP POLICY IF EXISTS "feedback_access" ON BrowoKo_feedback;
+DROP POLICY IF EXISTS "Users can view their conversations" ON BrowoKo_conversations;
+DROP POLICY IF EXISTS "Users can create conversations" ON BrowoKo_conversations;
+DROP POLICY IF EXISTS "Users can update their conversations" ON BrowoKo_conversations;
+DROP POLICY IF EXISTS "Users can delete their conversations" ON BrowoKo_conversations;
+
+-- STEP 2: DROP ALL TABLES (CASCADE to drop dependencies)
+DROP TABLE IF EXISTS BrowoKo_feedback CASCADE;
+DROP TABLE IF EXISTS BrowoKo_knowledge_articles CASCADE;
+DROP TABLE IF EXISTS BrowoKo_knowledge_categories CASCADE;
+DROP TABLE IF EXISTS BrowoKo_user_status CASCADE;
+DROP TABLE IF EXISTS BrowoKo_typing_indicators CASCADE;
+DROP TABLE IF EXISTS BrowoKo_message_reads CASCADE;
+DROP TABLE IF EXISTS BrowoKo_message_reactions CASCADE;
+DROP TABLE IF EXISTS BrowoKo_message_attachments CASCADE;
+DROP TABLE IF EXISTS BrowoKo_messages CASCADE;
+DROP TABLE IF EXISTS BrowoKo_conversation_members CASCADE;
+DROP TABLE IF EXISTS BrowoKo_conversations CASCADE;
+
+-- STEP 3: CREATE TABLES FROM SCRATCH (NO FOREIGN KEYS TO auth.users)
+
+-- Conversations
+CREATE TABLE BrowoKo_conversations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  type TEXT NOT NULL CHECK (type IN ('DM', 'GROUP')),
+  name TEXT,
+  avatar_url TEXT,
+  created_by UUID,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_conversations_type ON BrowoKo_conversations(type);
+CREATE INDEX idx_conversations_updated_at ON BrowoKo_conversations(updated_at DESC);
+
+-- Conversation Members
+CREATE TABLE BrowoKo_conversation_members (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  conversation_id UUID REFERENCES BrowoKo_conversations(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL,
+  role TEXT DEFAULT 'MEMBER' CHECK (role IN ('ADMIN', 'MEMBER')),
+  joined_at TIMESTAMPTZ DEFAULT NOW(),
+  last_read_at TIMESTAMPTZ DEFAULT NOW(),
+  notifications_enabled BOOLEAN DEFAULT TRUE,
+  UNIQUE(conversation_id, user_id)
+);
+
+CREATE INDEX idx_conversation_members_user ON BrowoKo_conversation_members(user_id);
+CREATE INDEX idx_conversation_members_conversation ON BrowoKo_conversation_members(conversation_id);
+
+-- Messages
+CREATE TABLE BrowoKo_messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  conversation_id UUID REFERENCES BrowoKo_conversations(id) ON DELETE CASCADE,
+  user_id UUID,
+  content TEXT NOT NULL,
+  type TEXT DEFAULT 'TEXT' CHECK (type IN ('TEXT', 'FILE', 'IMAGE', 'VIDEO', 'SYSTEM')),
+  edited_at TIMESTAMPTZ,
+  deleted_at TIMESTAMPTZ,
+  reply_to_message_id UUID REFERENCES BrowoKo_messages(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_messages_conversation ON BrowoKo_messages(conversation_id, created_at DESC);
+CREATE INDEX idx_messages_user ON BrowoKo_messages(user_id);
+CREATE INDEX idx_messages_deleted ON BrowoKo_messages(deleted_at) WHERE deleted_at IS NULL;
+
+-- Message Attachments
+CREATE TABLE BrowoKo_message_attachments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  message_id UUID REFERENCES BrowoKo_messages(id) ON DELETE CASCADE,
+  file_url TEXT NOT NULL,
+  file_name TEXT NOT NULL,
+  file_type TEXT NOT NULL,
+  file_size BIGINT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_message_attachments_message ON BrowoKo_message_attachments(message_id);
+
+-- Message Reactions
+CREATE TABLE BrowoKo_message_reactions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  message_id UUID REFERENCES BrowoKo_messages(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL,
+  emoji TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(message_id, user_id, emoji)
+);
+
+CREATE INDEX idx_message_reactions_message ON BrowoKo_message_reactions(message_id);
+CREATE INDEX idx_message_reactions_user ON BrowoKo_message_reactions(user_id);
+
+-- Read Receipts
+CREATE TABLE BrowoKo_message_reads (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  message_id UUID REFERENCES BrowoKo_messages(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL,
+  read_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(message_id, user_id)
+);
+
+CREATE INDEX idx_message_reads_message ON BrowoKo_message_reads(message_id);
+CREATE INDEX idx_message_reads_user ON BrowoKo_message_reads(user_id);
+
+-- Typing Indicators
+CREATE TABLE BrowoKo_typing_indicators (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  conversation_id UUID REFERENCES BrowoKo_conversations(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL,
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(conversation_id, user_id)
+);
+
+CREATE INDEX idx_typing_indicators_conversation ON BrowoKo_typing_indicators(conversation_id);
+CREATE INDEX idx_typing_indicators_user ON BrowoKo_typing_indicators(user_id);
+
+-- User Status
+CREATE TABLE BrowoKo_user_status (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID UNIQUE NOT NULL,
+  status TEXT DEFAULT 'OFFLINE' CHECK (status IN ('ONLINE', 'AWAY', 'BUSY', 'OFFLINE')),
+  custom_status TEXT,
+  last_active_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_user_status_user ON BrowoKo_user_status(user_id);
+CREATE INDEX idx_user_status_last_active ON BrowoKo_user_status(last_active_at DESC);
+
+-- Knowledge Categories
+CREATE TABLE BrowoKo_knowledge_categories (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  description TEXT,
+  icon TEXT,
+  parent_id UUID REFERENCES BrowoKo_knowledge_categories(id) ON DELETE SET NULL,
+  order_index INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_knowledge_categories_parent ON BrowoKo_knowledge_categories(parent_id);
+
+-- Knowledge Articles
+CREATE TABLE BrowoKo_knowledge_articles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  category_id UUID REFERENCES BrowoKo_knowledge_categories(id) ON DELETE SET NULL,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  author_id UUID,
+  tags TEXT[],
+  is_published BOOLEAN DEFAULT FALSE,
+  view_count INTEGER DEFAULT 0,
+  helpful_count INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_knowledge_articles_category ON BrowoKo_knowledge_articles(category_id);
+CREATE INDEX idx_knowledge_articles_author ON BrowoKo_knowledge_articles(author_id);
+CREATE INDEX idx_knowledge_articles_published ON BrowoKo_knowledge_articles(is_published) WHERE is_published = true;
+
+-- Feedback
+CREATE TABLE BrowoKo_feedback (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID,
+  type TEXT CHECK (type IN ('BUG', 'FEATURE', 'IMPROVEMENT', 'QUESTION', 'OTHER')),
+  priority TEXT DEFAULT 'MEDIUM' CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH', 'URGENT')),
+  status TEXT DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'IN_PROGRESS', 'RESOLVED', 'CLOSED')),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  attachments TEXT[],
+  assigned_to UUID,
+  resolved_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_feedback_user ON BrowoKo_feedback(user_id);
+CREATE INDEX idx_feedback_status ON BrowoKo_feedback(status);
+CREATE INDEX idx_feedback_assigned ON BrowoKo_feedback(assigned_to);
+
+-- STEP 4: ENABLE RLS
+ALTER TABLE BrowoKo_conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE BrowoKo_conversation_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE BrowoKo_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE BrowoKo_message_attachments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE BrowoKo_message_reactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE BrowoKo_message_reads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE BrowoKo_typing_indicators ENABLE ROW LEVEL SECURITY;
+ALTER TABLE BrowoKo_user_status ENABLE ROW LEVEL SECURITY;
+ALTER TABLE BrowoKo_knowledge_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE BrowoKo_knowledge_articles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE BrowoKo_feedback ENABLE ROW LEVEL SECURITY;
+
+-- STEP 5: CREATE SIMPLE RLS POLICIES (Allow all authenticated users)
+CREATE POLICY "chat_conversations_access" ON BrowoKo_conversations FOR ALL TO authenticated USING (true);
+CREATE POLICY "chat_members_access" ON BrowoKo_conversation_members FOR ALL TO authenticated USING (true);
+CREATE POLICY "chat_messages_access" ON BrowoKo_messages FOR ALL TO authenticated USING (true);
+CREATE POLICY "chat_attachments_access" ON BrowoKo_message_attachments FOR ALL TO authenticated USING (true);
+CREATE POLICY "chat_reactions_access" ON BrowoKo_message_reactions FOR ALL TO authenticated USING (true);
+CREATE POLICY "chat_reads_access" ON BrowoKo_message_reads FOR ALL TO authenticated USING (true);
+CREATE POLICY "chat_typing_access" ON BrowoKo_typing_indicators FOR ALL TO authenticated USING (true);
+CREATE POLICY "chat_status_access" ON BrowoKo_user_status FOR ALL TO authenticated USING (true);
+CREATE POLICY "knowledge_categories_access" ON BrowoKo_knowledge_categories FOR ALL TO authenticated USING (true);
+CREATE POLICY "knowledge_articles_access" ON BrowoKo_knowledge_articles FOR ALL TO authenticated USING (true);
+CREATE POLICY "feedback_access" ON BrowoKo_feedback FOR ALL TO authenticated USING (true);
+
+-- DONE!

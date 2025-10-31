@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { CheckCircle, XCircle, AlertCircle, RefreshCw } from './icons/HRTHISIcons';
+import { CheckCircle, XCircle, AlertCircle, RefreshCw } from './icons/BrowoKoIcons';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface BucketInfo {

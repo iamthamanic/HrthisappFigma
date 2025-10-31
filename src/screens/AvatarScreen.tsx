@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Sparkles } from '../components/icons/HRTHISIcons';
-import { useAuthStore } from '../stores/HRTHIS_authStore';
+import { Sparkles } from '../components/icons/BrowoKoIcons';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
 import { useGamificationStore } from '../stores/gamificationStore';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import AvatarDisplay from '../components/AvatarDisplay';
 import AvatarEditor, { AvatarConfig } from '../components/AvatarEditor';
 import XPProgress from '../components/XPProgress';
-import AvatarStatsGrid from '../components/HRTHIS_AvatarStatsGrid';
-import LevelMilestones from '../components/HRTHIS_LevelMilestones';
+import AvatarStatsGrid from '../components/BrowoKo_AvatarStatsGrid';
+import LevelMilestones from '../components/BrowoKo_LevelMilestones';
 
 export default function AvatarScreen() {
   const { user } = useAuthStore();

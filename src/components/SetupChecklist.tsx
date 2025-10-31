@@ -1,4 +1,4 @@
-import { CheckCircle, Circle, ExternalLink, Copy } from './icons/HRTHISIcons';
+import { CheckCircle, Circle, ExternalLink, Copy } from './icons/BrowoKoIcons';
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';

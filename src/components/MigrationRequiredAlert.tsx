@@ -1,4 +1,4 @@
-import { AlertTriangle, Database, Copy, ExternalLink } from './icons/HRTHISIcons';
+import { AlertTriangle, Database, Copy, ExternalLink } from './icons/BrowoKoIcons';
 import { Alert, AlertDescription } from './ui/alert';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';

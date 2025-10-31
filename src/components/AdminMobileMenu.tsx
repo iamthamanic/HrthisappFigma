@@ -8,9 +8,11 @@ import {
   Gift,
   Megaphone,
   GraduationCap,
-  Package
-} from './icons/HRTHISIcons';
-import { useAdminMenuRouting } from '../hooks/HRTHIS_useAdminMenuRouting';
+  Package,
+  Activity
+} from './icons/BrowoKoIcons';
+import { Zap } from 'lucide-react';
+import { useAdminMenuRouting } from '../hooks/BrowoKo_useAdminMenuRouting';
 
 interface AdminMobileMenuProps {
   onClose: () => void;
@@ -27,42 +29,62 @@ export default function AdminMobileMenu({ onClose }: AdminMobileMenuProps) {
     { 
       label: 'Organigram Unified (NEU!)', 
       icon: Network, 
-      description: 'Canvas + Firmeneinstellungen' 
+      description: 'Canvas + Firmeneinstellungen',
+      customRoute: '/admin/organigram-unified'
     },
     { 
       label: 'Organigram Canvas', 
       icon: Network, 
-      description: 'Canvas Editor (alt)' 
+      description: 'Canvas Editor (alt)',
+      customRoute: '/admin/organigram-canvas'
     },
     { 
       label: 'Firmeneinstellungen', 
       icon: Building2, 
-      description: 'Firma konfigurieren (alt)' 
+      description: 'Firma konfigurieren (alt)',
+      customRoute: '/admin/company-settings'
     },
     { 
       label: 'Fieldverwaltung', 
       icon: MapPin, 
-      description: 'Field-Mitarbeiter (EXTERN)' 
+      description: 'Field-Mitarbeiter (EXTERN)',
+      customRoute: '/admin/field-management'
     },
     { 
       label: 'Equipment Verwaltung', 
       icon: Package, 
-      description: 'Equipment-Items verwalten' 
+      description: 'Equipment-Items verwalten',
+      customRoute: '/admin/equipment-management'
     },
     { 
       label: 'Benefitsverwaltung', 
       icon: Gift, 
-      description: 'Benefits verwalten' 
+      description: 'Benefits verwalten',
+      customRoute: '/admin/benefits-management'
     },
     { 
       label: 'Dashboard-Mitteilungen', 
       icon: Megaphone, 
-      description: 'Mitteilungen erstellen' 
+      description: 'Mitteilungen erstellen',
+      customRoute: '/admin/dashboard-announcements'
     },
     { 
       label: 'Lernverwaltung', 
       icon: GraduationCap, 
-      description: 'Videos, Tests & Lerneinheiten' 
+      description: 'Videos, Tests & Lerneinheiten',
+      customRoute: '/admin/learning-management'
+    },
+    { 
+      label: 'Automationenverwaltung', 
+      icon: Zap, 
+      description: 'n8n API Keys & Monitoring',
+      customRoute: '/admin/automationenverwaltung'
+    },
+    { 
+      label: 'System Health (NEU!)', 
+      icon: Activity, 
+      description: '14 Edge Functions Monitoring',
+      customRoute: '/admin/system-health'
     },
   ];
 
@@ -106,7 +128,7 @@ export default function AdminMobileMenu({ onClose }: AdminMobileMenuProps) {
       {/* Footer */}
       <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
         <p className="text-xs text-gray-500 text-center">
-          HRthis Admin Panel v4.5.9
+          Browo Koordinator Admin Panel v4.11.0
         </p>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { AlertTriangle, RefreshCw } from './icons/HRTHISIcons';
+import { AlertTriangle, RefreshCw } from './icons/BrowoKoIcons';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 

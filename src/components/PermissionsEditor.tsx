@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, Check, X, Save, RotateCcw } from './icons/HRTHISIcons';
+import { Shield, Check, X, Save, RotateCcw } from './icons/BrowoKoIcons';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Checkbox } from './ui/checkbox';
 import { Button } from './ui/button';

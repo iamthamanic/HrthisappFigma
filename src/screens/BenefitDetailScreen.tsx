@@ -15,18 +15,18 @@ import { toast } from 'sonner@2.0.3';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card } from '../components/ui/card';
-import HRTHIS_BenefitRequestDialog from '../components/HRTHIS_BenefitRequestDialog';
+import BrowoKo_BenefitRequestDialog from '../components/BrowoKo_BenefitRequestDialog';
 import LoadingState from '../components/LoadingState';
-import { useAuthStore } from '../stores/HRTHIS_authStore';
-import type { Benefit, UserBenefit } from '../types/schemas/HRTHIS_benefitSchemas';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
+import type { Benefit, UserBenefit } from '../types/schemas/BrowoKo_benefitSchemas';
 import {
   BENEFIT_CATEGORY_META,
   formatAvailability,
   formatBenefitStatus,
   canRequestBenefit,
   getMonthsEmployed,
-} from '../types/schemas/HRTHIS_benefitSchemas';
-import * as benefitsService from '../services/HRTHIS_benefitsService';
+} from '../types/schemas/BrowoKo_benefitSchemas';
+import * as benefitsService from '../services/BrowoKo_benefitsService';
 
 export default function BenefitDetailScreen() {
   const { benefitId } = useParams<{ benefitId: string }>();
@@ -249,7 +249,7 @@ export default function BenefitDetailScreen() {
       </Card>
 
       {/* Request Dialog */}
-      <HRTHIS_BenefitRequestDialog
+      <BrowoKo_BenefitRequestDialog
         open={requestDialogOpen}
         onOpenChange={setRequestDialogOpen}
         benefit={benefit}

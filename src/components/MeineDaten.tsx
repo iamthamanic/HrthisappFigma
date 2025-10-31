@@ -18,30 +18,30 @@ import { Calendar as CalendarComponent } from './ui/calendar';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { 
   Upload, User, Calendar, Timer, FileText, Shield, ArrowLeft, Plus, CheckCircle2, XCircle, Clock
-} from './icons/HRTHISIcons';
+} from './icons/BrowoKoIcons';
 import { toast } from 'sonner@2.0.3';
 import PermissionsView from './PermissionsView';
-import { DocumentsTabContent } from './HRTHIS_DocumentsTabContent';
+import { DocumentsTabContent } from './BrowoKo_DocumentsTabContent';
 import { ImageCropDialog } from './ImageCropDialog';
-import { EditWarningDialog } from './HRTHIS_EditWarningDialog';
-import { AuditLogsView } from './HRTHIS_AuditLogsView';
-import MyRequestsOverview from './HRTHIS_MyRequestsOverview';
+import { EditWarningDialog } from './BrowoKo_EditWarningDialog';
+import { AuditLogsView } from './BrowoKo_AuditLogsView';
+import MyRequestsOverview from './BrowoKo_MyRequestsOverview';
 import RequestLeaveDialog from './RequestLeaveDialog';
-import MyRequestsCalendar from './HRTHIS_MyRequestsCalendar';
-import { useCardEditing } from '../hooks/HRTHIS_useCardEditing';
-import { useFieldPermissions } from '../hooks/HRTHIS_useFieldPermissions';
+import MyRequestsCalendar from './BrowoKo_MyRequestsCalendar';
+import { useCardEditing } from '../hooks/BrowoKo_useCardEditing';
+import { useFieldPermissions } from '../hooks/BrowoKo_useFieldPermissions';
 import { useDateFilter } from '../hooks/useDateFilter';
-import { useLeaveRequestsList } from '../hooks/HRTHIS_useLeaveRequestsList';
-import { useTabRouting, type TabConfig } from '../hooks/HRTHIS_useTabRouting';
+import { useLeaveRequestsList } from '../hooks/BrowoKo_useLeaveRequestsList';
+import { useTabRouting, type TabConfig } from '../hooks/BrowoKo_useTabRouting';
 import type { UserRole } from '../types/database';
 
 // Import Card Components
-import { PersonalDataCard } from './user/HRTHIS_PersonalDataCard';
-import { AddressCard } from './user/HRTHIS_AddressCard';
-import { BankInfoCard } from './user/HRTHIS_BankInfoCard';
-import { ClothingSizesCard } from './user/HRTHIS_ClothingSizesCard';
-import { EmergencyContactCard } from './user/HRTHIS_EmergencyContactCard';
-import { LanguageSkillsCard } from './user/HRTHIS_LanguageSkillsCard';
+import { PersonalDataCard } from './user/BrowoKo_PersonalDataCard';
+import { AddressCard } from './user/BrowoKo_AddressCard';
+import { BankInfoCard } from './user/BrowoKo_BankInfoCard';
+import { ClothingSizesCard } from './user/BrowoKo_ClothingSizesCard';
+import { EmergencyContactCard } from './user/BrowoKo_EmergencyContactCard';
+import { LanguageSkillsCard } from './user/BrowoKo_LanguageSkillsCard';
 
 // Tab configuration - Add new tabs here and routing will be automatic!
 const TABS: TabConfig[] = [

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Award, Coins, Clock, CheckCircle, HelpCircle, Play } from '../components/icons/HRTHISIcons';
-import { useAuthStore } from '../stores/HRTHIS_authStore';
-import { useLearningStore } from '../stores/HRTHIS_learningStore';
+import { ArrowLeft, Award, Coins, Clock, CheckCircle, HelpCircle, Play } from '../components/icons/BrowoKoIcons';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
+import { useLearningStore } from '../stores/BrowoKo_learningStore';
 import { useGamificationStore } from '../stores/gamificationStore';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';

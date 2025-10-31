@@ -30,7 +30,7 @@ export {
   RetryStrategies,
   type RetryOptions,
   type RetryStats,
-} from './HRTHIS_retry';
+} from './BrowoKo_retry';
 
 // Export circuit breaker
 export {
@@ -41,7 +41,7 @@ export {
   CircuitBreakerError,
   type CircuitBreakerOptions,
   type CircuitBreakerStats,
-} from './HRTHIS_circuitBreaker';
+} from './BrowoKo_circuitBreaker';
 
 // Export timeout utilities
 export {
@@ -54,7 +54,7 @@ export {
   TimeoutStrategies,
   createTimeoutConfig,
   type TimeoutConfig,
-} from './HRTHIS_timeout';
+} from './BrowoKo_timeout';
 
 // Export error types
 export {
@@ -131,9 +131,9 @@ export async function withResilience<T>(
   } = config;
   
   // Import here to avoid circular dependencies
-  const { retryWithBackoff, RetryStrategies } = await import('./HRTHIS_retry');
-  const { circuitBreakers } = await import('./HRTHIS_circuitBreaker');
-  const { withTimeout, TimeoutStrategies } = await import('./HRTHIS_timeout');
+  const { retryWithBackoff, RetryStrategies } = await import('./BrowoKo_retry');
+  const { circuitBreakers } = await import('./BrowoKo_circuitBreaker');
+  const { withTimeout, TimeoutStrategies } = await import('./BrowoKo_timeout');
   
   // Build the execution chain
   let executor = fn;

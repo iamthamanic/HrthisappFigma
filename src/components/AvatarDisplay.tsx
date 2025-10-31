@@ -1,4 +1,4 @@
-import { Star } from './icons/HRTHISIcons';
+import { Star } from './icons/BrowoKoIcons';
 
 interface AvatarDisplayProps {
   emoji?: string;

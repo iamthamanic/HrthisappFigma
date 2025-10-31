@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, Home } from './icons/HRTHISIcons';
+import { AlertTriangle, RefreshCw, Home } from './icons/BrowoKoIcons';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 

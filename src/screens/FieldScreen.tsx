@@ -8,7 +8,7 @@
  */
 
 import { useState } from 'react';
-import { Building2, Plus, Users, Layers } from '../components/icons/HRTHISIcons';
+import { Building2, Plus, Users, Layers } from '../components/icons/BrowoKoIcons';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';

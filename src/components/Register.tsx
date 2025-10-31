@@ -4,8 +4,8 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
-import { ArrowLeft, CheckCircle } from './icons/HRTHISIcons';
-import sanitize from '../utils/security/HRTHIS_sanitization';
+import { ArrowLeft, CheckCircle } from './icons/BrowoKoIcons';
+import sanitize from '../utils/security/BrowoKo_sanitization';
 
 interface RegisterProps {
   onBackToLogin: () => void;

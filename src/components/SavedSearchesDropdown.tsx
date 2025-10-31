@@ -6,7 +6,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
-import { Bookmark, Trash2, Save, Loader2, Globe } from './icons/HRTHISIcons';
+import { Bookmark, Trash2, Save, Loader2, Globe } from './icons/BrowoKoIcons';
 import { SavedSearch, SearchConfig } from '../types/database';
 
 interface SavedSearchesDropdownProps {

@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrowoKoordinator - Kalender Edge Function v2.0.0 Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .version {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .config-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 30px;
+            border: 2px solid #e9ecef;
+        }
+
+        .config-section h2 {
+            color: #667eea;
+            font-size: 20px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #495057;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .test-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        .test-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .test-card h3 {
+            color: #212529;
+            font-size: 18px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .test-card p {
+            color: #6c757d;
+            font-size: 14px;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .button {
+            width: 100%;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result h3 {
+            color: #212529;
+            margin-bottom: 16px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .result pre {
+            background: #212529;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .note strong {
+            color: #856404;
+        }
+
+        .quick-params {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .quick-params input,
+        .quick-params select {
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .section-title {
+            color: #667eea;
+            font-size: 24px;
+            margin: 30px 0 20px 0;
+            font-weight: 600;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗓️ Kalender Edge Function Test</h1>
+            <span class="version">Version 2.0.0</span>
+            <p style="margin-top: 15px; opacity: 0.9;">Calendar Visualization & Shift Planning System</p>
+        </div>
+
+        <div class="content">
+            <!-- Configuration Section -->
+            <div class="config-section">
+                <h2>🔧 Konfiguration</h2>
+                <div class="note">
+                    <strong>📋 Wichtig:</strong> Trage hier deine Supabase Project ID und ANON_KEY ein. 
+                    Du findest diese in deinem Supabase Dashboard unter Settings → API.
+                </div>
+                <div class="input-group">
+                    <label>Supabase Project ID:</label>
+                    <input type="text" id="projectId" placeholder="z.B. abcdefghijklmnopqrst">
+                </div>
+                <div class="input-group">
+                    <label>Supabase ANON_KEY:</label>
+                    <input type="text" id="anonKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+                </div>
+                <div class="input-group">
+                    <label>Benutzer Access Token (Optional - für authentifizierte Tests):</label>
+                    <input type="text" id="accessToken" placeholder="Falls vorhanden, hier eintragen...">
+                    <small style="color: #6c757d; display: block; margin-top: 6px;">
+                        💡 Tipp: Melde dich in der App an und hole dir das Token via supabase.auth.getSession()
+                    </small>
+                </div>
+            </div>
+
+            <!-- Health Check -->
+            <div class="section-title">🏥 Health Check</div>
+            <div class="test-grid">
+                <div class="test-card">
+                    <h3>Health Check</h3>
+                    <p>Prüft, ob die Edge Function erreichbar ist (KEIN Auth erforderlich)</p>
+                    <button class="button btn-success" onclick="testHealth()">Health Check durchführen</button>
+                </div>
+            </div>
+
+            <!-- Calendar Features -->
+            <div class="section-title">📅 Kalender Features</div>
+            <div class="test-grid">
+                <div class="test-card">
+                    <h3>Team Kalender</h3>
+                    <p>Zeigt Team-Kalender mit Abwesenheiten, Schichten und Feiertagen für einen Monat</p>
+                    <div class="quick-params">
+                        <input type="number" id="teamCalMonth" placeholder="Monat (1-12)" value="">
+                        <input type="number" id="teamCalYear" placeholder="Jahr (2025)" value="2025">
+                        <input type="text" id="teamCalTeamId" placeholder="Team ID (optional)">
+                    </div>
+                    <button class="button btn-primary" style="margin-top: 12px;" onclick="testTeamCalendar()">Team Kalender abrufen</button>
+                </div>
+
+                <div class="test-card">
+                    <h3>Abwesenheiten</h3>
+                    <p>Zeigt alle genehmigten Abwesenheiten für einen Zeitraum (Read-only)</p>
+                    <div class="quick-params">
+                        <input type="date" id="absenceStart" placeholder="Start Datum">
+                        <input type="date" id="absenceEnd" placeholder="End Datum">
+                        <input type="text" id="absenceTeamId" placeholder="Team ID (optional)">
+                    </div>
+                    <button class="button btn-info" style="margin-top: 12px;" onclick="testAbsences()">Abwesenheiten abrufen</button>
+                </div>
+
+                <div class="test-card">
+                    <h3>Deutsche Feiertage</h3>
+                    <p>Berechnet gesetzliche Feiertage für ein Bundesland und Jahr</p>
+                    <div class="quick-params">
+                        <input type="number" id="holidayYear" placeholder="Jahr (2025)" value="2025">
+                        <select id="holidayState">
+                            <option value="NRW">NRW - Nordrhein-Westfalen</option>
+                            <option value="BW">BW - Baden-Württemberg</option>
+                            <option value="BY">BY - Bayern</option>
+                            <option value="HE">HE - Hessen</option>
+                            <option value="RP">RP - Rheinland-Pfalz</option>
+                            <option value="SL">SL - Saarland</option>
+                        </select>
+                    </div>
+                    <button class="button btn-warning" style="margin-top: 12px;" onclick="testHolidays()">Feiertage berechnen</button>
+                </div>
+            </div>
+
+            <!-- Shift Planning -->
+            <div class="section-title">👷 Schichtplanung</div>
+            <div class="test-grid">
+                <div class="test-card">
+                    <h3>Schichten abrufen</h3>
+                    <p>Zeigt alle Schichten für einen Zeitraum, Team oder Benutzer</p>
+                    <div class="quick-params">
+                        <input type="date" id="shiftGetStart" placeholder="Start Datum">
+                        <input type="date" id="shiftGetEnd" placeholder="End Datum">
+                        <input type="text" id="shiftGetUserId" placeholder="User ID (optional)">
+                        <input type="text" id="shiftGetTeamId" placeholder="Team ID (optional)">
+                    </div>
+                    <button class="button btn-primary" style="margin-top: 12px;" onclick="testGetShifts()">Schichten abrufen</button>
+                </div>
+
+                <div class="test-card">
+                    <h3>Schicht erstellen</h3>
+                    <p>Erstellt eine neue Schicht (nur HR/Teamlead)</p>
+                    <div class="quick-params">
+                        <input type="text" id="shiftCreateUserId" placeholder="User ID *">
+                        <input type="date" id="shiftCreateDate" placeholder="Datum *">
+                        <select id="shiftCreateType">
+                            <option value="">Schichttyp wählen *</option>
+                            <option value="EARLY">Frühschicht</option>
+                            <option value="LATE">Spätschicht</option>
+                            <option value="NIGHT">Nachtschicht</option>
+                            <option value="DAY">Tagschicht</option>
+                        </select>
+                        <input type="time" id="shiftCreateStart" placeholder="Start Zeit">
+                        <input type="time" id="shiftCreateEnd" placeholder="End Zeit">
+                        <input type="text" id="shiftCreateTeamId" placeholder="Team ID (optional)">
+                        <input type="text" id="shiftCreateNotes" placeholder="Notizen (optional)">
+                    </div>
+                    <button class="button btn-success" style="margin-top: 12px;" onclick="testCreateShift()">Schicht erstellen</button>
+                </div>
+
+                <div class="test-card">
+                    <h3>Schicht aktualisieren</h3>
+                    <p>Aktualisiert eine bestehende Schicht</p>
+                    <div class="quick-params">
+                        <input type="text" id="shiftUpdateId" placeholder="Schicht ID *">
+                        <input type="date" id="shiftUpdateDate" placeholder="Neues Datum">
+                        <select id="shiftUpdateType">
+                            <option value="">Schichttyp ändern</option>
+                            <option value="EARLY">Frühschicht</option>
+                            <option value="LATE">Spätschicht</option>
+                            <option value="NIGHT">Nachtschicht</option>
+                            <option value="DAY">Tagschicht</option>
+                        </select>
+                        <input type="time" id="shiftUpdateStart" placeholder="Start Zeit">
+                        <input type="time" id="shiftUpdateEnd" placeholder="End Zeit">
+                        <input type="text" id="shiftUpdateNotes" placeholder="Notizen">
+                    </div>
+                    <button class="button btn-warning" style="margin-top: 12px;" onclick="testUpdateShift()">Schicht aktualisieren</button>
+                </div>
+
+                <div class="test-card">
+                    <h3>Schicht löschen</h3>
+                    <p>Löscht eine Schicht (nur HR/Teamlead/Creator)</p>
+                    <div class="quick-params">
+                        <input type="text" id="shiftDeleteId" placeholder="Schicht ID *">
+                    </div>
+                    <button class="button btn-danger" style="margin-top: 12px;" onclick="testDeleteShift()">Schicht löschen</button>
+                </div>
+            </div>
+
+            <!-- iCal Export -->
+            <div class="section-title">📤 Kalender Export</div>
+            <div class="test-grid">
+                <div class="test-card">
+                    <h3>iCal Export</h3>
+                    <p>Exportiert Kalender als iCal-Datei (.ics) für Outlook, Google Calendar etc.</p>
+                    <div class="quick-params">
+                        <input type="date" id="exportStart" placeholder="Start Datum *">
+                        <input type="date" id="exportEnd" placeholder="End Datum *">
+                        <select id="exportState">
+                            <option value="NRW">NRW</option>
+                            <option value="BW">BW</option>
+                            <option value="BY">BY</option>
+                            <option value="HE">HE</option>
+                            <option value="RP">RP</option>
+                            <option value="SL">SL</option>
+                        </select>
+                    </div>
+                    <div style="margin-top: 12px;">
+                        <label><input type="checkbox" id="exportAbsences" checked> Abwesenheiten</label>
+                        <label style="margin-left: 12px;"><input type="checkbox" id="exportShifts" checked> Schichten</label>
+                        <label style="margin-left: 12px;"><input type="checkbox" id="exportHolidays" checked> Feiertage</label>
+                    </div>
+                    <button class="button btn-primary" style="margin-top: 12px;" onclick="testExport()">Kalender exportieren</button>
+                </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 12px; color: #667eea; font-weight: 600;">Test läuft...</p>
+            </div>
+
+            <!-- Result Section -->
+            <div class="result" id="result">
+                <h3 id="resultTitle">Ergebnis</h3>
+                <div id="resultContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Helper Functions
+        function getBaseUrl() {
+            const projectId = document.getElementById('projectId').value.trim();
+            if (!projectId) {
+                alert('❌ Bitte trage deine Supabase Project ID ein!');
+                throw new Error('Project ID missing');
+            }
+            return `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Kalender`;
+        }
+
+        function getHeaders(requireAuth = true) {
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+
+            if (requireAuth) {
+                const accessToken = document.getElementById('accessToken').value.trim();
+                const anonKey = document.getElementById('anonKey').value.trim();
+                
+                if (accessToken) {
+                    headers['Authorization'] = `Bearer ${accessToken}`;
+                } else if (anonKey) {
+                    headers['Authorization'] = `Bearer ${anonKey}`;
+                } else {
+                    alert('❌ Für diesen Test wird ein Access Token oder ANON_KEY benötigt!');
+                    throw new Error('Auth required');
+                }
+            }
+
+            return headers;
+        }
+
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('result').classList.remove('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        function showResult(title, data, isSuccess = true) {
+            hideLoading();
+            
+            const resultDiv = document.getElementById('result');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultContent = document.getElementById('resultContent');
+
+            const badge = isSuccess 
+                ? '<span class="status-badge status-success">✓ Erfolg</span>'
+                : '<span class="status-badge status-error">✗ Fehler</span>';
+
+            resultTitle.innerHTML = badge + title;
+            resultContent.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            resultDiv.classList.add('show');
+
+            // Scroll to result
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        async function makeRequest(endpoint, options = {}, requireAuth = true) {
+            showLoading();
+            try {
+                const url = `${getBaseUrl()}${endpoint}`;
+                const headers = getHeaders(requireAuth);
+
+                console.log('📡 Request:', url, options);
+
+                const response = await fetch(url, {
+                    ...options,
+                    headers: { ...headers, ...options.headers },
+                });
+
+                const data = await response.json();
+                
+                console.log('📥 Response:', data);
+
+                if (!response.ok) {
+                    showResult(`Fehler ${response.status}`, data, false);
+                    return null;
+                }
+
+                return data;
+            } catch (error) {
+                console.error('❌ Error:', error);
+                showResult('Network Error', { error: error.message }, false);
+                return null;
+            }
+        }
+
+        // Test Functions
+        async function testHealth() {
+            const data = await makeRequest('/health', {}, false);
+            if (data) {
+                showResult('Health Check', data, true);
+            }
+        }
+
+        async function testTeamCalendar() {
+            const month = document.getElementById('teamCalMonth').value || new Date().getMonth() + 1;
+            const year = document.getElementById('teamCalYear').value || new Date().getFullYear();
+            const teamId = document.getElementById('teamCalTeamId').value;
+
+            let query = `?month=${month}&year=${year}`;
+            if (teamId) query += `&team_id=${teamId}`;
+
+            const data = await makeRequest(`/team-calendar${query}`);
+            if (data) {
+                showResult(`Team Kalender ${month}/${year}`, data, true);
+            }
+        }
+
+        async function testAbsences() {
+            const startDate = document.getElementById('absenceStart').value;
+            const endDate = document.getElementById('absenceEnd').value;
+            const teamId = document.getElementById('absenceTeamId').value;
+
+            let query = '?';
+            if (startDate) query += `start_date=${startDate}&`;
+            if (endDate) query += `end_date=${endDate}&`;
+            if (teamId) query += `team_id=${teamId}&`;
+
+            const data = await makeRequest(`/absences${query}`);
+            if (data) {
+                showResult('Abwesenheiten', data, true);
+            }
+        }
+
+        async function testHolidays() {
+            const year = document.getElementById('holidayYear').value || new Date().getFullYear();
+            const state = document.getElementById('holidayState').value;
+
+            const data = await makeRequest(`/holidays?year=${year}&state=${state}`);
+            if (data) {
+                showResult(`Deutsche Feiertage ${year} (${state})`, data, true);
+            }
+        }
+
+        async function testGetShifts() {
+            const startDate = document.getElementById('shiftGetStart').value;
+            const endDate = document.getElementById('shiftGetEnd').value;
+            const userId = document.getElementById('shiftGetUserId').value;
+            const teamId = document.getElementById('shiftGetTeamId').value;
+
+            let query = '?';
+            if (startDate) query += `start_date=${startDate}&`;
+            if (endDate) query += `end_date=${endDate}&`;
+            if (userId) query += `user_id=${userId}&`;
+            if (teamId) query += `team_id=${teamId}&`;
+
+            const data = await makeRequest(`/shifts${query}`);
+            if (data) {
+                showResult('Schichten', data, true);
+            }
+        }
+
+        async function testCreateShift() {
+            const userId = document.getElementById('shiftCreateUserId').value;
+            const date = document.getElementById('shiftCreateDate').value;
+            const shiftType = document.getElementById('shiftCreateType').value;
+            const startTime = document.getElementById('shiftCreateStart').value;
+            const endTime = document.getElementById('shiftCreateEnd').value;
+            const teamId = document.getElementById('shiftCreateTeamId').value;
+            const notes = document.getElementById('shiftCreateNotes').value;
+
+            if (!userId || !date || !shiftType) {
+                alert('❌ User ID, Datum und Schichttyp sind erforderlich!');
+                return;
+            }
+
+            const body = {
+                user_id: userId,
+                date: date,
+                shift_type: shiftType,
+                start_time: startTime || null,
+                end_time: endTime || null,
+                team_id: teamId || null,
+                notes: notes || null,
+            };
+
+            const data = await makeRequest('/shifts', {
+                method: 'POST',
+                body: JSON.stringify(body),
+            });
+
+            if (data) {
+                showResult('Schicht erstellt', data, true);
+            }
+        }
+
+        async function testUpdateShift() {
+            const shiftId = document.getElementById('shiftUpdateId').value;
+            
+            if (!shiftId) {
+                alert('❌ Schicht ID ist erforderlich!');
+                return;
+            }
+
+            const date = document.getElementById('shiftUpdateDate').value;
+            const shiftType = document.getElementById('shiftUpdateType').value;
+            const startTime = document.getElementById('shiftUpdateStart').value;
+            const endTime = document.getElementById('shiftUpdateEnd').value;
+            const notes = document.getElementById('shiftUpdateNotes').value;
+
+            const body = {};
+            if (date) body.date = date;
+            if (shiftType) body.shift_type = shiftType;
+            if (startTime) body.start_time = startTime;
+            if (endTime) body.end_time = endTime;
+            if (notes) body.notes = notes;
+
+            const data = await makeRequest(`/shifts/${shiftId}`, {
+                method: 'PUT',
+                body: JSON.stringify(body),
+            });
+
+            if (data) {
+                showResult('Schicht aktualisiert', data, true);
+            }
+        }
+
+        async function testDeleteShift() {
+            const shiftId = document.getElementById('shiftDeleteId').value;
+            
+            if (!shiftId) {
+                alert('❌ Schicht ID ist erforderlich!');
+                return;
+            }
+
+            if (!confirm('Möchtest du diese Schicht wirklich löschen?')) {
+                return;
+            }
+
+            const data = await makeRequest(`/shifts/${shiftId}`, {
+                method: 'DELETE',
+            });
+
+            if (data) {
+                showResult('Schicht gelöscht', data, true);
+            }
+        }
+
+        async function testExport() {
+            const startDate = document.getElementById('exportStart').value;
+            const endDate = document.getElementById('exportEnd').value;
+            const state = document.getElementById('exportState').value;
+
+            if (!startDate || !endDate) {
+                alert('❌ Start- und End-Datum sind erforderlich!');
+                return;
+            }
+
+            const body = {
+                start_date: startDate,
+                end_date: endDate,
+                state: state,
+                include_absences: document.getElementById('exportAbsences').checked,
+                include_shifts: document.getElementById('exportShifts').checked,
+                include_holidays: document.getElementById('exportHolidays').checked,
+            };
+
+            const data = await makeRequest('/export', {
+                method: 'POST',
+                body: JSON.stringify(body),
+            });
+
+            if (data) {
+                showResult('Kalender Export', data, true);
+                
+                // Download iCal file
+                if (data.ical_data) {
+                    const blob = new Blob([data.ical_data], { type: 'text/calendar' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = data.download_filename || 'kalender.ics';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }
+            }
+        }
+
+        // Set current date defaults
+        window.addEventListener('load', () => {
+            const today = new Date();
+            const month = today.getMonth() + 1;
+            const year = today.getFullYear();
+            
+            document.getElementById('teamCalMonth').value = month;
+            document.getElementById('teamCalYear').value = year;
+            document.getElementById('holidayYear').value = year;
+            
+            // Set date ranges
+            const firstDay = new Date(year, month - 1, 1).toISOString().split('T')[0];
+            const lastDay = new Date(year, month, 0).toISOString().split('T')[0];
+            
+            document.getElementById('absenceStart').value = firstDay;
+            document.getElementById('absenceEnd').value = lastDay;
+            document.getElementById('shiftGetStart').value = firstDay;
+            document.getElementById('shiftGetEnd').value = lastDay;
+            document.getElementById('exportStart').value = firstDay;
+            document.getElementById('exportEnd').value = lastDay;
+        });
+
+        console.log('✅ BrowoKoordinator Kalender v2.0.0 Test Suite geladen');
+        console.log('📋 Verfügbare Funktionen:', {
+            healthCheck: 'testHealth()',
+            teamCalendar: 'testTeamCalendar()',
+            absences: 'testAbsences()',
+            holidays: 'testHolidays()',
+            getShifts: 'testGetShifts()',
+            createShift: 'testCreateShift()',
+            updateShift: 'testUpdateShift()',
+            deleteShift: 'testDeleteShift()',
+            export: 'testExport()',
+        });
+    </script>
+</body>
+</html>

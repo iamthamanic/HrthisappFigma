@@ -33,13 +33,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../../components/ui/alert-dialog';
-import { Plus, Edit, Trash2, Eye, EyeOff, Megaphone, Loader2, Send, Edit3 } from '../../components/icons/HRTHISIcons';
+import { Plus, Edit, Trash2, Eye, EyeOff, Megaphone, Loader2, Send, Edit3 } from '../../components/icons/BrowoKoIcons';
 import { toast } from 'sonner@2.0.3';
 import { getServices } from '../../services';
-import { useAuthStore } from '../../stores/HRTHIS_authStore';
-import type { Announcement, AnnouncementContent } from '../../services/HRTHIS_announcementService';
+import { useAuthStore } from '../../stores/BrowoKo_authStore';
+import type { Announcement, AnnouncementContent } from '../../services/BrowoKo_announcementService';
 import AnnouncementContentEditor from '../../components/AnnouncementContentEditor';
-import HRTHIS_DashboardAnnouncementCard from '../../components/HRTHIS_DashboardAnnouncementCard';
+import BrowoKo_DashboardAnnouncementCard from '../../components/BrowoKo_DashboardAnnouncementCard';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
@@ -449,7 +449,7 @@ export default function DashboardAnnouncementsScreen() {
                     So wird die Mitteilung auf dem Dashboard angezeigt:
                   </p>
                   {title || content.blocks.length > 0 ? (
-                    <HRTHIS_DashboardAnnouncementCard
+                    <BrowoKo_DashboardAnnouncementCard
                       announcement={{
                         id: 'preview',
                         organization_id: '',
@@ -557,7 +557,7 @@ export default function DashboardAnnouncementsScreen() {
                     So wird die Mitteilung auf dem Dashboard angezeigt:
                   </p>
                   {title || content.blocks.length > 0 ? (
-                    <HRTHIS_DashboardAnnouncementCard
+                    <BrowoKo_DashboardAnnouncementCard
                       announcement={{
                         id: 'preview',
                         organization_id: '',

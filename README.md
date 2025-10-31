@@ -1,7 +1,7 @@
 
-  # HRThis App
+  # Browo Koordinator
 
-  This is a code bundle for HRThis App. The original project is available at https://www.figma.com/design/MBjR8xTzmnXD47CgMEJqHg/HRThis-App.
+  This is a code bundle for Browo Koordinator. The original project is available at https://www.figma.com/design/MBjR8xTzmnXD47CgMEJqHg/Browo-Koordinator.
 
   ## Running the code
 

@@ -24,10 +24,10 @@ import {
   formatFileSize,
   isImageFile,
   isPdfFile,
-} from '../utils/HRTHIS_storageHelper';
+} from '../utils/BrowoKo_storageHelper';
 import { toast } from 'sonner@2.0.3';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { FileText } from './icons/HRTHISIcons';
+import { FileText } from './icons/BrowoKoIcons';
 import {
   Bold,
   Italic,
@@ -49,8 +49,8 @@ import {
   Gift,
   X,
   Upload,
-} from './icons/HRTHISIcons';
-import type { AnnouncementContent, AnnouncementContentBlock } from '../services/HRTHIS_announcementService';
+} from './icons/BrowoKoIcons';
+import type { AnnouncementContent, AnnouncementContentBlock } from '../services/BrowoKo_announcementService';
 
 interface AnnouncementContentEditorProps {
   content: AnnouncementContent;

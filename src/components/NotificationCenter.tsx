@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { Bell, Check, CheckCheck, Trash2, X } from './icons/HRTHISIcons';
-import { useAuthStore } from '../stores/HRTHIS_authStore';
+import { Bell, Check, CheckCheck, Trash2, X } from './icons/BrowoKoIcons';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';

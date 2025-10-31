@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, UserPlus, User, Users } from './icons/HRTHISIcons';
+import { X, UserPlus, User, Users } from './icons/BrowoKoIcons';
 import { Dialog } from './ui/dialog';
 import { Button } from './ui/button';
 import { Label } from './ui/label';

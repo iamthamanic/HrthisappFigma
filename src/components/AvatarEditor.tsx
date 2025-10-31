@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Sparkles } from './icons/HRTHISIcons';
+import { Check, Sparkles } from './icons/BrowoKoIcons';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';

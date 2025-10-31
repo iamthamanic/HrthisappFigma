@@ -14,7 +14,7 @@ import { User, LeaveType } from '../types/database';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from './ui/hover-card';
 import { Badge } from './ui/badge';
-import { useOrganigramUserInfo } from '../hooks/HRTHIS_useOrganigramUserInfo';
+import { useOrganigramUserInfo } from '../hooks/BrowoKo_useOrganigramUserInfo';
 
 interface TeamAbsenceAvatarProps {
   user: User;

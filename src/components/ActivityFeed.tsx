@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Activity, Clock, Trophy, Video, HelpCircle, Award, Coins, User, TrendingUp } from './icons/HRTHISIcons';
-import { useAuthStore } from '../stores/HRTHIS_authStore';
+import { Activity, Clock, Trophy, Video, HelpCircle, Award, Coins, User, TrendingUp } from './icons/BrowoKoIcons';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
 import { supabase } from '../utils/supabase/client';
 import { getServices } from '../services';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';

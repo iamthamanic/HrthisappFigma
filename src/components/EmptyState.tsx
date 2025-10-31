@@ -1,4 +1,4 @@
-import { LucideIcon } from './icons/HRTHISIcons';
+import { LucideIcon } from './icons/BrowoKoIcons';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 

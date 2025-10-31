@@ -15,22 +15,22 @@ import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
-import HRTHIS_BenefitBrowseCard from '../components/HRTHIS_BenefitBrowseCard';
-import HRTHIS_MyBenefitsCard from '../components/HRTHIS_MyBenefitsCard';
-import HRTHIS_BenefitRequestDialog from '../components/HRTHIS_BenefitRequestDialog';
-import HRTHIS_BenefitPurchaseDialog from '../components/HRTHIS_BenefitPurchaseDialog';
-import HRTHIS_BenefitApprovalDialog from '../components/HRTHIS_BenefitApprovalDialog';
-import HRTHIS_AdminBenefitsList from '../components/admin/HRTHIS_AdminBenefitsList';
-import HRTHIS_AdminApprovalQueue from '../components/admin/HRTHIS_AdminApprovalQueue';
-import HRTHIS_BenefitDialog from '../components/admin/HRTHIS_BenefitDialog';
-import HRTHIS_CoinWalletWidget from '../components/HRTHIS_CoinWalletWidget';
-import HRTHIS_CoinAchievementCard from '../components/HRTHIS_CoinAchievementCard';
-import AchievementDialog from '../components/admin/HRTHIS_AchievementDialog';
-import CoinDistributionDialog from '../components/admin/HRTHIS_CoinDistributionDialog';
+import BrowoKo_BenefitBrowseCard from '../components/BrowoKo_BenefitBrowseCard';
+import BrowoKo_MyBenefitsCard from '../components/BrowoKo_MyBenefitsCard';
+import BrowoKo_BenefitRequestDialog from '../components/BrowoKo_BenefitRequestDialog';
+import BrowoKo_BenefitPurchaseDialog from '../components/BrowoKo_BenefitPurchaseDialog';
+import BrowoKo_BenefitApprovalDialog from '../components/BrowoKo_BenefitApprovalDialog';
+import BrowoKo_AdminBenefitsList from '../components/admin/BrowoKo_AdminBenefitsList';
+import BrowoKo_AdminApprovalQueue from '../components/admin/BrowoKo_AdminApprovalQueue';
+import BrowoKo_BenefitDialog from '../components/admin/BrowoKo_BenefitDialog';
+import BrowoKo_CoinWalletWidget from '../components/BrowoKo_CoinWalletWidget';
+import BrowoKo_CoinAchievementCard from '../components/BrowoKo_CoinAchievementCard';
+import AchievementDialog from '../components/admin/BrowoKo_AchievementDialog';
+import CoinDistributionDialog from '../components/admin/BrowoKo_CoinDistributionDialog';
 import LoadingState from '../components/LoadingState';
-import { useAuthStore } from '../stores/HRTHIS_authStore';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
 import { useGamificationStore } from '../stores/gamificationStore';
-import { useAchievementsManagement } from '../hooks/HRTHIS_useAchievementsManagement';
+import { useAchievementsManagement } from '../hooks/BrowoKo_useAchievementsManagement';
 import type {
   Benefit,
   BenefitWithUserStatus,
@@ -38,11 +38,11 @@ import type {
   UserBenefitWithDetails,
   BenefitFormData,
   BenefitCategory,
-} from '../types/schemas/HRTHIS_benefitSchemas';
+} from '../types/schemas/BrowoKo_benefitSchemas';
 import type { CoinAchievementWithProgress } from '../types/database';
-import { BENEFIT_CATEGORIES, BENEFIT_CATEGORY_META, canRequestBenefit, getMonthsEmployed } from '../types/schemas/HRTHIS_benefitSchemas';
-import * as benefitsService from '../services/HRTHIS_benefitsService';
-import * as coinAchievementsService from '../services/HRTHIS_coinAchievementsService';
+import { BENEFIT_CATEGORIES, BENEFIT_CATEGORY_META, canRequestBenefit, getMonthsEmployed } from '../types/schemas/BrowoKo_benefitSchemas';
+import * as benefitsService from '../services/BrowoKo_benefitsService';
+import * as coinAchievementsService from '../services/BrowoKo_coinAchievementsService';
 
 export default function BenefitsScreen() {
   const { user, profile } = useAuthStore();
@@ -499,7 +499,7 @@ export default function BenefitsScreen() {
         </div>
         {/* Coin Wallet Widget - only visible on Benefits screen! */}
         <div className="shrink-0">
-          <HRTHIS_CoinWalletWidget />
+          <BrowoKo_CoinWalletWidget />
         </div>
       </div>
 
@@ -585,7 +585,7 @@ export default function BenefitsScreen() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredBenefits.map((benefit) => (
-                <HRTHIS_BenefitBrowseCard
+                <BrowoKo_BenefitBrowseCard
                   key={benefit.id}
                   benefit={benefit}
                   onRequest={handleRequestClick}
@@ -639,7 +639,7 @@ export default function BenefitsScreen() {
           ) : (
             <div className="space-y-4">
               {achievements.map((achievement) => (
-                <HRTHIS_CoinAchievementCard
+                <BrowoKo_CoinAchievementCard
                   key={achievement.id}
                   achievement={achievement}
                   onClaim={handleClaimAchievement}
@@ -732,7 +732,7 @@ export default function BenefitsScreen() {
           ) : (
             <div className="space-y-4">
               {filteredMyBenefits.map((userBenefit) => (
-                <HRTHIS_MyBenefitsCard
+                <BrowoKo_MyBenefitsCard
                   key={userBenefit.id}
                   userBenefit={userBenefit}
                   onCancel={handleCancelRequest}
@@ -762,7 +762,7 @@ export default function BenefitsScreen() {
             </div>
 
             {/* Benefits List */}
-            <HRTHIS_AdminBenefitsList
+            <BrowoKo_AdminBenefitsList
               benefits={adminBenefits}
               onEdit={handleEditBenefit}
               onDelete={handleDeleteBenefit}
@@ -830,7 +830,7 @@ export default function BenefitsScreen() {
             </div>
 
             {/* Approval Queue */}
-            <HRTHIS_AdminApprovalQueue
+            <BrowoKo_AdminApprovalQueue
               requests={filteredPendingRequests}
               onApprove={handleApproveClick}
               onReject={handleRejectClick}
@@ -840,7 +840,7 @@ export default function BenefitsScreen() {
       </Tabs>
 
       {/* Dialogs */}
-      <HRTHIS_BenefitRequestDialog
+      <BrowoKo_BenefitRequestDialog
         open={requestDialogOpen}
         onOpenChange={setRequestDialogOpen}
         benefit={selectedBenefit}
@@ -848,14 +848,14 @@ export default function BenefitsScreen() {
       />
 
       {/* Coin Purchase Dialog (v3.8.0) */}
-      <HRTHIS_BenefitPurchaseDialog
+      <BrowoKo_BenefitPurchaseDialog
         benefit={selectedPurchaseBenefit}
         open={purchaseDialogOpen}
         onOpenChange={setPurchaseDialogOpen}
         onConfirm={handlePurchaseConfirm}
       />
 
-      <HRTHIS_BenefitApprovalDialog
+      <BrowoKo_BenefitApprovalDialog
         open={approvalDialogOpen}
         onOpenChange={setApprovalDialogOpen}
         request={selectedRequest}
@@ -864,7 +864,7 @@ export default function BenefitsScreen() {
       />
 
       {isAdmin && (
-        <HRTHIS_BenefitDialog
+        <BrowoKo_BenefitDialog
           open={benefitDialogOpen}
           onOpenChange={setBenefitDialogOpen}
           onSave={handleSaveBenefit}

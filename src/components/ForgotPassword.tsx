@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { useAuthStore } from '../stores/HRTHIS_authStore';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
 import Logo from './Logo';
-import { ArrowLeft, Mail, CheckCircle } from './icons/HRTHISIcons';
-import sanitize from '../utils/security/HRTHIS_sanitization';
+import { ArrowLeft, Mail, CheckCircle } from './icons/BrowoKoIcons';
+import sanitize from '../utils/security/BrowoKo_sanitization';
 
 interface ForgotPasswordProps {
   onBackToLogin: () => void;

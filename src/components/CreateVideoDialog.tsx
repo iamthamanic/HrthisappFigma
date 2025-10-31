@@ -5,9 +5,9 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Video, Loader2 } from './icons/HRTHISIcons';
+import { Video, Loader2 } from './icons/BrowoKoIcons';
 import { toast } from 'sonner@2.0.3';
-import sanitize from '../utils/security/HRTHIS_sanitization';
+import sanitize from '../utils/security/BrowoKo_sanitization';
 import { fetchYouTubeMetadata } from '../utils/youtubeHelper';
 
 interface CreateVideoDialogProps {
