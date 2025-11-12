@@ -200,7 +200,7 @@ export default function FieldManagementScreen() {
       </div>
 
       {/* Main Content - Desktop Responsive Container */}
-      <div className="max-w-5xl mx-auto px-4 md:px-6 py-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Tabs Navigation */}
           <TabsList className="grid w-full grid-cols-3 h-auto mb-6">

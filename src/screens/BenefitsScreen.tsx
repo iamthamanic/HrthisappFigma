@@ -488,7 +488,9 @@ export default function BenefitsScreen() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen pt-20 md:pt-6 px-4 md:px-6">
+      {/* ✅ MAX-WIDTH CONTAINER */}
+      <div className="max-w-7xl mx-auto space-y-6">
       {/* Header with Coin Wallet - Responsive */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
@@ -894,6 +896,7 @@ export default function BenefitsScreen() {
           organizationId={profile.organization_id}
         />
       )}
+      </div> {/* ✅ Close max-width container */}
     </div>
   );
 }

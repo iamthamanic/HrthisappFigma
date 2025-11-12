@@ -14,6 +14,7 @@ import CompanyBasicSettings from '../../components/admin/BrowoKo_CompanyBasicSet
 import CompanyLogoUpload from '../../components/admin/BrowoKo_CompanyLogoUpload';
 import LocationManager from '../../components/admin/BrowoKo_LocationManager';
 import DepartmentManager from '../../components/admin/BrowoKo_DepartmentManager';
+import SpecializationManager from '../../components/admin/BrowoKo_SpecializationManager';
 
 export default function CompanySettingsScreen() {
   const navigate = useNavigate();
@@ -28,7 +29,12 @@ export default function CompanySettingsScreen() {
     loadDepartments,
     createDepartment,
     updateDepartment,
-    deleteDepartment
+    deleteDepartment,
+    specializations,
+    loadSpecializations,
+    createSpecialization,
+    updateSpecialization,
+    deleteSpecialization
   } = useAdminStore();
 
   const [organization, setOrganization] = useState<Organization | null>(null);
@@ -81,10 +87,11 @@ export default function CompanySettingsScreen() {
         }
       }
 
-      // Load locations and departments
+      // Load locations, departments and specializations
       await Promise.all([
         loadLocations(),
-        loadDepartments()
+        loadDepartments(),
+        loadSpecializations()
       ]);
     } catch (error: any) {
       console.error('Error loading data:', error);
@@ -175,12 +182,14 @@ export default function CompanySettingsScreen() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen pt-20 md:pt-6 px-4 md:px-6">
+      {/* ✅ MAX-WIDTH CONTAINER */}
+      <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Firmeneinstellungen</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Verwalte Unternehmens-Informationen, Logo, Standorte und Abteilungen
+          Verwalte Unternehmens-Informationen, Logo, Standorte, Abteilungen und Spezialisierungen
         </p>
       </div>
 
@@ -222,6 +231,14 @@ export default function CompanySettingsScreen() {
         onDeleteDepartment={deleteDepartment}
       />
 
+      {/* Specializations Manager */}
+      <SpecializationManager
+        specializations={specializations}
+        onCreateSpecialization={createSpecialization}
+        onUpdateSpecialization={updateSpecialization}
+        onDeleteSpecialization={deleteSpecialization}
+      />
+
       {/* Storage Diagnostics */}
       <div className="border-t pt-6 mt-8">
         <Button
@@ -243,6 +260,7 @@ export default function CompanySettingsScreen() {
         </Button>
         {showDiagnostics && <StorageDiagnostics />}
       </div>
+      </div> {/* ✅ Close max-width container */}
     </div>
   );
 }

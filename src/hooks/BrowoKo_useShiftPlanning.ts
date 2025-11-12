@@ -45,6 +45,7 @@ interface Shift {
   id: string;
   user_id: string;
   date: string;
+  shift_type: string;
   start_time: string;
   end_time: string;
   specialization?: string;
@@ -90,8 +91,7 @@ export function BrowoKo_useShiftPlanning(selectedWeek: Date) {
           .order('start_time'),
         supabase
           .from('users')
-          .select('id, first_name, last_name, email, location_id, department, specialization, profile_picture')
-          .eq('role', 'EMPLOYEE')
+          .select('id, first_name, last_name, email, location_id, department, specialization, profile_picture, role')
           .order('last_name'),
       ]);
 
@@ -176,22 +176,223 @@ export function BrowoKo_useShiftPlanning(selectedWeek: Date) {
   // Create a new shift
   const createShift = async (shiftData: Omit<Shift, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      console.log('🔐 [Auth Check] Checking authentication...');
+      
+      // Get current user ID and session
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      console.log('🔐 [Auth Check] Auth error:', authError);
+      console.log('🔐 [Auth Check] User:', user);
+      
+      if (authError || !user) {
+        console.error('❌ [Auth Error] Not authenticated:', authError);
+        throw new Error('Nicht authentifiziert. Bitte melden Sie sich erneut an.');
+      }
+
+      // Get user role from database
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      console.log('👤 [User Role] User data:', userData);
+      console.log('👤 [User Role] User error:', userError);
+
+      if (userError || !userData) {
+        console.error('❌ [User Error] Could not fetch user data:', userError);
+        throw new Error('Benutzer nicht gefunden');
+      }
+
+      // Check if user has permission to create shifts
+      const allowedRoles = ['SUPERADMIN', 'ADMIN', 'HR'];
+      if (!allowedRoles.includes(userData.role)) {
+        console.error('❌ [Permission Error] User role not allowed:', userData.role);
+        throw new Error(`Keine Berechtigung. Nur SUPERADMIN, ADMIN und HR können Schichten erstellen. Ihre Rolle: ${userData.role}`);
+      }
+
+      console.log('✅ [Permission Check] User has permission. Role:', userData.role);
+
+      // Add created_by field
+      const shiftDataWithCreator = {
+        ...shiftData,
+        created_by: user.id,
+      };
+
+      console.log('📤 [Shift Creation] Sending data to Supabase:', shiftDataWithCreator);
+      console.log('📤 [Shift Creation] User ID:', user.id);
+
       const { data, error } = await supabase
         .from('shifts')
-        .insert([shiftData])
+        .insert([shiftDataWithCreator])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [Shift Creation] Error:', error);
+        console.error('❌ [Shift Creation] Error Code:', error.code);
+        console.error('❌ [Shift Creation] Error Message:', error.message);
+        console.error('❌ [Shift Creation] Error Details:', error.details);
+        console.error('❌ [Shift Creation] Error Hint:', error.hint);
+        throw error;
+      }
+
+      console.log('✅ [Shift Creation] Success! Created shift:', data);
 
       setShifts((prev) => [...prev, data]);
       toast.success('Schicht erfolgreich erstellt');
       return data;
     } catch (err: any) {
-      console.error('Error creating shift:', err);
-      toast.error('Fehler beim Erstellen der Schicht');
+      console.error('❌ Error creating shift:', err);
+      const errorMessage = err.message || 'Unbekannter Fehler';
+      toast.error(`Fehler beim Erstellen der Schicht: ${errorMessage}`);
       throw err;
     }
+  };
+
+  // Create multiple shifts at once
+  const createMultipleShifts = async (shiftsData: Omit<Shift, 'id' | 'created_at' | 'updated_at'>[]) => {
+    try {
+      console.log('🔐 [Multi-Shift Auth Check] Checking authentication...');
+      
+      // Get current user ID and session
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.error('❌ [Auth Error] Not authenticated:', authError);
+        throw new Error('Nicht authentifiziert. Bitte melden Sie sich erneut an.');
+      }
+
+      // Get user role from database
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (userError || !userData) {
+        console.error('❌ [User Error] Could not fetch user data:', userError);
+        throw new Error('Benutzer nicht gefunden');
+      }
+
+      // Check if user has permission to create shifts
+      const allowedRoles = ['SUPERADMIN', 'ADMIN', 'HR'];
+      if (!allowedRoles.includes(userData.role)) {
+        console.error('❌ [Permission Error] User role not allowed:', userData.role);
+        throw new Error(`Keine Berechtigung. Nur SUPERADMIN, ADMIN und HR können Schichten erstellen. Ihre Rolle: ${userData.role}`);
+      }
+
+      console.log('✅ [Permission Check] User has permission. Role:', userData.role);
+
+      // Add created_by field to all shifts
+      const shiftsWithCreator = shiftsData.map(shift => ({
+        ...shift,
+        created_by: user.id,
+      }));
+
+      console.log('📤 [Multi-Shift Creation] Sending data to Supabase:', shiftsWithCreator);
+      console.log('📤 [Multi-Shift Creation] Count:', shiftsWithCreator.length);
+
+      const { data, error } = await supabase
+        .from('shifts')
+        .insert(shiftsWithCreator)
+        .select();
+
+      if (error) {
+        console.error('❌ [Multi-Shift Creation] Error:', error);
+        console.error('❌ [Multi-Shift Creation] Error Code:', error.code);
+        console.error('❌ [Multi-Shift Creation] Error Message:', error.message);
+        console.error('❌ [Multi-Shift Creation] Error Details:', error.details);
+        throw error;
+      }
+
+      console.log('✅ [Multi-Shift Creation] Success! Created shifts:', data);
+
+      setShifts((prev) => [...prev, ...data]);
+      toast.success(`${data.length} Schichten erfolgreich erstellt`);
+      return data;
+    } catch (err: any) {
+      console.error('❌ Error creating multiple shifts:', err);
+      const errorMessage = err.message || 'Unbekannter Fehler';
+      toast.error(`Fehler beim Erstellen der Schichten: ${errorMessage}`);
+      throw err;
+    }
+  };
+
+  // Get all shifts for a specific user
+  const getUserShifts = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('shifts')
+        .select('*')
+        .eq('user_id', userId)
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true });
+
+      if (error) {
+        console.error('❌ Error fetching user shifts:', error);
+        throw error;
+      }
+
+      return data as Shift[];
+    } catch (err: any) {
+      console.error('❌ Error fetching user shifts:', err);
+      return [];
+    }
+  };
+
+  // Get user shifts for a specific week (Monday - Sunday)
+  const getUserShiftsForWeek = async (userId: string, weekStart: Date) => {
+    try {
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6); // Sunday
+
+      const { data, error } = await supabase
+        .from('shifts')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('date', weekStart.toISOString().split('T')[0])
+        .lte('date', weekEnd.toISOString().split('T')[0])
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true });
+
+      if (error) {
+        console.error('❌ Error fetching user shifts for week:', error);
+        throw error;
+      }
+
+      return data as Shift[];
+    } catch (err: any) {
+      console.error('❌ Error fetching user shifts for week:', err);
+      return [];
+    }
+  };
+
+  // Check if a new shift overlaps with existing shifts
+  const checkShiftOverlap = (
+    userId: string,
+    date: string,
+    startTime: string,
+    endTime: string,
+    existingShifts?: Shift[]
+  ): { hasOverlap: boolean; overlappingShift?: Shift } => {
+    const shiftsToCheck = existingShifts || shifts.filter(s => s.user_id === userId && s.date === date);
+    
+    for (const shift of shiftsToCheck) {
+      const existingStart = shift.start_time;
+      const existingEnd = shift.end_time;
+      
+      // Check for overlap
+      if (
+        (startTime >= existingStart && startTime < existingEnd) || // New start is during existing shift
+        (endTime > existingStart && endTime <= existingEnd) || // New end is during existing shift
+        (startTime <= existingStart && endTime >= existingEnd) // New shift completely contains existing shift
+      ) {
+        return { hasOverlap: true, overlappingShift: shift };
+      }
+    }
+    
+    return { hasOverlap: false };
   };
 
   // Update a shift
@@ -252,6 +453,10 @@ export function BrowoKo_useShiftPlanning(selectedWeek: Date) {
     error,
     refetch: fetchData,
     createShift,
+    createMultipleShifts,
+    getUserShifts,
+    getUserShiftsForWeek,
+    checkShiftOverlap,
     updateShift,
     deleteShift,
   };

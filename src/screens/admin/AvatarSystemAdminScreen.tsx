@@ -72,7 +72,9 @@ export default function AvatarSystemAdminScreen() {
   const ButtonIcon = buttonConfig.icon;
 
   return (
-    <div className="w-full">
+    <div className="min-h-screen pt-20 md:pt-6 px-4 md:px-6">
+      {/* ✅ MAX-WIDTH CONTAINER */}
+      <div className="max-w-7xl mx-auto w-full">
       {/* Header with Context-Aware Button */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
@@ -249,6 +251,7 @@ export default function AvatarSystemAdminScreen() {
           </Card>
         </TabsContent>
       </Tabs>
+      </div> {/* ✅ Close max-width container */}
     </div>
   );
 }

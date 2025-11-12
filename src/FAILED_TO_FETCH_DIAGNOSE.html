@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supabase Connection Diagnose</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #3ecf8e;
+      padding-bottom: 10px;
+    }
+    .status {
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+    .success {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+      color: #155724;
+    }
+    .error {
+      background: #f8d7da;
+      border-left: 4px solid #dc3545;
+      color: #721c24;
+    }
+    .warning {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      color: #856404;
+    }
+    .info {
+      background: #d1ecf1;
+      border-left: 4px solid #17a2b8;
+      color: #0c5460;
+    }
+    button {
+      background: #3ecf8e;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #36b87a;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 14px;
+    }
+    .test-section {
+      margin: 25px 0;
+      padding: 20px;
+      background: #f9f9f9;
+      border-radius: 6px;
+    }
+    .step {
+      margin: 15px 0;
+      padding: 15px;
+      background: white;
+      border-radius: 4px;
+      border-left: 3px solid #3ecf8e;
+    }
+    .step-number {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      background: #3ecf8e;
+      color: white;
+      text-align: center;
+      line-height: 30px;
+      border-radius: 50%;
+      margin-right: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Supabase Connection Diagnose</h1>
+    
+    <div class="info">
+      <strong>📋 Was wird getestet:</strong><br>
+      1️⃣ Supabase Projekt Status<br>
+      2️⃣ Network Connectivity<br>
+      3️⃣ Authentication<br>
+      4️⃣ Database Query<br>
+      5️⃣ RLS Policies<br>
+      6️⃣ Shift Creation Test
+    </div>
+
+    <div class="test-section">
+      <h2>📊 Test-Ergebnisse</h2>
+      <div id="results"></div>
+    </div>
+
+    <div style="text-align: center;">
+      <button onclick="runDiagnostics()" id="testBtn">🚀 Diagnose Starten</button>
+      <button onclick="location.reload()">🔄 Neu laden</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const projectId = 'azmtojgikubegzusvhra';
+    const publicAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6bXRvamdpa3ViZWd6dXN2aHJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzODQzOTEsImV4cCI6MjA3NDk2MDM5MX0.bls9aJ-M1Wi-387R9mveOuiQCkmVPjTc6IntZjM1YMk';
+    const supabaseUrl = `https://${projectId}.supabase.co`;
+
+    let supabase;
+    let currentUser = null;
+
+    function log(message, type = 'info') {
+      const resultsDiv = document.getElementById('results');
+      const statusDiv = document.createElement('div');
+      statusDiv.className = `status ${type}`;
+      statusDiv.innerHTML = message;
+      resultsDiv.appendChild(statusDiv);
+    }
+
+    async function runDiagnostics() {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '';
+      const testBtn = document.getElementById('testBtn');
+      testBtn.disabled = true;
+
+      try {
+        // TEST 1: Initialize Supabase Client
+        log('<strong>TEST 1: Supabase Client Initialisierung</strong>', 'info');
+        try {
+          supabase = window.supabase.createClient(supabaseUrl, publicAnonKey);
+          log('✅ Supabase Client erfolgreich erstellt!', 'success');
+          log(`📍 URL: ${supabaseUrl}`, 'info');
+        } catch (error) {
+          log(`❌ Client Initialisierung fehlgeschlagen: ${error.message}`, 'error');
+          testBtn.disabled = false;
+          return;
+        }
+
+        // TEST 2: Check Project Status
+        log('<br><strong>TEST 2: Projekt Status</strong>', 'info');
+        try {
+          const response = await fetch(`${supabaseUrl}/rest/v1/`, {
+            method: 'HEAD',
+            headers: {
+              'apikey': publicAnonKey
+            }
+          });
+          
+          if (response.ok) {
+            log('✅ Supabase Projekt ist AKTIV und erreichbar!', 'success');
+          } else if (response.status === 401 || response.status === 403) {
+            log('⚠️ Projekt erreichbar, aber Authorization-Problem!', 'warning');
+          } else {
+            log(`❌ Projekt Status: ${response.status} ${response.statusText}`, 'error');
+          }
+        } catch (error) {
+          log(`❌ Netzwerk-Fehler: ${error.message}`, 'error');
+          log(`⚠️ Mögliche Ursachen:<br>
+            - Supabase Projekt ist PAUSIERT<br>
+            - Keine Internet-Verbindung<br>
+            - CORS-Probleme<br>
+            - Firewall blockiert Zugriff`, 'warning');
+          testBtn.disabled = false;
+          return;
+        }
+
+        // TEST 3: Check Authentication
+        log('<br><strong>TEST 3: Authentication Check</strong>', 'info');
+        try {
+          const { data: { user }, error } = await supabase.auth.getUser();
+          
+          if (error) {
+            log(`⚠️ Auth Error: ${error.message}`, 'warning');
+            log('ℹ️ Du bist NICHT eingeloggt. Das ist OK für manche Tests.', 'info');
+          } else if (user) {
+            currentUser = user;
+            log(`✅ Eingeloggt als: ${user.email}`, 'success');
+            log(`📋 User ID: ${user.id}`, 'info');
+          } else {
+            log('⚠️ Nicht eingeloggt. Einige Tests werden übersprungen.', 'warning');
+          }
+        } catch (error) {
+          log(`❌ Auth Check fehlgeschlagen: ${error.message}`, 'error');
+        }
+
+        // TEST 4: Database Query (Public Table)
+        log('<br><strong>TEST 4: Database Query Test</strong>', 'info');
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .select('id, email')
+            .limit(1);
+          
+          if (error) {
+            log(`❌ Query fehlgeschlagen: ${error.message}`, 'error');
+            log(`🔍 Error Code: ${error.code}`, 'info');
+            log(`🔍 Error Details: ${error.details}`, 'info');
+          } else {
+            log(`✅ Database Query erfolgreich!`, 'success');
+            log(`📊 Ergebnis: ${data.length} User(s) gefunden`, 'info');
+          }
+        } catch (error) {
+          log(`❌ Query Exception: ${error.message}`, 'error');
+        }
+
+        // TEST 5: Check shifts table
+        log('<br><strong>TEST 5: Shifts Table Check</strong>', 'info');
+        try {
+          const { data, error } = await supabase
+            .from('shifts')
+            .select('id')
+            .limit(1);
+          
+          if (error) {
+            log(`❌ Shifts Table Error: ${error.message}`, 'error');
+            log(`🔍 Error Code: ${error.code}`, 'info');
+            
+            if (error.code === '42P01') {
+              log(`⚠️ Die 'shifts' Tabelle existiert NICHT!`, 'error');
+              log(`💡 Führe aus: /SCHICHTPLANUNG_COMPLETE_SETUP.sql`, 'warning');
+            }
+          } else {
+            log(`✅ Shifts Table existiert!`, 'success');
+            log(`📊 ${data.length} Schicht(en) gefunden`, 'info');
+          }
+        } catch (error) {
+          log(`❌ Shifts Table Exception: ${error.message}`, 'error');
+        }
+
+        // TEST 6: Try INSERT (only if logged in)
+        if (currentUser) {
+          log('<br><strong>TEST 6: Shift Creation Test</strong>', 'info');
+          try {
+            const testDate = new Date();
+            testDate.setDate(testDate.getDate() + 1);
+            const dateString = testDate.toISOString().split('T')[0];
+
+            const { data, error } = await supabase
+              .from('shifts')
+              .insert([{
+                user_id: currentUser.id,
+                date: dateString,
+                shift_type: 'MORNING',
+                start_time: '08:00:00',
+                end_time: '16:00:00',
+                notes: 'Diagnose Test Shift',
+                created_by: currentUser.id
+              }])
+              .select()
+              .single();
+            
+            if (error) {
+              log(`❌ INSERT fehlgeschlagen: ${error.message}`, 'error');
+              log(`🔍 Error Code: ${error.code}`, 'info');
+              
+              if (error.code === '42501') {
+                log(`⚠️ RLS POLICY VIOLATION!`, 'error');
+                log(`💡 Lösung: Führe aus /SCHICHTPLANUNG_RLS_NUCLEAR_FIX.sql`, 'warning');
+              } else if (error.code === '23502') {
+                log(`⚠️ NOT NULL CONSTRAINT!`, 'error');
+                log(`💡 Ein Pflichtfeld fehlt: ${error.message}`, 'warning');
+              } else if (error.code === '23503') {
+                log(`⚠️ FOREIGN KEY CONSTRAINT!`, 'error');
+                log(`💡 user_id existiert nicht in users table`, 'warning');
+              }
+            } else {
+              log(`✅ ✅ ✅ INSERT ERFOLGREICH! ✅ ✅ ✅`, 'success');
+              log(`📋 Shift ID: ${data.id}`, 'info');
+              
+              // Cleanup
+              const { error: deleteError } = await supabase
+                .from('shifts')
+                .delete()
+                .eq('id', data.id);
+              
+              if (deleteError) {
+                log(`⚠️ Cleanup fehlgeschlagen: ${deleteError.message}`, 'warning');
+              } else {
+                log(`✅ Test-Schicht gelöscht (cleanup)`, 'success');
+              }
+            }
+          } catch (error) {
+            log(`❌ INSERT Exception: ${error.message}`, 'error');
+          }
+        } else {
+          log('<br><strong>TEST 6: ÜBERSPRUNGEN</strong>', 'info');
+          log('⚠️ Nicht eingeloggt - INSERT Test wird übersprungen', 'warning');
+          log('💡 Logge dich in deine App ein und führe die Diagnose erneut aus!', 'info');
+        }
+
+        // SUMMARY
+        log('<br><strong>📋 ZUSAMMENFASSUNG</strong>', 'info');
+        log(`
+          <strong>Nächste Schritte:</strong><br><br>
+          
+          <strong>Falls "Failed to fetch":</strong><br>
+          1. Check ob Supabase Projekt PAUSIERT ist<br>
+          2. Öffne Supabase Dashboard → Settings → General<br>
+          3. Klicke "Restore project" falls pausiert<br><br>
+          
+          <strong>Falls RLS Policy Error (42501):</strong><br>
+          1. Öffne Supabase SQL Editor<br>
+          2. Führe aus: /SCHICHTPLANUNG_RLS_NUCLEAR_FIX.sql<br><br>
+          
+          <strong>Falls "shifts table not found" (42P01):</strong><br>
+          1. Öffne Supabase SQL Editor<br>
+          2. Führe aus: /SCHICHTPLANUNG_COMPLETE_SETUP.sql<br><br>
+          
+          <strong>Falls alle Tests erfolgreich:</strong><br>
+          ✅ Backend funktioniert!<br>
+          ✅ Problem ist im Frontend Code<br>
+          ✅ Check Browser Console für Fehler
+        `, 'info');
+
+      } catch (error) {
+        log(`❌ KRITISCHER FEHLER: ${error.message}`, 'error');
+        console.error('Full error:', error);
+      } finally {
+        testBtn.disabled = false;
+      }
+    }
+
+    // Auto-start on load
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        log('👋 Bereit! Klicke auf "Diagnose Starten"', 'info');
+      }, 500);
+    });
+  </script>
+</body>
+</html>

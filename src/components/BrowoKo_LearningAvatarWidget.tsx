@@ -10,7 +10,7 @@
  * ============================================
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, User, Trophy, Coins, Settings, Award } from 'lucide-react';
 import { Button } from './ui/button';
@@ -20,6 +20,7 @@ import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { useAuthStore } from '../stores/BrowoKo_authStore';
 import { useGamificationStore } from '../stores/gamificationStore';
+import { supabase } from '../utils/supabase/client';
 import AvatarDisplay from './AvatarDisplay';
 
 export default function HRTHIS_LearningAvatarWidget() {
@@ -59,6 +60,34 @@ export default function HRTHIS_LearningAvatarWidget() {
     ? `${profile.first_name?.[0] || ''}${profile.last_name?.[0] || ''}`
     : 'U';
 
+  // Get the proper profile picture URL
+  const processedProfilePictureUrl = useMemo(() => {
+    if (!profile?.profile_picture) return undefined;
+
+    // If it's already a full URL (starts with http:// or https://), use it as-is
+    if (profile.profile_picture.startsWith('http://') || profile.profile_picture.startsWith('https://')) {
+      return profile.profile_picture;
+    }
+
+    // If it's a Base64 string (starts with data:), use it as-is
+    if (profile.profile_picture.startsWith('data:')) {
+      return profile.profile_picture;
+    }
+
+    // Otherwise, it's a storage path - convert to public URL
+    try {
+      const { data } = supabase.storage
+        .from('make-f659121d-profile-pictures')
+        .getPublicUrl(profile.profile_picture);
+      
+      console.log('🖼️ [LearningAvatar] Converted storage path to public URL:', data.publicUrl);
+      return data.publicUrl;
+    } catch (error) {
+      console.warn('Failed to get public URL for profile picture:', error);
+      return undefined;
+    }
+  }, [profile?.profile_picture]);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -69,26 +98,19 @@ export default function HRTHIS_LearningAvatarWidget() {
           {/* Avatar Display */}
           <div className="relative">
             <div className="w-12 h-12 rounded-full border-2 border-blue-500 overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
-              {(() => {
-                // Debug logging
-                console.log('🖼️ [LearningAvatar] Profile Picture:', profile?.profile_picture);
-                console.log('👤 [LearningAvatar] Profile Data:', profile);
-                console.log('📸 [LearningAvatar] Has Picture?', !!profile?.profile_picture);
-                
-                return profile?.profile_picture ? (
-                  <img
-                    src={profile.profile_picture}
-                    alt={`${profile.first_name} ${profile.last_name}`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      console.error('❌ [LearningAvatar] Image failed to load:', profile.profile_picture);
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <span className="text-lg font-semibold text-blue-600">{userInitials}</span>
-                );
-              })()}
+              {processedProfilePictureUrl ? (
+                <img
+                  src={processedProfilePictureUrl}
+                  alt={`${profile?.first_name} ${profile?.last_name}`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error('❌ [LearningAvatar] Image failed to load:', processedProfilePictureUrl);
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <span className="text-lg font-semibold text-blue-600">{userInitials}</span>
+              )}
             </div>
             {/* Level Badge */}
             <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full border-2 border-white flex items-center justify-center">
@@ -107,10 +129,10 @@ export default function HRTHIS_LearningAvatarWidget() {
           <div className="flex items-center gap-3">
             {/* Large Avatar */}
             <div className="w-16 h-16 rounded-full border-2 border-blue-500 overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center flex-shrink-0">
-              {profile?.profile_picture ? (
+              {processedProfilePictureUrl ? (
                 <img
-                  src={profile.profile_picture}
-                  alt={`${profile.first_name} ${profile.last_name}`}
+                  src={processedProfilePictureUrl}
+                  alt={`${profile?.first_name} ${profile?.last_name}`}
                   className="w-full h-full object-cover"
                 />
               ) : avatar ? (

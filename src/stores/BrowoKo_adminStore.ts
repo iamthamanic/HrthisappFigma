@@ -12,6 +12,15 @@
 
 import { create } from 'zustand';
 import { User, LeaveRequest, VideoContent, CoinTransaction, Location, Department, SavedSearch, SearchConfig } from '../types/database';
+
+// Specialization type
+interface Specialization {
+  id: string;
+  name: string;
+  organization_id: string;
+  created_at?: string;
+  updated_at?: string;
+}
 import { supabase } from '../utils/supabase/client';
 import { getDefaultOrganizationId } from '../utils/BrowoKo_organizationHelper';
 import { getServices } from '../services';
@@ -22,6 +31,7 @@ interface AdminState {
   leaveRequests: LeaveRequest[];
   locations: Location[];
   departments: Department[];
+  specializations: Specialization[];
   savedSearches: SavedSearch[];
   loading: boolean;
   
@@ -58,6 +68,12 @@ interface AdminState {
   updateDepartment: (departmentId: string, updates: Partial<Department>) => Promise<void>;
   deleteDepartment: (departmentId: string) => Promise<void>;
   
+  // Specialization Management
+  loadSpecializations: () => Promise<void>;
+  createSpecialization: (name: string) => Promise<void>;
+  updateSpecialization: (specializationId: string, name: string) => Promise<void>;
+  deleteSpecialization: (specializationId: string) => Promise<void>;
+  
   // Quick Actions - Notes
   createUserNote: (userId: string, noteText: string, isPrivate: boolean) => Promise<void>;
   
@@ -76,6 +92,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   leaveRequests: [],
   locations: [],
   departments: [],
+  specializations: [],
   savedSearches: [],
   loading: false,
 
@@ -671,6 +688,141 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       });
     } catch (error) {
       console.error('Delete department error:', error);
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  // ============================================
+  // SPECIALIZATION MANAGEMENT
+  // ============================================
+
+  loadSpecializations: async () => {
+    set({ loading: true });
+    try {
+      const defaultOrgId = await getDefaultOrganizationId();
+      if (!defaultOrgId) {
+        // Silently set empty array - no organization exists yet
+        set({ specializations: [] });
+        return;
+      }
+
+      // Direct Supabase call (no SpecializationService yet)
+      const { data, error } = await supabase
+        .from('specializations')
+        .select('*')
+        .eq('organization_id', defaultOrgId)
+        .order('name', { ascending: true });
+
+      if (error) {
+        // Check if it's a \"table not found\" error
+        if (error.code === 'PGRST205' || error.message?.includes('not find the table')) {
+          console.warn('⚠️ Specializations table not found. Please run migration 070_specializations_master_table.sql');
+          set({ specializations: [] });
+          return;
+        }
+        throw error;
+      }
+
+      set({ specializations: data || [] });
+    } catch (error) {
+      console.error('Load specializations error:', error);
+      // Don't throw - just set empty array to prevent app crash
+      set({ specializations: [] });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  createSpecialization: async (name) => {
+    set({ loading: true });
+    try {
+      const defaultOrgId = await getDefaultOrganizationId();
+      if (!defaultOrgId) {
+        throw new Error('Keine Standard-Organisation gefunden. Bitte erstelle zuerst eine Organisation in den Firmeneinstellungen.');
+      }
+
+      // Direct Supabase call (no SpecializationService yet)
+      const { data, error } = await supabase
+        .from('specializations')
+        .insert({
+          name: name.trim(),
+          organization_id: defaultOrgId,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        // Check for unique constraint violation
+        if (error.code === '23505') {
+          throw new Error('Diese Spezialisierung existiert bereits');
+        }
+        throw error;
+      }
+
+      // Update local state
+      const { specializations } = get();
+      set({ specializations: [...specializations, data] });
+    } catch (error) {
+      console.error('Create specialization error:', error);
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  updateSpecialization: async (specializationId, name) => {
+    set({ loading: true });
+    try {
+      // Direct Supabase call (no SpecializationService yet)
+      const { data, error } = await supabase
+        .from('specializations')
+        .update({ name: name.trim() })
+        .eq('id', specializationId)
+        .select()
+        .single();
+
+      if (error) {
+        // Check for unique constraint violation
+        if (error.code === '23505') {
+          throw new Error('Diese Spezialisierung existiert bereits');
+        }
+        throw error;
+      }
+
+      // Update local state
+      const { specializations } = get();
+      set({
+        specializations: specializations.map(s => s.id === specializationId ? data : s)
+      });
+    } catch (error) {
+      console.error('Update specialization error:', error);
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  deleteSpecialization: async (specializationId) => {
+    set({ loading: true });
+    try {
+      // Hard delete - remove from database
+      // Direct Supabase call (no SpecializationService yet)
+      const { error } = await supabase
+        .from('specializations')
+        .delete()
+        .eq('id', specializationId);
+
+      if (error) throw error;
+
+      // Update local state - remove from list
+      const { specializations } = get();
+      set({
+        specializations: specializations.filter(s => s.id !== specializationId)
+      });
+    } catch (error) {
+      console.error('Delete specialization error:', error);
       throw error;
     } finally {
       set({ loading: false });

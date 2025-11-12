@@ -49,7 +49,7 @@ export const FEDERAL_STATES = [
   { code: 'TH', name: 'Thüringen' },
 ] as const;
 
-interface Holiday {
+export interface Holiday {
   date: Date;
   name: string;
   states: FederalState[];
@@ -163,10 +163,30 @@ export function useGermanHolidays(federalState?: FederalState) {
     };
   }, [federalState]);
 
+  const getHolidayInfo = useMemo(() => {
+    return (date: Date | string): Holiday | null => {
+      const d = new Date(date);
+      const year = d.getFullYear();
+      const holidays = getGermanHolidays(year, federalState || undefined);
+      
+      const holiday = holidays.find(h => {
+        const holidayDate = new Date(h.date);
+        return (
+          holidayDate.getFullYear() === d.getFullYear() &&
+          holidayDate.getMonth() === d.getMonth() &&
+          holidayDate.getDate() === d.getDate()
+        );
+      });
+
+      return holiday || null;
+    };
+  }, [federalState]);
+
   return {
     getHolidaysForYear,
     isHoliday,
     getHolidayName,
+    getHolidayInfo,
     federalState,
   };
 }

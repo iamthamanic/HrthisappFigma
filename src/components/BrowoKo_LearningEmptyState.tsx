@@ -1,9 +1,9 @@
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { BookOpen, PlayCircle, TrendingUp } from './icons/BrowoKoIcons';
+import { BookOpen, PlayCircle, TrendingUp, Book } from './icons/BrowoKoIcons';
 import { useNavigate } from 'react-router-dom';
 
-type EmptyStateType = 'all' | 'videos' | 'mandatory' | 'skills';
+type EmptyStateType = 'all' | 'videos' | 'mandatory' | 'skills' | 'wiki';
 
 interface LearningEmptyStateProps {
   type: EmptyStateType;
@@ -51,6 +51,15 @@ export function LearningEmptyState({ type, isAdmin }: LearningEmptyStateProps) {
             : 'Es wurden noch keine Skills-Schulungen erstellt.',
           buttonText: 'Quiz erstellen'
         };
+      case 'wiki':
+        return {
+          icon: Book,
+          title: 'Noch kein Wiki verfügbar',
+          description: isAdmin 
+            ? 'Wiki-Artikel können im Admin-Bereich unter Lernverwaltung → Wiki erstellt werden.'
+            : 'Das Wiki wird gerade erstellt und steht bald zur Verfügung.',
+          buttonText: 'Wiki-Artikel erstellen'
+        };
     }
   };
 
@@ -67,7 +76,7 @@ export function LearningEmptyState({ type, isAdmin }: LearningEmptyStateProps) {
         <p className="text-gray-500 mb-6">
           {config.description}
         </p>
-        {isAdmin && (
+        {isAdmin && type !== 'wiki' && (
           <Button onClick={() => navigate('/learning/admin')}>
             {config.buttonText}
           </Button>

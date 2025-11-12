@@ -166,7 +166,9 @@ export default function AddEmployeeScreen() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen pt-20 md:pt-6 px-4 md:px-6">
+      {/* ✅ MAX-WIDTH CONTAINER */}
+      <div className="max-w-5xl mx-auto space-y-6">
       {/* DEBUG: Version Checker */}
       <DebugVersionChecker />
       
@@ -378,6 +380,7 @@ export default function AddEmployeeScreen() {
           </CardContent>
         </Card>
       </form>
+      </div> {/* ✅ Close max-width container */}
     </div>
   );
 }

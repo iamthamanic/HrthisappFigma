@@ -65,7 +65,9 @@ export default function DashboardScreen() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen pt-20 md:pt-6 px-4 md:px-6">
+      {/* ✅ MAX-WIDTH CONTAINER */}
+      <div className="max-w-7xl mx-auto space-y-6">
       {/* Welcome Header */}
       <DashboardWelcomeHeader
         firstName={profile?.first_name}
@@ -104,6 +106,7 @@ export default function DashboardScreen() {
           onBenefitClick={() => navigate('/benefits')}
         />
       )}
+      </div> {/* ✅ Close max-width container */}
     </div>
   );
 }

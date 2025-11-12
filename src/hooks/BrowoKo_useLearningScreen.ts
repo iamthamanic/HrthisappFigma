@@ -18,9 +18,11 @@ export function useLearningScreen() {
   const { user, profile } = useAuthStore();
   const { 
     videos, 
-    quizzes, 
+    quizzes,
+    tests,
     loadVideos, 
-    loadQuizzes, 
+    loadQuizzes,
+    loadTests,
     loading, 
     loadProgress, 
     getVideoProgress 
@@ -31,10 +33,11 @@ export function useLearningScreen() {
   useEffect(() => {
     loadVideos();
     loadQuizzes();
+    loadTests();
     if (user?.id) {
       loadProgress(user.id);
     }
-  }, [user?.id, loadVideos, loadQuizzes, loadProgress]);
+  }, [user?.id, loadVideos, loadQuizzes, loadTests, loadProgress]);
 
   // Check if user is admin
   const isAdmin = profile?.role === 'ADMIN' || profile?.role === 'SUPERADMIN';
@@ -73,6 +76,7 @@ export function useLearningScreen() {
     // Data
     videos,
     quizzes,
+    tests,
     categorizedQuizzes,
     coins,
     xp,

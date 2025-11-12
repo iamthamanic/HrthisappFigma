@@ -44,7 +44,9 @@ export default function BenefitsManagementScreen() {
   } = useAchievementsManagement();
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen pt-20 md:pt-6 px-4 md:px-6">
+      {/* ✅ MAX-WIDTH CONTAINER */}
+      <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Benefits & Achievements verwalten</h1>
@@ -135,6 +137,7 @@ export default function BenefitsManagementScreen() {
         onSubmit={handleAchievementSubmit}
         onClose={handleCloseAchievementDialog}
       />
+      </div> {/* ✅ Close max-width container */}
     </div>
   );
 }

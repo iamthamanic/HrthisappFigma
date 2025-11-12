@@ -58,7 +58,9 @@ export default function AchievementsScreen() {
   });
 
   return (
-    <div className="space-y-8">
+    <div className="min-h-screen pt-20 md:pt-6 px-4 md:px-6">
+      {/* ✅ MAX-WIDTH CONTAINER */}
+      <div className="max-w-7xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -222,6 +224,7 @@ export default function AchievementsScreen() {
           </ul>
         </CardContent>
       </Card>
+      </div> {/* ✅ Close max-width container */}
     </div>
   );
 }

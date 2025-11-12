@@ -6,7 +6,10 @@
  * Original: ~240 lines → Refactored: ~100 lines (58% reduction)
  */
 
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/BrowoKo_authStore';
+import { useLearningStore } from '../stores/BrowoKo_learningStore';
+import { getServices } from '../services';
 import { Video, Plus, Play, Clock } from '../components/icons/BrowoKoIcons';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -17,36 +20,112 @@ import CreateVideoDialog from '../components/CreateVideoDialog';
 import EditVideoDialog from '../components/EditVideoDialog';
 import DeleteVideoDialog from '../components/DeleteVideoDialog';
 import VideosListTab from '../components/BrowoKo_VideosListTab';
-import { useLearningAdmin } from '../hooks/BrowoKo_useLearningAdmin';
 
+/**
+ * LearningAdminScreen - v4.13.2-SCREEN-DIRECT-LOAD
+ * Videos werden DIREKT geladen (nicht vom Hook)
+ */
 export default function LearningAdminScreen() {
+  console.log('🎬 [LearningAdminScreen] Component mounted - v4.13.2-DIRECT-LOAD');
+  
   const { profile } = useAuthStore();
-  const {
-    // Data
-    filteredVideos,
-    categories,
-    selectedCategory,
-    loading,
+  const { createVideo, updateVideo, deleteVideo } = useLearningStore();
 
-    // Dialog state
-    createDialogOpen,
-    editDialogOpen,
-    deleteDialogOpen,
-    selectedVideo,
+  // Local state for videos (DIRECT LOAD - NOT from hook!)
+  const [videos, setVideos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<any>(null);
 
-    // Setters
-    setSelectedCategory,
-    setCreateDialogOpen,
-    setEditDialogOpen,
-    setDeleteDialogOpen,
+  // Load videos directly on mount (v4.13.2-SCREEN-DIRECT-LOAD)
+  useEffect(() => {
+    const loadVideos = async () => {
+      if (!profile?.organization_id) {
+        console.log('⏳ [LearningAdminScreen] Waiting for organization_id...');
+        return;
+      }
 
-    // Handlers
-    handleCreateVideo,
-    handleUpdateVideo,
-    handleDeleteVideo,
-    handleEditClick,
-    handleDeleteClick,
-  } = useLearningAdmin();
+      setLoading(true);
+      try {
+        console.log('🔍 [LearningAdminScreen] Loading videos for org:', profile.organization_id);
+        const services = getServices();
+        const loadedVideos = await services.learning.getAllVideos({
+          organization_id: profile.organization_id
+        });
+        console.log('✅ [LearningAdminScreen] Videos loaded:', loadedVideos.length, loadedVideos);
+        setVideos(loadedVideos);
+      } catch (error) {
+        console.error('❌ [LearningAdminScreen] Error loading videos:', error);
+        setVideos([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadVideos();
+  }, [profile?.organization_id]);
+
+  // Filter videos by category
+  const filteredVideos = selectedCategory === 'all'
+    ? videos
+    : videos.filter(v => v.category === selectedCategory);
+
+  // Category counts
+  const categories = [
+    { id: 'all', label: 'Alle Videos', count: videos.length },
+    { id: 'MANDATORY', label: 'Pflicht', count: videos.filter(v => v.category === 'MANDATORY').length },
+    { id: 'COMPLIANCE', label: 'Compliance', count: videos.filter(v => v.category === 'COMPLIANCE').length },
+    { id: 'SKILLS', label: 'Skills', count: videos.filter(v => v.category === 'SKILLS').length },
+    { id: 'ONBOARDING', label: 'Onboarding', count: videos.filter(v => v.category === 'ONBOARDING').length },
+    { id: 'BONUS', label: 'Bonus', count: videos.filter(v => v.category === 'BONUS').length },
+  ];
+
+  // Reload videos helper
+  const reloadVideos = async () => {
+    if (!profile?.organization_id) return;
+    
+    setLoading(true);
+    try {
+      const services = getServices();
+      const loadedVideos = await services.learning.getAllVideos({
+        organization_id: profile.organization_id
+      });
+      setVideos(loadedVideos);
+    } catch (error) {
+      console.error('❌ [LearningAdminScreen] Error reloading videos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handlers
+  const handleCreateVideo = async (videoData: any) => {
+    await createVideo(videoData);
+    await reloadVideos();
+  };
+
+  const handleUpdateVideo = async (videoId: string, updates: any) => {
+    await updateVideo(videoId, updates);
+    await reloadVideos();
+  };
+
+  const handleDeleteVideo = async (videoId: string) => {
+    await deleteVideo(videoId);
+    await reloadVideos();
+  };
+
+  const handleEditClick = (video: any) => {
+    setSelectedVideo(video);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (video: any) => {
+    setSelectedVideo(video);
+    setDeleteDialogOpen(true);
+  };
 
   // Admin check - HR and TEAMLEAD now have admin rights
   const isAdmin = profile?.role === 'HR' ||

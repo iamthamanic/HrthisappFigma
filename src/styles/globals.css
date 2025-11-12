@@ -523,6 +523,30 @@ html {
     display: none;
   }
 
+  /* Custom Scrollbar - Always Visible */
+  .scrollbar-visible {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f7fafc;
+  }
+  
+  .scrollbar-visible::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .scrollbar-visible::-webkit-scrollbar-track {
+    background: #f7fafc;
+    border-radius: 4px;
+  }
+  
+  .scrollbar-visible::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 4px;
+  }
+  
+  .scrollbar-visible::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+  }
+
   /* ========================================
      GLOBAL RESPONSIVE DESIGN PATTERNS
      All new features must use these classes!

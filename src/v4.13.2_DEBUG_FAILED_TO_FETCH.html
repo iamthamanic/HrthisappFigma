@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Browo Koordinator - Failed to Fetch Debugger</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 { color: #1a1a1a; margin-bottom: 10px; }
+    h2 { color: #4a5568; margin-top: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+    .test-section {
+      margin: 20px 0;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #3b82f6;
+    }
+    .success { border-left-color: #10b981; background: #f0fdf4; }
+    .error { border-left-color: #ef4444; background: #fef2f2; }
+    .warning { border-left-color: #f59e0b; background: #fffbeb; }
+    .result {
+      margin-top: 10px;
+      padding: 10px;
+      background: white;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      margin: 5px;
+    }
+    button:hover { background: #2563eb; }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+    .status.ok { background: #10b981; color: white; }
+    .status.fail { background: #ef4444; color: white; }
+    .status.pending { background: #f59e0b; color: white; }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 14px;
+      margin: 5px 0;
+    }
+    .config-box {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Failed to Fetch Debugger</h1>
+    <p style="color: #64748b;">Systematisches Debugging für Backend-Fehler</p>
+
+    <!-- Configuration -->
+    <h2>⚙️ Konfiguration</h2>
+    <div class="config-box">
+      <label><strong>Supabase Project ID:</strong></label>
+      <input type="text" id="projectId" placeholder="dein-projekt-id">
+      
+      <label><strong>Supabase Anon Key:</strong></label>
+      <input type="text" id="anonKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+      
+      <label><strong>Organization ID:</strong></label>
+      <input type="text" id="orgId" placeholder="60f2a9c9-dc19-4edc-9491-900819649b4a">
+      
+      <button onclick="saveConfig()">💾 Konfiguration speichern</button>
+      <button onclick="loadConfig()">📂 Konfiguration laden</button>
+    </div>
+
+    <!-- Test 1: Supabase Connection -->
+    <h2>Test 1: Supabase Verbindung</h2>
+    <div class="test-section" id="test1">
+      <strong>Prüft: Ist Supabase erreichbar?</strong>
+      <span class="status pending" id="status1">PENDING</span>
+      <div>
+        <button onclick="testSupabaseConnection()">▶️ Test starten</button>
+      </div>
+      <div class="result" id="result1">Noch nicht gestartet</div>
+    </div>
+
+    <!-- Test 2: Direct Table Query -->
+    <h2>Test 2: Direkte Tabellen-Abfrage</h2>
+    <div class="test-section" id="test2">
+      <strong>Prüft: Kann video_content Tabelle gelesen werden?</strong>
+      <span class="status pending" id="status2">PENDING</span>
+      <div>
+        <button onclick="testDirectQuery()">▶️ Test starten</button>
+      </div>
+      <div class="result" id="result2">Noch nicht gestartet</div>
+    </div>
+
+    <!-- Test 3: Organization Filter -->
+    <h2>Test 3: Organization Filter</h2>
+    <div class="test-section" id="test3">
+      <strong>Prüft: Funktioniert der organization_id Filter?</strong>
+      <span class="status pending" id="status3">PENDING</span>
+      <div>
+        <button onclick="testOrgFilter()">▶️ Test starten</button>
+      </div>
+      <div class="result" id="result3">Noch nicht gestartet</div>
+    </div>
+
+    <!-- Test 4: Edge Function Health -->
+    <h2>Test 4: Edge Function Health</h2>
+    <div class="test-section" id="test4">
+      <strong>Prüft: Ist BrowoKoordinator-Lernen erreichbar?</strong>
+      <span class="status pending" id="status4">PENDING</span>
+      <div>
+        <button onclick="testEdgeFunction()">▶️ Test starten</button>
+      </div>
+      <div class="result" id="result4">Noch nicht gestartet</div>
+    </div>
+
+    <!-- Test 5: Full Video Load Simulation -->
+    <h2>Test 5: Video Load Simulation</h2>
+    <div class="test-section" id="test5">
+      <strong>Prüft: Kompletter Video-Load wie in der App</strong>
+      <span class="status pending" id="status5">PENDING</span>
+      <div>
+        <button onclick="testVideoLoad()">▶️ Test starten</button>
+      </div>
+      <div class="result" id="result5">Noch nicht gestartet</div>
+    </div>
+
+    <!-- Run All Tests -->
+    <div style="margin-top: 30px; text-align: center;">
+      <button onclick="runAllTests()" style="background: #10b981; font-size: 16px; padding: 15px 30px;">
+        🚀 Alle Tests ausführen
+      </button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+    // Global state
+    window.supabase = null;
+    window.config = {
+      projectId: '',
+      anonKey: '',
+      orgId: ''
+    };
+
+    // Save config to localStorage
+    window.saveConfig = () => {
+      window.config.projectId = document.getElementById('projectId').value;
+      window.config.anonKey = document.getElementById('anonKey').value;
+      window.config.orgId = document.getElementById('orgId').value;
+      
+      localStorage.setItem('browo-debug-config', JSON.stringify(window.config));
+      alert('✅ Konfiguration gespeichert!');
+      initSupabase();
+    };
+
+    // Load config from localStorage
+    window.loadConfig = () => {
+      const saved = localStorage.getItem('browo-debug-config');
+      if (saved) {
+        window.config = JSON.parse(saved);
+        document.getElementById('projectId').value = window.config.projectId;
+        document.getElementById('anonKey').value = window.config.anonKey;
+        document.getElementById('orgId').value = window.config.orgId;
+        alert('✅ Konfiguration geladen!');
+        initSupabase();
+      } else {
+        alert('⚠️ Keine gespeicherte Konfiguration gefunden!');
+      }
+    };
+
+    // Initialize Supabase client
+    function initSupabase() {
+      if (!window.config.projectId || !window.config.anonKey) {
+        console.warn('⚠️ Konfiguration fehlt!');
+        return;
+      }
+      
+      const supabaseUrl = `https://${window.config.projectId}.supabase.co`;
+      window.supabase = createClient(supabaseUrl, window.config.anonKey);
+      console.log('✅ Supabase Client initialisiert:', supabaseUrl);
+    }
+
+    // Helper function to update test UI
+    function updateTest(testNum, status, message) {
+      const section = document.getElementById(`test${testNum}`);
+      const statusEl = document.getElementById(`status${testNum}`);
+      const resultEl = document.getElementById(`result${testNum}`);
+      
+      section.className = `test-section ${status}`;
+      statusEl.className = `status ${status === 'success' ? 'ok' : 'fail'}`;
+      statusEl.textContent = status === 'success' ? 'OK' : 'FAIL';
+      resultEl.textContent = message;
+    }
+
+    // Test 1: Supabase Connection
+    window.testSupabaseConnection = async () => {
+      updateTest(1, 'pending', 'Teste Verbindung...');
+      
+      try {
+        if (!window.supabase) {
+          updateTest(1, 'error', 'ERROR: Supabase Client nicht initialisiert!\n\nBitte Konfiguration eingeben und speichern.');
+          return;
+        }
+
+        const { data, error } = await window.supabase.from('users').select('id').limit(1);
+        
+        if (error) {
+          updateTest(1, 'error', `ERROR: ${error.message}\n\nDetails: ${JSON.stringify(error, null, 2)}`);
+        } else {
+          updateTest(1, 'success', `✅ Supabase Verbindung OK!\n\nAntwort: ${JSON.stringify(data, null, 2)}`);
+        }
+      } catch (err) {
+        updateTest(1, 'error', `EXCEPTION: ${err.message}\n\nStack: ${err.stack}`);
+      }
+    };
+
+    // Test 2: Direct Table Query
+    window.testDirectQuery = async () => {
+      updateTest(2, 'pending', 'Lade Videos...');
+      
+      try {
+        if (!window.supabase) {
+          updateTest(2, 'error', 'ERROR: Supabase Client nicht initialisiert!');
+          return;
+        }
+
+        const { data, error } = await window.supabase
+          .from('video_content')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          updateTest(2, 'error', `ERROR: ${error.message}\n\nDetails: ${JSON.stringify(error, null, 2)}`);
+        } else {
+          updateTest(2, 'success', `✅ Gefundene Videos: ${data.length}\n\n${JSON.stringify(data, null, 2)}`);
+        }
+      } catch (err) {
+        updateTest(2, 'error', `EXCEPTION: ${err.message}\n\nStack: ${err.stack}`);
+      }
+    };
+
+    // Test 3: Organization Filter
+    window.testOrgFilter = async () => {
+      updateTest(3, 'pending', 'Teste Filter...');
+      
+      try {
+        if (!window.supabase) {
+          updateTest(3, 'error', 'ERROR: Supabase Client nicht initialisiert!');
+          return;
+        }
+
+        if (!window.config.orgId) {
+          updateTest(3, 'error', 'ERROR: Organization ID nicht konfiguriert!');
+          return;
+        }
+
+        const { data, error } = await window.supabase
+          .from('video_content')
+          .select('*')
+          .eq('organization_id', window.config.orgId)
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          updateTest(3, 'error', `ERROR: ${error.message}\n\nDetails: ${JSON.stringify(error, null, 2)}`);
+        } else {
+          updateTest(3, 'success', `✅ Videos für Organization: ${data.length}\n\nOrg ID: ${window.config.orgId}\n\n${JSON.stringify(data, null, 2)}`);
+        }
+      } catch (err) {
+        updateTest(3, 'error', `EXCEPTION: ${err.message}\n\nStack: ${err.stack}`);
+      }
+    };
+
+    // Test 4: Edge Function Health
+    window.testEdgeFunction = async () => {
+      updateTest(4, 'pending', 'Teste Edge Function...');
+      
+      try {
+        if (!window.config.projectId || !window.config.anonKey) {
+          updateTest(4, 'error', 'ERROR: Konfiguration fehlt!');
+          return;
+        }
+
+        const url = `https://${window.config.projectId}.supabase.co/functions/v1/BrowoKoordinator-Lernen/health`;
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${window.config.anonKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          updateTest(4, 'success', `✅ Edge Function erreichbar!\n\nStatus: ${response.status}\n\n${JSON.stringify(data, null, 2)}`);
+        } else {
+          updateTest(4, 'error', `ERROR: Status ${response.status}\n\n${JSON.stringify(data, null, 2)}`);
+        }
+      } catch (err) {
+        updateTest(4, 'error', `EXCEPTION: ${err.message}\n\nMögliche Ursachen:\n- Edge Function nicht deployed\n- CORS Problem\n- Falsche URL\n\nStack: ${err.stack}`);
+      }
+    };
+
+    // Test 5: Full Video Load Simulation
+    window.testVideoLoad = async () => {
+      updateTest(5, 'pending', 'Simuliere Video-Load...');
+      
+      try {
+        if (!window.supabase || !window.config.orgId) {
+          updateTest(5, 'error', 'ERROR: Konfiguration unvollständig!');
+          return;
+        }
+
+        // Simulate the exact query from learningService.getAllVideos
+        console.log('📋 Simulating getAllVideos call...');
+        
+        let query = window.supabase
+          .from('video_content')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        // Apply organization filter
+        query = query.eq('organization_id', window.config.orgId);
+
+        const { data: videos, error } = await query;
+
+        if (error) {
+          updateTest(5, 'error', `ERROR in getAllVideos:\n\n${error.message}\n\nDetails: ${JSON.stringify(error, null, 2)}`);
+        } else {
+          const summary = `
+✅ VIDEO LOAD ERFOLGREICH!
+
+Organization ID: ${window.config.orgId}
+Videos gefunden: ${videos.length}
+
+${videos.length > 0 ? 'Video Liste:\n' + videos.map((v, i) => `${i + 1}. ${v.title} (${v.id})`).join('\n') : 'Keine Videos gefunden!'}
+
+Komplette Daten:
+${JSON.stringify(videos, null, 2)}
+          `;
+          updateTest(5, 'success', summary);
+        }
+      } catch (err) {
+        updateTest(5, 'error', `EXCEPTION: ${err.message}\n\nStack: ${err.stack}`);
+      }
+    };
+
+    // Run all tests sequentially
+    window.runAllTests = async () => {
+      console.log('🚀 Running all tests...');
+      await window.testSupabaseConnection();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await window.testDirectQuery();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await window.testOrgFilter();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await window.testEdgeFunction();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await window.testVideoLoad();
+      console.log('✅ All tests complete!');
+    };
+
+    // Try to load saved config on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem('browo-debug-config');
+      if (saved) {
+        window.config = JSON.parse(saved);
+        document.getElementById('projectId').value = window.config.projectId;
+        document.getElementById('anonKey').value = window.config.anonKey;
+        document.getElementById('orgId').value = window.config.orgId;
+        initSupabase();
+        console.log('✅ Config auto-loaded from localStorage');
+      }
+    });
+  </script>
+</body>
+</html>

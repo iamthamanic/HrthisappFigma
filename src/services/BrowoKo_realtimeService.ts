@@ -10,9 +10,15 @@
  * - Presence channel management
  * - Automatic cleanup
  * - Type-safe callbacks
+ * 
+ * EMERGENCY MODE: Set DISABLE_REALTIME=true to bypass realtime in case of connection issues
  */
 
 import { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
+
+// Emergency flag - set to true to disable all realtime features
+// PERMANENTLY DISABLED DUE TO NETWORK INSTABILITY (2025-11-06)
+const DISABLE_REALTIME = true;
 
 /**
  * Postgres Change Events
@@ -93,6 +99,12 @@ export class RealtimeService {
     events: PostgresChangeEvent[],
     callback: TableChangeCallback
   ): () => void {
+    // EMERGENCY: Skip realtime if disabled
+    if (DISABLE_REALTIME) {
+      console.log(`[RealtimeService] Realtime is disabled, skipping subscription to: ${table}`);
+      return () => {}; // Return no-op unsubscribe function
+    }
+
     const channelKey = this.generateTableChannelKey(table, filter, events);
     
     // Reuse existing channel if available

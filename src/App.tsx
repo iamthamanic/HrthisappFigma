@@ -50,6 +50,7 @@ const AvatarSystemAdminScreen = lazy(() => import('./screens/admin/AvatarSystemA
 const BenefitsManagementScreen = lazy(() => import('./screens/admin/BenefitsManagementScreen'));
 const DashboardAnnouncementsScreen = lazy(() => import('./screens/admin/DashboardAnnouncementsScreen'));
 const LearningManagementScreen = lazy(() => import('./screens/admin/LearningManagementScreen'));
+const TestBuilderScreen = lazy(() => import('./screens/admin/TestBuilderScreen'));
 const TimeAccountTestScreen = lazy(() => import('./screens/admin/TimeAccountTestScreen'));
 const TimesheetManagementScreen = lazy(() => import('./screens/admin/TimesheetManagementScreen'));
 const AutomationManagementScreen = lazy(() => import('./screens/admin/AutomationManagementScreen'));
@@ -438,6 +439,12 @@ export default function App() {
           <Route path="learning-management" element={
             <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
               <LearningManagementScreen />
+            </Suspense>
+          } />
+          {/* NEW v4.13.2: Test Builder Screen */}
+          <Route path="lernen/test-builder/:testId" element={
+            <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
+              <TestBuilderScreen />
             </Suspense>
           } />
           {/* TEST: Time Account System (Phase 1 Week 1) */}

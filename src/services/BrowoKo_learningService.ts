@@ -108,7 +108,8 @@ export class LearningService extends ApiService {
           query = query.eq('category', filters.category);
         }
         if (filters.organization_id) {
-          query = query.eq('organization_id', filters.organization_id);
+          // Include videos with matching org_id OR videos without org_id (legacy)
+          query = query.or(`organization_id.eq.${filters.organization_id},organization_id.is.null`);
         }
         if (filters.search) {
           query = query.or(
@@ -298,6 +299,36 @@ export class LearningService extends ApiService {
         throw error;
       }
       this.handleError(error, 'LearningService.deleteVideo');
+    }
+  }
+
+  /**
+   * Get videos for a specific organization (alias for getAllVideos)
+   * Used by CreateTestDialog to load videos for linking
+   * NOTE: Also returns videos WITHOUT organization_id (legacy videos)
+   */
+  async getVideos(organizationId: string): Promise<Video[]> {
+    this.logRequest('getVideos', 'LearningService', { organizationId });
+
+    try {
+      const { data: videos, error } = await this.supabase
+        .from('video_content')
+        .select('*')
+        .or(`organization_id.eq.${organizationId},organization_id.is.null`)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        this.handleError(error, 'LearningService.getVideos');
+      }
+
+      this.logResponse('LearningService.getVideos', { 
+        count: videos?.length || 0,
+        organizationId 
+      });
+      
+      return (videos || []) as Video[];
+    } catch (error: any) {
+      this.handleError(error, 'LearningService.getVideos');
     }
   }
 
@@ -831,6 +862,547 @@ export class LearningService extends ApiService {
         throw error;
       }
       this.handleError(error, 'LearningService.getUserLearningStats');
+    }
+  }
+
+  // ========================================
+  // TEST MANAGEMENT (v4.13.1)
+  // ========================================
+
+  /**
+   * Get all tests with optional filters
+   */
+  async getAllTests(filters?: { organization_id?: string; is_template?: boolean }): Promise<any[]> {
+    this.logRequest('getAllTests', 'LearningService', { filters });
+
+    try {
+      let query = this.supabase
+        .from('tests')
+        .select('*')
+        .eq('is_active', true);
+
+      if (filters?.organization_id) {
+        query = query.eq('organization_id', filters.organization_id);
+      }
+
+      if (filters?.is_template !== undefined) {
+        query = query.eq('is_template', filters.is_template);
+      }
+
+      const { data: tests, error } = await query.order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ [getAllTests] Supabase error:', error);
+        this.handleError(error, 'LearningService.getAllTests');
+        throw error;
+      }
+
+      console.log('✅ [getAllTests] Success:', { count: tests?.length || 0 });
+      this.logResponse('LearningService.getAllTests', { count: tests?.length || 0 });
+      return tests || [];
+    } catch (error: any) {
+      console.error('❌ [getAllTests] Exception:', error);
+      this.handleError(error, 'LearningService.getAllTests');
+      throw error;
+    }
+  }
+
+  /**
+   * Get single test by ID
+   */
+  async getTest(testId: string): Promise<any> {
+    this.logRequest('getTest', 'LearningService', { testId });
+
+    if (!testId) {
+      throw new ValidationError(
+        'Test ID ist erforderlich',
+        'LearningService.getTest',
+        { testId: 'Test ID ist erforderlich' }
+      );
+    }
+
+    try {
+      const { data: test, error } = await this.supabase
+        .from('tests')
+        .select('*, test_blocks(*)')
+        .eq('id', testId)
+        .single();
+
+      if (error) {
+        this.handleError(error, 'LearningService.getTest');
+      }
+
+      if (!test) {
+        throw new NotFoundError('Test nicht gefunden', 'LearningService.getTest', testId);
+      }
+
+      this.logResponse('LearningService.getTest', { id: test.id });
+      return test;
+    } catch (error: any) {
+      if (error instanceof ValidationError || error instanceof NotFoundError) {
+        throw error;
+      }
+      this.handleError(error, 'LearningService.getTest');
+    }
+  }
+
+  /**
+   * Create new test
+   */
+  async createTest(data: {
+    title: string;
+    description?: string;
+    pass_percentage?: number;
+    reward_coins?: number;
+    max_attempts?: number;
+    time_limit_minutes?: number;
+    is_template?: boolean;
+    template_category?: string;
+    organization_id?: string;
+  }): Promise<any> {
+    this.logRequest('createTest', 'LearningService', data);
+
+    // Validation
+    if (!data.title?.trim()) {
+      throw new ValidationError(
+        'Titel ist erforderlich',
+        'LearningService.createTest',
+        { title: 'Titel ist erforderlich' }
+      );
+    }
+
+    try {
+      const { data: test, error } = await this.supabase
+        .from('tests')
+        .insert({
+          title: data.title,
+          description: data.description || null,
+          pass_percentage: data.pass_percentage || 80,
+          reward_coins: data.reward_coins || 0,
+          max_attempts: data.max_attempts || 3,
+          time_limit_minutes: data.time_limit_minutes || null,
+          is_template: data.is_template || false,
+          template_category: data.template_category || null,
+          organization_id: data.organization_id || null,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        this.handleError(error, 'LearningService.createTest');
+      }
+
+      if (!test) {
+        throw new ApiError(
+          'Test konnte nicht erstellt werden',
+          'CREATION_FAILED',
+          'LearningService.createTest'
+        );
+      }
+
+      this.logResponse('LearningService.createTest', { id: test.id });
+      return test;
+    } catch (error: any) {
+      if (error instanceof ValidationError || error instanceof ApiError) {
+        throw error;
+      }
+      this.handleError(error, 'LearningService.createTest');
+    }
+  }
+
+  /**
+   * Update test
+   */
+  async updateTest(testId: string, updates: {
+    title?: string;
+    description?: string;
+    pass_percentage?: number;
+    reward_coins?: number;
+    max_attempts?: number;
+    time_limit_minutes?: number;
+    is_template?: boolean;
+    template_category?: string;
+    blocks?: any;
+    xp_reward?: number;
+    passing_score?: number;
+    coin_reward?: number;
+    published?: boolean;
+  }): Promise<any> {
+    this.logRequest('updateTest', 'LearningService', { testId, updates });
+
+    if (!testId) {
+      throw new ValidationError(
+        'Test ID ist erforderlich',
+        'LearningService.updateTest',
+        { testId: 'Test ID ist erforderlich' }
+      );
+    }
+
+    try {
+      const { data: test, error } = await this.supabase
+        .from('tests')
+        .update(updates)
+        .eq('id', testId)
+        .select()
+        .single();
+
+      if (error) {
+        this.handleError(error, 'LearningService.updateTest');
+      }
+
+      if (!test) {
+        throw new NotFoundError('Test nicht gefunden', 'LearningService.updateTest', testId);
+      }
+
+      this.logResponse('LearningService.updateTest', { id: test.id });
+      return test;
+    } catch (error: any) {
+      if (error instanceof ValidationError || error instanceof NotFoundError) {
+        throw error;
+      }
+      this.handleError(error, 'LearningService.updateTest');
+    }
+  }
+
+  /**
+   * Delete test (soft delete)
+   */
+  async deleteTest(testId: string): Promise<void> {
+    this.logRequest('deleteTest', 'LearningService', { testId });
+
+    if (!testId) {
+      throw new ValidationError(
+        'Test ID ist erforderlich',
+        'LearningService.deleteTest',
+        { testId: 'Test ID ist erforderlich' }
+      );
+    }
+
+    try {
+      const { error } = await this.supabase
+        .from('tests')
+        .update({ is_active: false })
+        .eq('id', testId);
+
+      if (error) {
+        this.handleError(error, 'LearningService.deleteTest');
+      }
+
+      this.logResponse('LearningService.deleteTest', { testId });
+    } catch (error: any) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      this.handleError(error, 'LearningService.deleteTest');
+    }
+  }
+
+  /**
+   * Get test blocks for a test
+   */
+  async getTestBlocks(testId: string): Promise<any[]> {
+    this.logRequest('getTestBlocks', 'LearningService', { testId });
+
+    if (!testId) {
+      throw new ValidationError(
+        'Test ID ist erforderlich',
+        'LearningService.getTestBlocks',
+        { testId: 'Test ID ist erforderlich' }
+      );
+    }
+
+    try {
+      const { data: blocks, error } = await this.supabase
+        .from('test_blocks')
+        .select('*')
+        .eq('test_id', testId)
+        .order('position', { ascending: true });
+
+      if (error) {
+        this.handleError(error, 'LearningService.getTestBlocks');
+      }
+
+      this.logResponse('LearningService.getTestBlocks', { count: blocks?.length || 0 });
+      return blocks || [];
+    } catch (error: any) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      this.handleError(error, 'LearningService.getTestBlocks');
+    }
+  }
+
+  /**
+   * Create test block
+   */
+  async createTestBlock(data: {
+    test_id: string;
+    type: string;
+    title: string;
+    description?: string;
+    content: any;
+    points?: number;
+    is_required?: boolean;
+    time_limit_seconds?: number;
+    position?: number;
+  }): Promise<any> {
+    this.logRequest('createTestBlock', 'LearningService', data);
+
+    // Validation
+    const errors: Record<string, string> = {};
+    if (!data.test_id) errors.test_id = 'Test ID ist erforderlich';
+    if (!data.type) errors.type = 'Block-Typ ist erforderlich';
+    if (!data.title?.trim()) errors.title = 'Titel ist erforderlich';
+
+    if (Object.keys(errors).length > 0) {
+      throw new ValidationError(
+        'Ungültige Eingabedaten',
+        'LearningService.createTestBlock',
+        errors
+      );
+    }
+
+    try {
+      const { data: block, error } = await this.supabase
+        .from('test_blocks')
+        .insert({
+          test_id: data.test_id,
+          type: data.type,
+          title: data.title,
+          description: data.description || null,
+          content: data.content,
+          points: data.points || 10,
+          is_required: data.is_required !== undefined ? data.is_required : true,
+          time_limit_seconds: data.time_limit_seconds || null,
+          position: data.position || 0,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        this.handleError(error, 'LearningService.createTestBlock');
+      }
+
+      if (!block) {
+        throw new ApiError(
+          'Test-Block konnte nicht erstellt werden',
+          'CREATION_FAILED',
+          'LearningService.createTestBlock'
+        );
+      }
+
+      this.logResponse('LearningService.createTestBlock', { id: block.id });
+      return block;
+    } catch (error: any) {
+      if (error instanceof ValidationError || error instanceof ApiError) {
+        throw error;
+      }
+      this.handleError(error, 'LearningService.createTestBlock');
+    }
+  }
+
+  /**
+   * Update test block
+   */
+  async updateTestBlock(blockId: string, updates: {
+    title?: string;
+    description?: string;
+    content?: any;
+    points?: number;
+    is_required?: boolean;
+    time_limit_seconds?: number;
+    position?: number;
+  }): Promise<any> {
+    this.logRequest('updateTestBlock', 'LearningService', { blockId, updates });
+
+    if (!blockId) {
+      throw new ValidationError(
+        'Block ID ist erforderlich',
+        'LearningService.updateTestBlock',
+        { blockId: 'Block ID ist erforderlich' }
+      );
+    }
+
+    try {
+      const { data: block, error } = await this.supabase
+        .from('test_blocks')
+        .update(updates)
+        .eq('id', blockId)
+        .select()
+        .single();
+
+      if (error) {
+        this.handleError(error, 'LearningService.updateTestBlock');
+      }
+
+      if (!block) {
+        throw new NotFoundError('Test-Block nicht gefunden', 'LearningService.updateTestBlock', blockId);
+      }
+
+      this.logResponse('LearningService.updateTestBlock', { id: block.id });
+      return block;
+    } catch (error: any) {
+      if (error instanceof ValidationError || error instanceof NotFoundError) {
+        throw error;
+      }
+      this.handleError(error, 'LearningService.updateTestBlock');
+    }
+  }
+
+  /**
+   * Delete test block
+   */
+  async deleteTestBlock(blockId: string): Promise<void> {
+    this.logRequest('deleteTestBlock', 'LearningService', { blockId });
+
+    if (!blockId) {
+      throw new ValidationError(
+        'Block ID ist erforderlich',
+        'LearningService.deleteTestBlock',
+        { blockId: 'Block ID ist erforderlich' }
+      );
+    }
+
+    try {
+      const { error } = await this.supabase
+        .from('test_blocks')
+        .delete()
+        .eq('id', blockId);
+
+      if (error) {
+        this.handleError(error, 'LearningService.deleteTestBlock');
+      }
+
+      this.logResponse('LearningService.deleteTestBlock', { blockId });
+    } catch (error: any) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      this.handleError(error, 'LearningService.deleteTestBlock');
+    }
+  }
+
+  /**
+   * Assign test to video
+   */
+  async assignTestToVideo(testId: string, videoId: string): Promise<any> {
+    this.logRequest('assignTestToVideo', 'LearningService', { testId, videoId });
+
+    // Validation
+    const errors: Record<string, string> = {};
+    if (!testId) errors.testId = 'Test ID ist erforderlich';
+    if (!videoId) errors.videoId = 'Video ID ist erforderlich';
+
+    if (Object.keys(errors).length > 0) {
+      throw new ValidationError(
+        'Ungültige Eingabedaten',
+        'LearningService.assignTestToVideo',
+        errors
+      );
+    }
+
+    try {
+      // Check if video already has a test assigned to an EXISTING test (ignore orphaned assignments)
+      const { data: existing, error: checkError } = await this.supabase
+        .from('test_video_assignments')
+        .select('*, tests!inner(id)')
+        .eq('video_id', videoId)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        // PGRST116 = no rows returned (not an error)
+        this.handleError(checkError, 'LearningService.assignTestToVideo');
+      }
+
+      if (existing) {
+        throw new ApiError(
+          'Video hat bereits einen Test zugewiesen',
+          'ALREADY_ASSIGNED',
+          'LearningService.assignTestToVideo'
+        );
+      }
+
+      // ✅ CLEANUP: Remove any orphaned assignments for this video before creating new one
+      const { error: cleanupError } = await this.supabase
+        .from('test_video_assignments')
+        .delete()
+        .eq('video_id', videoId)
+        .not('test_id', 'in', `(SELECT id FROM tests)`);
+      
+      if (cleanupError) {
+        console.warn('⚠️ Could not cleanup orphaned assignments:', cleanupError);
+        // Continue anyway - this is just a cleanup operation
+      }
+
+      const { data: assignment, error } = await this.supabase
+        .from('test_video_assignments')
+        .insert({
+          test_id: testId,
+          video_id: videoId,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        this.handleError(error, 'LearningService.assignTestToVideo');
+      }
+
+      if (!assignment) {
+        throw new ApiError(
+          'Zuweisung konnte nicht erstellt werden',
+          'CREATION_FAILED',
+          'LearningService.assignTestToVideo'
+        );
+      }
+
+      this.logResponse('LearningService.assignTestToVideo', { id: assignment.id });
+      return assignment;
+    } catch (error: any) {
+      if (error instanceof ValidationError || error instanceof ApiError) {
+        throw error;
+      }
+      this.handleError(error, 'LearningService.assignTestToVideo');
+    }
+  }
+
+  /**
+   * Link test to video (alias for assignTestToVideo)
+   * Used by CreateTestDialog
+   */
+  async linkTestToVideo(testId: string, videoId: string): Promise<any> {
+    return this.assignTestToVideo(testId, videoId);
+  }
+
+  /**
+   * Remove test assignment from video
+   */
+  async removeTestFromVideo(videoId: string): Promise<void> {
+    this.logRequest('removeTestFromVideo', 'LearningService', { videoId });
+
+    if (!videoId) {
+      throw new ValidationError(
+        'Video ID ist erforderlich',
+        'LearningService.removeTestFromVideo',
+        { videoId: 'Video ID ist erforderlich' }
+      );
+    }
+
+    try {
+      const { error } = await this.supabase
+        .from('test_video_assignments')
+        .delete()
+        .eq('video_id', videoId);
+
+      if (error) {
+        this.handleError(error, 'LearningService.removeTestFromVideo');
+      }
+
+      this.logResponse('LearningService.removeTestFromVideo', { videoId });
+    } catch (error: any) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      this.handleError(error, 'LearningService.removeTestFromVideo');
     }
   }
 }

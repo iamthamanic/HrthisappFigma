@@ -27,6 +27,7 @@ interface QuizProgress {
 interface LearningState {
   videos: VideoContent[];
   quizzes: QuizContent[];
+  tests: any[]; // Tests from learning_tests table
   progress: LearningProgress[];
   videoProgress: Record<string, number>; // videoId -> progress percentage
   quizProgress: Record<string, QuizProgress>; // quizId -> progress
@@ -35,6 +36,7 @@ interface LearningState {
   // Actions
   loadVideos: () => Promise<void>;
   loadQuizzes: () => Promise<void>;
+  loadTests: () => Promise<void>;
   loadProgress: (userId: string) => Promise<void>;
   updateProgress: (userId: string, videoId: string, watchedSeconds: number) => Promise<void>;
   updateVideoProgress: (userId: string, videoId: string, progressPercent: number) => Promise<void>;
@@ -52,6 +54,7 @@ interface LearningState {
 export const useLearningStore = create<LearningState>((set, get) => ({
   videos: [],
   quizzes: [],
+  tests: [],
   progress: [],
   videoProgress: {},
   quizProgress: {},
@@ -62,11 +65,30 @@ export const useLearningStore = create<LearningState>((set, get) => ({
     try {
       // Use LearningService to load videos
       const services = getServices();
-      const videos = await services.learning.getAllVideos();
+      
+      // Get user's organization_id from auth
+      const { data: { user } } = await supabase.auth.getUser();
+      let organizationId: string | undefined;
+      
+      if (user) {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('organization_id')
+          .eq('id', user.id)
+          .single();
+        
+        organizationId = profile?.organization_id;
+      }
 
+      console.log('🔍 [LearningStore] Loading videos for org:', organizationId);
+      const videos = organizationId 
+        ? await services.learning.getAllVideos({ organization_id: organizationId })
+        : await services.learning.getAllVideos(); // Fallback without filter
+
+      console.log('✅ [LearningStore] Videos loaded:', videos.length, videos);
       set({ videos });
     } catch (error) {
-      console.error('Load videos error:', error);
+      console.error('❌ [LearningStore] Load videos error:', error);
       set({ videos: [] });
     } finally {
       set({ loading: false });
@@ -84,6 +106,22 @@ export const useLearningStore = create<LearningState>((set, get) => ({
     } catch (error) {
       console.error('Load quizzes error:', error);
       set({ quizzes: [] });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  loadTests: async () => {
+    set({ loading: true });
+    try {
+      // Use LearningService to load tests
+      const services = getServices();
+      const tests = await services.learning.getAllTests();
+
+      set({ tests });
+    } catch (error) {
+      console.error('Load tests error:', error);
+      set({ tests: [] });
     } finally {
       set({ loading: false });
     }
@@ -265,6 +303,7 @@ export const useLearningStore = create<LearningState>((set, get) => ({
         category: video.category,
         xp_reward: video.xp_reward,
         coin_reward: video.coin_reward,
+        organization_id: video.organization_id, // ✅ FIXED: Pass organization_id!
       });
 
       // Add to local state

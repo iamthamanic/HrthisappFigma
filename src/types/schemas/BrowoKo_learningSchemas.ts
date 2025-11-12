@@ -191,3 +191,152 @@ export const safeValidateCreateVideo = (data: unknown) => CreateVideoSchema.safe
 export const safeValidateQuiz = (data: unknown) => QuizSchema.safeParse(data);
 export const safeValidateCreateQuiz = (data: unknown) => CreateQuizSchema.safeParse(data);
 export const safeValidateSubmitQuizAttempt = (data: unknown) => SubmitQuizAttemptSchema.safeParse(data);
+
+/**
+ * TEST SCHEMAS (v4.13.1)
+ * =======================
+ */
+
+/**
+ * TEST BLOCK TYPES
+ */
+export const TestBlockTypeEnum = z.enum([
+  'MULTIPLE_CHOICE',
+  'MULTIPLE_SELECT',
+  'TRUE_FALSE',
+  'SHORT_TEXT',
+  'LONG_TEXT',
+  'FILL_BLANKS',
+  'ORDERING',
+  'MATCHING',
+  'SLIDER',
+  'FILE_UPLOAD'
+]);
+
+export type TestBlockType = z.infer<typeof TestBlockTypeEnum>;
+
+/**
+ * TEST BLOCK SCHEMA
+ */
+export const TestBlockSchema = z.object({
+  id: z.string().uuid().optional(),
+  test_id: z.string().uuid('Test ID muss eine gültige UUID sein'),
+  type: TestBlockTypeEnum,
+  title: z.string().min(1, 'Titel ist erforderlich').max(500),
+  description: z.string().max(2000).nullable().optional(),
+  content: z.any(), // JSON content varies by block type
+  points: z.number().int().min(0).default(10),
+  is_required: z.boolean().default(true),
+  time_limit_seconds: z.number().int().min(1).nullable().optional(),
+  position: z.number().int().min(0).default(0),
+  created_at: z.string().datetime().optional(),
+  updated_at: z.string().datetime().optional(),
+});
+
+export type TestBlock = z.infer<typeof TestBlockSchema>;
+
+/**
+ * TEST SCHEMA
+ */
+export const TestSchema = z.object({
+  id: z.string().uuid().optional(),
+  organization_id: z.string().uuid().nullable().optional(),
+  title: z.string().min(1, 'Titel ist erforderlich').max(300),
+  description: z.string().max(2000).nullable().optional(),
+  pass_percentage: z.number().int().min(0).max(100).default(80),
+  reward_coins: z.number().int().min(0).default(0),
+  max_attempts: z.number().int().min(0).default(3),
+  time_limit_minutes: z.number().int().min(1).nullable().optional(),
+  is_template: z.boolean().default(false),
+  template_category: z.string().max(100).nullable().optional(),
+  is_active: z.boolean().default(true),
+  created_at: z.string().datetime().optional(),
+  created_by: z.string().uuid().nullable().optional(),
+  updated_at: z.string().datetime().optional(),
+  updated_by: z.string().uuid().nullable().optional(),
+});
+
+export type Test = z.infer<typeof TestSchema>;
+
+/**
+ * CREATE TEST SCHEMA
+ */
+export const CreateTestSchema = z.object({
+  title: z.string().min(1, 'Titel ist erforderlich').max(300),
+  description: z.string().max(2000).optional(),
+  pass_percentage: z.number().int().min(0).max(100).default(80).optional(),
+  reward_coins: z.number().int().min(0).default(0).optional(),
+  max_attempts: z.number().int().min(0).default(3).optional(),
+  time_limit_minutes: z.number().int().min(1).nullable().optional(),
+  is_template: z.boolean().default(false).optional(),
+  template_category: z.string().max(100).nullable().optional(),
+  organization_id: z.string().uuid().optional(),
+});
+
+export type CreateTestData = z.infer<typeof CreateTestSchema>;
+
+/**
+ * UPDATE TEST SCHEMA
+ */
+export const UpdateTestSchema = z.object({
+  title: z.string().min(1).max(300).optional(),
+  description: z.string().max(2000).optional(),
+  pass_percentage: z.number().int().min(0).max(100).optional(),
+  reward_coins: z.number().int().min(0).optional(),
+  max_attempts: z.number().int().min(0).optional(),
+  time_limit_minutes: z.number().int().min(1).nullable().optional(),
+  is_template: z.boolean().optional(),
+  template_category: z.string().max(100).nullable().optional(),
+});
+
+export type UpdateTestData = z.infer<typeof UpdateTestSchema>;
+
+/**
+ * CREATE TEST BLOCK SCHEMA
+ */
+export const CreateTestBlockSchema = z.object({
+  test_id: z.string().uuid('Test ID muss eine gültige UUID sein'),
+  type: TestBlockTypeEnum,
+  title: z.string().min(1, 'Titel ist erforderlich').max(500),
+  description: z.string().max(2000).optional(),
+  content: z.any(),
+  points: z.number().int().min(0).default(10).optional(),
+  is_required: z.boolean().default(true).optional(),
+  time_limit_seconds: z.number().int().min(1).nullable().optional(),
+  position: z.number().int().min(0).default(0).optional(),
+});
+
+export type CreateTestBlockData = z.infer<typeof CreateTestBlockSchema>;
+
+/**
+ * UPDATE TEST BLOCK SCHEMA
+ */
+export const UpdateTestBlockSchema = z.object({
+  title: z.string().min(1).max(500).optional(),
+  description: z.string().max(2000).optional(),
+  content: z.any().optional(),
+  points: z.number().int().min(0).optional(),
+  is_required: z.boolean().optional(),
+  time_limit_seconds: z.number().int().min(1).nullable().optional(),
+  position: z.number().int().min(0).optional(),
+});
+
+export type UpdateTestBlockData = z.infer<typeof UpdateTestBlockSchema>;
+
+/**
+ * TEST VALIDATION HELPERS
+ */
+export const validateTest = (data: unknown) => TestSchema.parse(data);
+export const validateCreateTest = (data: unknown) => CreateTestSchema.parse(data);
+export const validateUpdateTest = (data: unknown) => UpdateTestSchema.parse(data);
+export const validateTestBlock = (data: unknown) => TestBlockSchema.parse(data);
+export const validateCreateTestBlock = (data: unknown) => CreateTestBlockSchema.parse(data);
+export const validateUpdateTestBlock = (data: unknown) => UpdateTestBlockSchema.parse(data);
+
+/**
+ * SAFE TEST VALIDATION
+ */
+export const safeValidateTest = (data: unknown) => TestSchema.safeParse(data);
+export const safeValidateCreateTest = (data: unknown) => CreateTestSchema.safeParse(data);
+export const safeValidateTestBlock = (data: unknown) => TestBlockSchema.safeParse(data);
+export const safeValidateCreateTestBlock = (data: unknown) => CreateTestBlockSchema.safeParse(data);

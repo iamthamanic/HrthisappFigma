@@ -221,7 +221,9 @@ export default function TeamMemberDetailsScreen() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6 pb-20 md:pb-0">
+    <div className="min-h-screen pt-20 md:pt-6 px-4 md:px-6">
+      {/* ✅ MAX-WIDTH CONTAINER */}
+      <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 pb-20 md:pb-0">
       {/* Compact Header with Back Button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 relative z-10">
         {/* Back Button */}
@@ -444,6 +446,7 @@ export default function TeamMemberDetailsScreen() {
         onOpenChange={setShowWarningDialog}
         currentCardName={cardEditing.currentCardName}
       />
+      </div> {/* ✅ Close max-width container */}
     </div>
   );
 }

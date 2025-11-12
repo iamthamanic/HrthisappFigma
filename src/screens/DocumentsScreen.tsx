@@ -73,7 +73,9 @@ export default function DocumentsScreen() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen pt-20 md:pt-6 px-4 md:px-6">
+      {/* ✅ MAX-WIDTH CONTAINER */}
+      <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Dokumente</h1>
@@ -283,6 +285,7 @@ export default function DocumentsScreen() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </div> {/* ✅ Close max-width container */}
     </div>
   );
 }

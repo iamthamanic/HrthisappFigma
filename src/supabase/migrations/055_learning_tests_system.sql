@@ -70,9 +70,43 @@ CREATE POLICY "Users can view tests in their organization"
   ON tests FOR SELECT
   USING (organization_id IN (SELECT organization_id FROM users WHERE id = auth.uid()));
 
-DROP POLICY IF EXISTS "Admins can manage tests" ON tests;
-CREATE POLICY "Admins can manage tests"
-  ON tests FOR ALL
+-- Admin Policies (Separate for each operation - v4.13.2 FIX)
+DROP POLICY IF EXISTS "Admins can view tests" ON tests;
+CREATE POLICY "Admins can view tests"
+  ON tests FOR SELECT
+  USING (
+    organization_id IN (
+      SELECT organization_id FROM users 
+      WHERE id = auth.uid() 
+      AND role IN ('ADMIN', 'SUPERADMIN', 'HR')
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can create tests" ON tests;
+CREATE POLICY "Admins can create tests"
+  ON tests FOR INSERT
+  WITH CHECK (
+    organization_id IN (
+      SELECT organization_id FROM users 
+      WHERE id = auth.uid() 
+      AND role IN ('ADMIN', 'SUPERADMIN', 'HR')
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can update tests" ON tests;
+CREATE POLICY "Admins can update tests"
+  ON tests FOR UPDATE
+  USING (
+    organization_id IN (
+      SELECT organization_id FROM users 
+      WHERE id = auth.uid() 
+      AND role IN ('ADMIN', 'SUPERADMIN', 'HR')
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can delete tests" ON tests;
+CREATE POLICY "Admins can delete tests"
+  ON tests FOR DELETE
   USING (
     organization_id IN (
       SELECT organization_id FROM users 
@@ -130,9 +164,52 @@ CREATE POLICY "Users can view test blocks in their organization"
     )
   );
 
-DROP POLICY IF EXISTS "Admins can manage test blocks" ON test_blocks;
-CREATE POLICY "Admins can manage test blocks"
-  ON test_blocks FOR ALL
+-- Admin Policies (Separate for each operation - v4.13.2 FIX)
+DROP POLICY IF EXISTS "Admins can view test blocks" ON test_blocks;
+CREATE POLICY "Admins can view test blocks"
+  ON test_blocks FOR SELECT
+  USING (
+    test_id IN (
+      SELECT id FROM tests 
+      WHERE organization_id IN (
+        SELECT organization_id FROM users 
+        WHERE id = auth.uid() 
+        AND role IN ('ADMIN', 'SUPERADMIN', 'HR')
+      )
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can create test blocks" ON test_blocks;
+CREATE POLICY "Admins can create test blocks"
+  ON test_blocks FOR INSERT
+  WITH CHECK (
+    test_id IN (
+      SELECT id FROM tests 
+      WHERE organization_id IN (
+        SELECT organization_id FROM users 
+        WHERE id = auth.uid() 
+        AND role IN ('ADMIN', 'SUPERADMIN', 'HR')
+      )
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can update test blocks" ON test_blocks;
+CREATE POLICY "Admins can update test blocks"
+  ON test_blocks FOR UPDATE
+  USING (
+    test_id IN (
+      SELECT id FROM tests 
+      WHERE organization_id IN (
+        SELECT organization_id FROM users 
+        WHERE id = auth.uid() 
+        AND role IN ('ADMIN', 'SUPERADMIN', 'HR')
+      )
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can delete test blocks" ON test_blocks;
+CREATE POLICY "Admins can delete test blocks"
+  ON test_blocks FOR DELETE
   USING (
     test_id IN (
       SELECT id FROM tests 
@@ -180,9 +257,52 @@ CREATE POLICY "Users can view test-video assignments in their organization"
     )
   );
 
-DROP POLICY IF EXISTS "Admins can manage test-video assignments" ON test_video_assignments;
-CREATE POLICY "Admins can manage test-video assignments"
-  ON test_video_assignments FOR ALL
+-- Admin Policies (Separate for each operation - v4.13.2 FIX)
+DROP POLICY IF EXISTS "Admins can view test-video assignments" ON test_video_assignments;
+CREATE POLICY "Admins can view test-video assignments"
+  ON test_video_assignments FOR SELECT
+  USING (
+    test_id IN (
+      SELECT id FROM tests 
+      WHERE organization_id IN (
+        SELECT organization_id FROM users 
+        WHERE id = auth.uid() 
+        AND role IN ('ADMIN', 'SUPERADMIN', 'HR')
+      )
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can create test-video assignments" ON test_video_assignments;
+CREATE POLICY "Admins can create test-video assignments"
+  ON test_video_assignments FOR INSERT
+  WITH CHECK (
+    test_id IN (
+      SELECT id FROM tests 
+      WHERE organization_id IN (
+        SELECT organization_id FROM users 
+        WHERE id = auth.uid() 
+        AND role IN ('ADMIN', 'SUPERADMIN', 'HR')
+      )
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can update test-video assignments" ON test_video_assignments;
+CREATE POLICY "Admins can update test-video assignments"
+  ON test_video_assignments FOR UPDATE
+  USING (
+    test_id IN (
+      SELECT id FROM tests 
+      WHERE organization_id IN (
+        SELECT organization_id FROM users 
+        WHERE id = auth.uid() 
+        AND role IN ('ADMIN', 'SUPERADMIN', 'HR')
+      )
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can delete test-video assignments" ON test_video_assignments;
+CREATE POLICY "Admins can delete test-video assignments"
+  ON test_video_assignments FOR DELETE
   USING (
     test_id IN (
       SELECT id FROM tests 
