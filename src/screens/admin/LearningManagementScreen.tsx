@@ -49,6 +49,7 @@ import { BrowoKo_WikiArticleCard } from '../../components/BrowoKo_WikiArticleCar
 import { BrowoKo_WikiArticleView } from '../../components/BrowoKo_WikiArticleView';
 import { BrowoKo_WikiSearchResults } from '../../components/BrowoKo_WikiSearchResults';
 import { BrowoKo_TestsList } from '../../components/BrowoKo_TestsList';
+import { BrowoKo_TestSubmissionsList } from '../../components/BrowoKo_TestSubmissionsList';
 import { 
   getWikiArticles, 
   deleteWikiArticle, 
@@ -125,6 +126,9 @@ export default function LearningManagementScreen() {
   const [employeeSearchEditedBy, setEmployeeSearchEditedBy] = useState<string>('');
   const [employeeSearchCreatedBy, setEmployeeSearchCreatedBy] = useState<string>('');
 
+  // Test sub-tab states
+  const [testSubTab, setTestSubTab] = useState<'created' | 'submissions' | 'templates'>('created');
+  
   // Get videos, tests and auth from stores
   const { videos, tests, loadVideos, loadTests, createVideo, updateVideo, deleteVideo } = useLearningStore();
   const { profile } = useAuthStore();
@@ -588,7 +592,7 @@ export default function LearningManagementScreen() {
           {/* Tests Tab */}
           <TabsContent value="tests" className="space-y-4 md:space-y-6 mt-6">
             {/* Test Sub-Tabs */}
-            <Tabs defaultValue="created" className="w-full">
+            <Tabs value={testSubTab} onValueChange={(value: any) => setTestSubTab(value)} className="w-full">
               <TabsList className="grid w-full max-w-2xl grid-cols-3">
                 <TabsTrigger value="created">
                   <ClipboardList className="w-4 h-4 mr-2" />
@@ -611,21 +615,7 @@ export default function LearningManagementScreen() {
               </TabsContent>
 
               <TabsContent value="submissions" className="mt-6">
-                <Card className="mobile-card md:desktop-card">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-600" />
-                      Abgegebene Tests
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center text-gray-400 py-12">
-                      <CheckCircle2 className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                      <p className="text-lg font-medium mb-2">Keine abgegebenen Tests</p>
-                      <p className="text-sm">Hier siehst du alle Tests die von Usern abgegeben wurden und auf Review warten</p>
-                    </div>
-                  </CardContent>
-                </Card>
+                <BrowoKo_TestSubmissionsList isActive={testSubTab === 'submissions'} />
               </TabsContent>
 
               <TabsContent value="templates" className="mt-6">

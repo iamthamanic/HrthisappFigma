@@ -1,30 +1,68 @@
+import { BrowoKo_WikiSearchResults } from '../components/BrowoKo_WikiSearchResults';
+import { BrowoKo_WikiSearchBar } from '../components/BrowoKo_WikiSearchBar';
+import { BrowoKo_WikiArticleView } from '../components/BrowoKo_WikiArticleView';
+import { getWikiArticles, WikiArticle, getSpecializations, type RAGAccessType } from '../services/BrowoKo_wikiService';
+import { supabase } from '../utils/supabase/client';
+import { toast } from 'sonner';
+import { Award, Play, FileText, Building2, MapPin, Filter, Database, Globe } from '../components/icons/BrowoKoIcons';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Checkbox } from '../components/ui/checkbox';
+import { Search, Headphones } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import LoadingState from '../components/LoadingState';
-import { LearningStatsGrid } from '../components/BrowoKo_LearningStatsGrid';
 import { VideoCardWithProgress } from '../components/BrowoKo_VideoCardWithProgress';
 import { QuizCard } from '../components/BrowoKo_QuizCard';
 import { LearningEmptyState } from '../components/BrowoKo_LearningEmptyState';
 import BrowoKo_LearningAvatarWidget from '../components/BrowoKo_LearningAvatarWidget';
 import { useLearningScreen } from '../hooks/BrowoKo_useLearningScreen';
-import { BrowoKo_WikiSearchBar } from '../components/BrowoKo_WikiSearchBar';
-import { BrowoKo_WikiArticleCard } from '../components/BrowoKo_WikiArticleCard';
-import { BrowoKo_WikiArticleView } from '../components/BrowoKo_WikiArticleView';
-import { BrowoKo_WikiSearchResults } from '../components/BrowoKo_WikiSearchResults';
-import { getWikiArticles, type WikiArticle } from '../services/BrowoKo_wikiService';
-import { supabase } from '../utils/supabase/client';
-import { toast } from 'sonner';
-import { Building2, MapPin, Award, Book, Play, FileText } from '../components/icons/BrowoKoIcons';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
 
-type TabValue = 'all' | 'pflicht' | 'videos' | 'tests' | 'lerneinheiten' | 'wiki' | 'avatar';
+type TabValue = 'videos' | 'tests' | 'lerneinheiten' | 'wiki' | 'avatar';
+type TestSubTabValue = 'all' | 'started' | 'submitted' | 'passed';
+type VideoSubTabValue = 'all' | 'started' | 'finished';
+type LerneinheitenSubTabValue = 'all' | 'started' | 'submitted' | 'passed';
 
 export default function LearningScreen() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabValue>('all');
+  const { user } = useAuthStore();
+  const [activeTab, setActiveTab] = useState<TabValue>('videos');
+  const [testSubTab, setTestSubTab] = useState<TestSubTabValue>('all');
+  const [testSearchQuery, setTestSearchQuery] = useState('');
+  const [videoSubTab, setVideoSubTab] = useState<VideoSubTabValue>('all');
+  const [videoSearchQuery, setVideoSearchQuery] = useState('');
+  const [lerneinheitenSubTab, setLerneinheitenSubTab] = useState<LerneinheitenSubTabValue>('all');
+  const [lerneinheitenSearchQuery, setLerneinheitenSearchQuery] = useState('');
+  
+  // Wiki State
+  const [wikiSearchQuery, setWikiSearchQuery] = useState('');
+  const [wikiResults, setWikiResults] = useState<WikiArticle[]>([]);
+  const [wikiLoading, setWikiLoading] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<WikiArticle | null>(null);
+  
+  // Wiki filter states
+  const [wikiFilterTab, setWikiFilterTab] = useState<'all' | 'department' | 'location' | 'specialization' | 'advanced'>('all');
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('');
+  const [selectedLocation, setSelectedLocation] = useState<string>('');
+  const [selectedSpecialization, setSelectedSpecialization] = useState<string>('');
+  const [departments, setDepartments] = useState<Array<{id: string, name: string}>>([]);
+  const [locations, setLocations] = useState<Array<{id: string, name: string}>>([]);
+  const [specializations, setSpecializations] = useState<string[]>([]);
+  
+  // Advanced filter states
+  const [selectedRagTypes, setSelectedRagTypes] = useState<string[]>([]);
+  const [minCharacters, setMinCharacters] = useState<string>('');
+  const [maxCharacters, setMaxCharacters] = useState<string>('');
+  const [minStorage, setMinStorage] = useState<string>('');
+  const [maxStorage, setMaxStorage] = useState<string>('');
+  const [editedAfter, setEditedAfter] = useState<string>('');
+  const [viewedAfter, setViewedAfter] = useState<string>('');
+  const [createdAfter, setCreatedAfter] = useState<string>('');
   
   const {
     videos,
@@ -39,25 +77,8 @@ export default function LearningScreen() {
     completedVideosCount,
     loading
   } = useLearningScreen();
-  
-  // Wiki States
-  const [wikiArticles, setWikiArticles] = useState<WikiArticle[]>([]);
-  const [filteredWikiArticles, setFilteredWikiArticles] = useState<WikiArticle[]>([]);
-  const [selectedWikiArticle, setSelectedWikiArticle] = useState<WikiArticle | null>(null);
-  const [isViewWikiOpen, setIsViewWikiOpen] = useState(false);
-  const [wikiLoading, setWikiLoading] = useState(false);
-  const [wikiSearch, setWikiSearch] = useState('');
-  
-  // Filter states
-  const [wikiFilterTab, setWikiFilterTab] = useState<'all' | 'department' | 'location' | 'specialization'>('all');
-  const [selectedDepartment, setSelectedDepartment] = useState<string>('');
-  const [selectedLocation, setSelectedLocation] = useState<string>('');
-  const [selectedSpecialization, setSelectedSpecialization] = useState<string>('');
-  const [departments, setDepartments] = useState<Array<{id: string, name: string}>>([]);
-  const [locations, setLocations] = useState<Array<{id: string, name: string}>>([]);
-  const [specializations, setSpecializations] = useState<string[]>([]);
 
-  // Load wiki articles when wiki tab is active
+  // Load all wiki articles initially when Wiki tab is opened
   useEffect(() => {
     if (activeTab === 'wiki') {
       loadWikiArticles();
@@ -68,14 +89,46 @@ export default function LearningScreen() {
   const loadWikiArticles = async () => {
     setWikiLoading(true);
     try {
-      // Use full-text search if search query exists, otherwise get all
-      const filters = wikiSearch.trim() ? { search: wikiSearch.trim() } : undefined;
-      const articles = await getWikiArticles(filters);
-      setWikiArticles(articles);
+      // Build filter object with all active filters
+      const filters: any = {};
+      
+      // Full-text search
+      if (wikiSearchQuery.trim()) {
+        filters.search = wikiSearchQuery.trim();
+      }
+      
+      // Advanced filters
+      if (selectedRagTypes.length > 0) {
+        filters.rag_types = selectedRagTypes as RAGAccessType[];
+      }
+      if (minCharacters) {
+        filters.min_characters = parseInt(minCharacters);
+      }
+      if (maxCharacters) {
+        filters.max_characters = parseInt(maxCharacters);
+      }
+      if (minStorage) {
+        filters.min_storage = parseInt(minStorage) * 1024; // Convert KB to bytes
+      }
+      if (maxStorage) {
+        filters.max_storage = parseInt(maxStorage) * 1024; // Convert KB to bytes
+      }
+      if (editedAfter) {
+        filters.edited_after = new Date(editedAfter).toISOString();
+      }
+      if (viewedAfter) {
+        filters.viewed_after = new Date(viewedAfter).toISOString();
+      }
+      if (createdAfter) {
+        filters.created_after = new Date(createdAfter).toISOString();
+      }
+      
+      const articles = await getWikiArticles(Object.keys(filters).length > 0 ? filters : undefined);
       filterWikiArticles(articles);
     } catch (error) {
       console.error('Error loading wiki articles:', error);
       toast.error('Fehler beim Laden der Wiki-Artikel');
+      setWikiResults([]);
     } finally {
       setWikiLoading(false);
     }
@@ -83,20 +136,15 @@ export default function LearningScreen() {
   
   const loadWikiFilters = async () => {
     try {
-      const [deptResult, locResult] = await Promise.all([
+      const [deptResult, locResult, specs] = await Promise.all([
         supabase.from('departments').select('id, name').order('name'),
-        supabase.from('locations').select('id, name').order('name')
+        supabase.from('locations').select('id, name').order('name'),
+        getSpecializations()
       ]);
       
       if (deptResult.data) setDepartments(deptResult.data);
       if (locResult.data) setLocations(locResult.data);
-      
-      // Get unique specializations from loaded articles
-      const uniqueSpecs = new Set<string>();
-      wikiArticles.forEach(article => {
-        article.specializations?.forEach(spec => uniqueSpecs.add(spec));
-      });
-      setSpecializations(Array.from(uniqueSpecs).sort());
+      setSpecializations(specs);
     } catch (error) {
       console.error('Error loading wiki filters:', error);
     }
@@ -104,9 +152,6 @@ export default function LearningScreen() {
   
   const filterWikiArticles = (articles: WikiArticle[]) => {
     let filtered = articles;
-    
-    // NOTE: Search is now handled by PostgreSQL Full-Text Search in loadWikiArticles()
-    // No need for client-side search filtering anymore
     
     // Department filter
     if (wikiFilterTab === 'department' && selectedDepartment) {
@@ -129,7 +174,7 @@ export default function LearningScreen() {
       );
     }
     
-    setFilteredWikiArticles(filtered);
+    setWikiResults(filtered);
   };
   
   useEffect(() => {
@@ -137,41 +182,23 @@ export default function LearningScreen() {
     if (activeTab === 'wiki') {
       loadWikiArticles();
     }
-  }, [wikiSearch]);
+  }, [wikiSearchQuery, selectedRagTypes, minCharacters, maxCharacters, minStorage, maxStorage, editedAfter, viewedAfter, createdAfter]);
   
   useEffect(() => {
-    // Re-filter when filters change (client-side)
-    filterWikiArticles(wikiArticles);
-  }, [wikiFilterTab, selectedDepartment, selectedLocation, selectedSpecialization, wikiArticles]);
-  
-  const handleViewWikiArticle = (article: WikiArticle) => {
-    setSelectedWikiArticle(article);
-    setIsViewWikiOpen(true);
-  };
+    // Re-filter when filter tabs change (client-side)
+    if (activeTab === 'wiki' && wikiResults.length > 0) {
+      const allArticles = wikiResults;
+      filterWikiArticles(allArticles);
+    }
+  }, [wikiFilterTab, selectedDepartment, selectedLocation, selectedSpecialization]);
   
   const handleWikiSearch = (query: string) => {
-    setWikiSearch(query);
+    setWikiSearchQuery(query);
   };
-
-  // Helper: Get mandatory content (videos, tests, lerneinheiten with is_mandatory=true)
-  const getMandatoryContent = () => {
-    const mandatoryVideos = videos.filter(v => v.is_mandatory);
-    const mandatoryTests = tests.filter(t => t.is_mandatory);
-    const mandatoryQuizzes = categorizedQuizzes.mandatory;
-    
-    return { videos: mandatoryVideos, tests: mandatoryTests, quizzes: mandatoryQuizzes };
+  
+  const handleSelectArticle = (article: WikiArticle) => {
+    setSelectedArticle(article);
   };
-
-  // Helper: Mix all content for "Alle" tab
-  const getAllMixedContent = () => {
-    return {
-      videos,
-      tests,
-      quizzes
-    };
-  };
-
-  const hasNoContent = videos.length === 0 && tests.length === 0 && quizzes.length === 0;
 
   // Early return AFTER all hooks
   if (loading) {
@@ -200,19 +227,9 @@ export default function LearningScreen() {
         </div>
       </div>
 
-      {/* Stats */}
-      <LearningStatsGrid
-        videosCount={videos.length}
-        quizzesCount={totalTests + totalQuizzes}
-        xp={xp || 0}
-        completedVideosCount={completedVideosCount}
-      />
-
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(value: any) => setActiveTab(value)}>
-        <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="all">Alle</TabsTrigger>
-          <TabsTrigger value="pflicht">Pflicht</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
           <TabsTrigger value="videos">Videos</TabsTrigger>
           <TabsTrigger value="tests">Tests</TabsTrigger>
           <TabsTrigger value="lerneinheiten">Lerneinheiten</TabsTrigger>
@@ -221,299 +238,461 @@ export default function LearningScreen() {
         </TabsList>
 
         {/* ========================================
-            TAB: ALLE (Mixed Content)
-        ======================================== */}
-        <TabsContent value="all" className="space-y-6 mt-6">
-          {hasNoContent && (
-            <LearningEmptyState type="all" isAdmin={false} />
-          )}
-
-          {/* Videos Section */}
-          {videos.length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Videos
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {videos.map((video) => (
-                  <VideoCardWithProgress
-                    key={video.id}
-                    video={video}
-                    progressPercentage={getVideoProgressPercentage(video.id)}
-                    isCompleted={isVideoCompleted(video.id)}
-                    showThumbnail={true}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Tests Section */}
-          {tests.length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Tests
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {tests.map((test) => (
-                  <UserTestCard key={test.id} test={test} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Lerneinheiten Section */}
-          {quizzes.length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Lerneinheiten
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {quizzes.map((quiz) => (
-                  <QuizCard key={quiz.id} quiz={quiz} variant={quiz.category?.toLowerCase() as any || 'skills'} />
-                ))}
-              </div>
-            </div>
-          )}
-        </TabsContent>
-
-        {/* ========================================
-            TAB: PFLICHT (Mandatory Content Only)
-        ======================================== */}
-        <TabsContent value="pflicht" className="space-y-6 mt-6">
-          {(() => {
-            const mandatory = getMandatoryContent();
-            const hasMandatory = mandatory.videos.length > 0 || mandatory.tests.length > 0 || mandatory.quizzes.length > 0;
-            
-            if (!hasMandatory) {
-              return (
-                <div className="text-center text-gray-400 py-12">
-                  <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium mb-2">Keine Pflichtinhalte</p>
-                  <p className="text-sm">Es gibt aktuell keine Pflicht-Schulungen</p>
-                </div>
-              );
-            }
-            
-            return (
-              <>
-                {/* Mandatory Videos */}
-                {mandatory.videos.length > 0 && (
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                      Pflicht-Videos
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {mandatory.videos.map((video) => (
-                        <VideoCardWithProgress
-                          key={video.id}
-                          video={video}
-                          progressPercentage={getVideoProgressPercentage(video.id)}
-                          isCompleted={isVideoCompleted(video.id)}
-                          showThumbnail={true}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Mandatory Tests */}
-                {mandatory.tests.length > 0 && (
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                      Pflicht-Tests
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {mandatory.tests.map((test) => (
-                        <UserTestCard key={test.id} test={test} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Mandatory Lerneinheiten */}
-                {mandatory.quizzes.length > 0 && (
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                      Pflicht-Schulungen
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {mandatory.quizzes.map((quiz) => (
-                        <QuizCard key={quiz.id} quiz={quiz} variant="mandatory" />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            );
-          })()}
-        </TabsContent>
-
-        {/* ========================================
             TAB: VIDEOS
         ======================================== */}
         <TabsContent value="videos" className="mt-6">
-          {videos.length === 0 ? (
-            <LearningEmptyState type="videos" isAdmin={false} />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {videos.map((video) => (
-                <VideoCardWithProgress
-                  key={video.id}
-                  video={video}
-                  progressPercentage={getVideoProgressPercentage(video.id)}
-                  isCompleted={isVideoCompleted(video.id)}
-                  showThumbnail={false}
+          <div className="space-y-4">
+            {/* Subbar: Search + Sub-Tabs - IMMER SICHTBAR */}
+            <div className="space-y-3">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Videos durchsuchen..."
+                  value={videoSearchQuery}
+                  onChange={(e) => setVideoSearchQuery(e.target.value)}
+                  className="pl-9"
                 />
-              ))}
+              </div>
+
+              {/* Sub-Tabs */}
+              <Tabs value={videoSubTab} onValueChange={(value: any) => setVideoSubTab(value)}>
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="all">Alle</TabsTrigger>
+                  <TabsTrigger value="started">Angefangen</TabsTrigger>
+                  <TabsTrigger value="finished">Abgeschlossen</TabsTrigger>
+                </TabsList>
+
+                {/* Sub-Tab: Alle */}
+                <TabsContent value="all" className="mt-4">
+                  {videos.length === 0 ? (
+                    <LearningEmptyState type="videos" isAdmin={false} />
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {videos
+                        .filter((video) => 
+                          video.title.toLowerCase().includes(videoSearchQuery.toLowerCase()) ||
+                          video.description?.toLowerCase().includes(videoSearchQuery.toLowerCase())
+                        )
+                        .map((video) => (
+                          <VideoCardWithProgress
+                            key={video.id}
+                            video={video}
+                            progressPercentage={getVideoProgressPercentage(video.id)}
+                            isCompleted={isVideoCompleted(video.id)}
+                            showThumbnail={false}
+                          />
+                        ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Sub-Tab: Angefangen */}
+                <TabsContent value="started" className="mt-4">
+                  <div className="text-center text-gray-400 py-12">
+                    <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">Keine angefangenen Videos</p>
+                    <p className="text-sm">Videos, die du begonnen hast, werden hier angezeigt</p>
+                  </div>
+                </TabsContent>
+
+                {/* Sub-Tab: Abgeschlossen */}
+                <TabsContent value="finished" className="mt-4">
+                  <div className="text-center text-gray-400 py-12">
+                    <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">Keine abgeschlossenen Videos</p>
+                    <p className="text-sm">Abgeschlossene Videos werden hier angezeigt</p>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
-          )}
+          </div>
         </TabsContent>
 
         {/* ========================================
             TAB: TESTS
         ======================================== */}
         <TabsContent value="tests" className="mt-6">
-          {tests.length === 0 ? (
-            <div className="text-center text-gray-400 py-12">
-              <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium mb-2">Noch keine Tests</p>
-              <p className="text-sm">Tests werden von Admins erstellt</p>
+          <div className="space-y-4">
+            {/* Subbar: Search + Sub-Tabs - IMMER SICHTBAR */}
+            <div className="space-y-3">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Tests durchsuchen..."
+                  value={testSearchQuery}
+                  onChange={(e) => setTestSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+
+              {/* Sub-Tabs */}
+              <Tabs value={testSubTab} onValueChange={(value: any) => setTestSubTab(value)}>
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="all">Alle</TabsTrigger>
+                  <TabsTrigger value="started">Angefangen</TabsTrigger>
+                  <TabsTrigger value="submitted">Abgegeben/In Review</TabsTrigger>
+                  <TabsTrigger value="passed">Bestanden</TabsTrigger>
+                </TabsList>
+
+                {/* Sub-Tab: Alle */}
+                <TabsContent value="all" className="mt-4">
+                  {tests.length === 0 ? (
+                    <div className="text-center text-gray-400 py-12">
+                      <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg font-medium mb-2">Noch keine Tests</p>
+                      <p className="text-sm">Tests werden von Admins erstellt</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {tests
+                        .filter((test) => 
+                          test.title.toLowerCase().includes(testSearchQuery.toLowerCase()) ||
+                          test.description?.toLowerCase().includes(testSearchQuery.toLowerCase())
+                        )
+                        .map((test) => (
+                          <UserTestCard key={test.id} test={test} />
+                        ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Sub-Tab: Angefangen */}
+                <TabsContent value="started" className="mt-4">
+                  <div className="text-center text-gray-400 py-12">
+                    <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">Keine angefangenen Tests</p>
+                    <p className="text-sm">Tests, die du begonnen hast, werden hier angezeigt</p>
+                  </div>
+                </TabsContent>
+
+                {/* Sub-Tab: Abgegeben/In Review */}
+                <TabsContent value="submitted" className="mt-4">
+                  <div className="text-center text-gray-400 py-12">
+                    <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">Keine abgegebenen Tests</p>
+                    <p className="text-sm">Abgegebene Tests werden hier angezeigt</p>
+                  </div>
+                </TabsContent>
+
+                {/* Sub-Tab: Bestanden */}
+                <TabsContent value="passed" className="mt-4">
+                  <div className="text-center text-gray-400 py-12">
+                    <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">Keine bestandenen Tests</p>
+                    <p className="text-sm">Erfolgreich abgeschlossene Tests werden hier angezeigt</p>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {tests.map((test) => (
-                <UserTestCard key={test.id} test={test} />
-              ))}
-            </div>
-          )}
+          </div>
         </TabsContent>
 
         {/* ========================================
             TAB: LERNEINHEITEN
         ======================================== */}
         <TabsContent value="lerneinheiten" className="mt-6">
-          {quizzes.length === 0 ? (
-            <div className="text-center text-gray-400 py-12">
-              <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium mb-2">Noch keine Lerneinheiten</p>
-              <p className="text-sm">Lerneinheiten werden von Admins erstellt</p>
+          <div className="space-y-4">
+            {/* Subbar: Search + Sub-Tabs - IMMER SICHTBAR */}
+            <div className="space-y-3">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Lerneinheiten durchsuchen..."
+                  value={lerneinheitenSearchQuery}
+                  onChange={(e) => setLerneinheitenSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+
+              {/* Sub-Tabs */}
+              <Tabs value={lerneinheitenSubTab} onValueChange={(value: any) => setLerneinheitenSubTab(value)}>
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="all">Alle</TabsTrigger>
+                  <TabsTrigger value="started">Angefangen</TabsTrigger>
+                  <TabsTrigger value="submitted">Abgegeben/In Review</TabsTrigger>
+                  <TabsTrigger value="passed">Bestanden</TabsTrigger>
+                </TabsList>
+
+                {/* Sub-Tab: Alle */}
+                <TabsContent value="all" className="mt-4">
+                  {quizzes.length === 0 ? (
+                    <div className="text-center text-gray-400 py-12">
+                      <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg font-medium mb-2">Noch keine Lerneinheiten</p>
+                      <p className="text-sm">Lerneinheiten werden von Admins erstellt</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {quizzes
+                        .filter((quiz) => 
+                          quiz.title.toLowerCase().includes(lerneinheitenSearchQuery.toLowerCase()) ||
+                          quiz.description?.toLowerCase().includes(lerneinheitenSearchQuery.toLowerCase())
+                        )
+                        .map((quiz) => (
+                          <QuizCard key={quiz.id} quiz={quiz} variant={quiz.category?.toLowerCase() as any || 'skills'} />
+                        ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Sub-Tab: Angefangen */}
+                <TabsContent value="started" className="mt-4">
+                  <div className="text-center text-gray-400 py-12">
+                    <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">Keine angefangenen Lerneinheiten</p>
+                    <p className="text-sm">Lerneinheiten, die du begonnen hast, werden hier angezeigt</p>
+                  </div>
+                </TabsContent>
+
+                {/* Sub-Tab: Abgegeben/In Review */}
+                <TabsContent value="submitted" className="mt-4">
+                  <div className="text-center text-gray-400 py-12">
+                    <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">Keine abgegebenen Lerneinheiten</p>
+                    <p className="text-sm">Abgegebene Lerneinheiten werden hier angezeigt</p>
+                  </div>
+                </TabsContent>
+
+                {/* Sub-Tab: Bestanden */}
+                <TabsContent value="passed" className="mt-4">
+                  <div className="text-center text-gray-400 py-12">
+                    <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">Keine bestandenen Lerneinheiten</p>
+                    <p className="text-sm">Erfolgreich abgeschlossene Lerneinheiten werden hier angezeigt</p>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {quizzes.map((quiz) => (
-                <QuizCard key={quiz.id} quiz={quiz} variant={quiz.category?.toLowerCase() as any || 'skills'} />
-              ))}
-            </div>
-          )}
+          </div>
         </TabsContent>
 
         {/* ========================================
             TAB: WIKI
         ======================================== */}
-        <TabsContent value="wiki" className="space-y-6 mt-6">
-          {/* Search Bar */}
-          <BrowoKo_WikiSearchBar
-            onSearch={handleWikiSearch}
-            placeholder="Wiki durchsuchen..."
-          />
-          
-          {/* Filter Tabs */}
-          <Tabs value={wikiFilterTab} onValueChange={(value: any) => setWikiFilterTab(value)}>
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="all">Alle</TabsTrigger>
-              <TabsTrigger value="department">
-                <Building2 className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Abteilung</span>
-              </TabsTrigger>
-              <TabsTrigger value="location">
-                <MapPin className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Standort</span>
-              </TabsTrigger>
-              <TabsTrigger value="specialization">
-                <Award className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Spezialisierung</span>
-              </TabsTrigger>
-            </TabsList>
-            
-            {/* Filter Selects */}
-            <div className="mt-4">
-              {wikiFilterTab === 'department' && (
-                <select
-                  value={selectedDepartment}
-                  onChange={(e) => setSelectedDepartment(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                >
-                  <option value="">Alle Abteilungen</option>
-                  {departments.map(dept => (
-                    <option key={dept.id} value={dept.id}>{dept.name}</option>
-                  ))}
-                </select>
-              )}
-              {wikiFilterTab === 'location' && (
-                <select
-                  value={selectedLocation}
-                  onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                >
-                  <option value="">Alle Standorte</option>
-                  {locations.map(loc => (
-                    <option key={loc.id} value={loc.id}>{loc.name}</option>
-                  ))}
-                </select>
-              )}
-              {wikiFilterTab === 'specialization' && (
-                <select
-                  value={selectedSpecialization}
-                  onChange={(e) => setSelectedSpecialization(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                >
-                  <option value="">Alle Spezialisierungen</option>
-                  {specializations.map(spec => (
-                    <option key={spec} value={spec}>{spec}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-          </Tabs>
-          
-          {/* Articles Grid or Search Results */}
-          {wikiLoading ? (
-            <LoadingState loading={true} type="spinner" />
-          ) : wikiSearch.trim() ? (
-            /* Show Search Results with Highlighting */
-            <BrowoKo_WikiSearchResults
-              results={filteredWikiArticles}
-              searchQuery={wikiSearch}
-              onSelectArticle={handleViewWikiArticle}
-              loading={wikiLoading}
+        <TabsContent value="wiki" className="mt-6">
+          <div className="space-y-4">
+            <BrowoKo_WikiSearchBar
+              onSearch={handleWikiSearch}
             />
-          ) : filteredWikiArticles.length === 0 ? (
-            <div className="text-center text-gray-400 py-12">
-              <Book className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium mb-2">
-                {wikiArticles.length === 0 ? 'Noch keine Wiki-Artikel' : 'Keine Artikel gefunden'}
-              </p>
-              <p className="text-sm">
-                {wikiArticles.length === 0 
-                  ? 'Wiki-Artikel werden von Admins erstellt'
-                  : 'Versuche einen anderen Filter oder Suchbegriff'
-                }
-              </p>
-            </div>
-          ) : (
-            /* Show Card Grid (no search) */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredWikiArticles.map(article => (
-                <BrowoKo_WikiArticleCard
-                  key={article.id}
-                  article={article}
-                  onView={handleViewWikiArticle}
-                  isAdmin={false}
-                />
-              ))}
-            </div>
-          )}
+            
+            {/* Filter Tabs */}
+            <Card>
+              <CardHeader className="py-2 pb-3">
+                <CardTitle className="text-base">Filter</CardTitle>
+              </CardHeader>
+              <CardContent className="py-0 pb-3">
+                <Tabs value={wikiFilterTab} onValueChange={(value: any) => setWikiFilterTab(value)}>
+                  <TabsList className="grid w-full grid-cols-5 h-8 mb-2">
+                    <TabsTrigger value="all" className="text-xs py-1">Alle</TabsTrigger>
+                    <TabsTrigger value="department" className="text-xs py-1">
+                      <Building2 className="w-3 h-3 mr-1" />
+                      <span className="hidden sm:inline">Abt.</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="location" className="text-xs py-1">
+                      <MapPin className="w-3 h-3 mr-1" />
+                      <span className="hidden sm:inline">Ort</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="specialization" className="text-xs py-1">
+                      <Award className="w-3 h-3 mr-1" />
+                      <span className="hidden sm:inline">Spez.</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="advanced" className="text-xs py-1">
+                      <Filter className="w-3 h-3 mr-1" />
+                      <span className="hidden sm:inline">Mehr</span>
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  {/* Filter Selects */}
+                  <div>
+                    {wikiFilterTab === 'department' && (
+                      <select
+                        value={selectedDepartment}
+                        onChange={(e) => setSelectedDepartment(e.target.value)}
+                        className="w-full rounded-md border border-gray-300 px-2 py-1 text-xs"
+                      >
+                        <option value="">Alle Abteilungen</option>
+                        {departments.map(dept => (
+                          <option key={dept.id} value={dept.id}>{dept.name}</option>
+                        ))}
+                      </select>
+                    )}
+                    {wikiFilterTab === 'location' && (
+                      <select
+                        value={selectedLocation}
+                        onChange={(e) => setSelectedLocation(e.target.value)}
+                        className="w-full rounded-md border border-gray-300 px-2 py-1 text-xs"
+                      >
+                        <option value="">Alle Standorte</option>
+                        {locations.map(loc => (
+                          <option key={loc.id} value={loc.id}>{loc.name}</option>
+                        ))}
+                      </select>
+                    )}
+                    {wikiFilterTab === 'specialization' && (
+                      <select
+                        value={selectedSpecialization}
+                        onChange={(e) => setSelectedSpecialization(e.target.value)}
+                        className="w-full rounded-md border border-gray-300 px-2 py-1 text-xs"
+                      >
+                        <option value="">Alle Spezialisierungen</option>
+                        {specializations.map(spec => (
+                          <option key={spec} value={spec}>{spec}</option>
+                        ))}
+                      </select>
+                    )}
+                    
+                    {/* Advanced Filters */}
+                    {wikiFilterTab === 'advanced' && (
+                      <div className="space-y-2">
+                        {/* Two Column Grid: RAG Types + Zeichen/Größe */}
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Left Column: RAG Types */}
+                          <div className="space-y-1">
+                            <Label className="flex items-center gap-1 text-xs">
+                              <Database className="w-3 h-3" />
+                              RAG Typen
+                            </Label>
+                            <div className="space-y-1 pl-2">
+                              <div className="flex items-center gap-1.5">
+                                <Checkbox
+                                  id="rag-intern"
+                                  className="h-3 w-3"
+                                  checked={selectedRagTypes.includes('INTERN_WIKI')}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedRagTypes([...selectedRagTypes, 'INTERN_WIKI']);
+                                    } else {
+                                      setSelectedRagTypes(selectedRagTypes.filter(t => t !== 'INTERN_WIKI'));
+                                    }
+                                  }}
+                                />
+                                <Label htmlFor="rag-intern" className="flex items-center gap-1 cursor-pointer text-xs">
+                                  <Database className="w-2.5 h-2.5 text-blue-600" />
+                                  Intern
+                                </Label>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <Checkbox
+                                  id="rag-website"
+                                  className="h-3 w-3"
+                                  checked={selectedRagTypes.includes('WEBSITE_RAG')}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedRagTypes([...selectedRagTypes, 'WEBSITE_RAG']);
+                                    } else {
+                                      setSelectedRagTypes(selectedRagTypes.filter(t => t !== 'WEBSITE_RAG'));
+                                    }
+                                  }}
+                                />
+                                <Label htmlFor="rag-website" className="flex items-center gap-1 cursor-pointer text-xs">
+                                  <Globe className="w-2.5 h-2.5 text-green-600" />
+                                  Website
+                                </Label>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Right Column: Zeichen + Größe */}
+                          <div className="space-y-2">
+                            {/* Character Count Range */}
+                            <div className="space-y-1">
+                              <Label className="text-xs">Zeichen</Label>
+                              <div className="grid grid-cols-2 gap-1">
+                                <Input
+                                  type="number"
+                                  placeholder="Min"
+                                  className="h-7 text-xs px-2"
+                                  value={minCharacters}
+                                  onChange={(e) => setMinCharacters(e.target.value)}
+                                />
+                                <Input
+                                  type="number"
+                                  placeholder="Max"
+                                  className="h-7 text-xs px-2"
+                                  value={maxCharacters}
+                                  onChange={(e) => setMaxCharacters(e.target.value)}
+                                />
+                              </div>
+                            </div>
+                            
+                            {/* Storage Size Range (in KB) */}
+                            <div className="space-y-1">
+                              <Label className="text-xs">Größe (KB)</Label>
+                              <div className="grid grid-cols-2 gap-1">
+                                <Input
+                                  type="number"
+                                  placeholder="Min"
+                                  className="h-7 text-xs px-2"
+                                  value={minStorage}
+                                  onChange={(e) => setMinStorage(e.target.value)}
+                                />
+                                <Input
+                                  type="number"
+                                  placeholder="Max"
+                                  className="h-7 text-xs px-2"
+                                  value={maxStorage}
+                                  onChange={(e) => setMaxStorage(e.target.value)}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Three Date Filters in One Row */}
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <div className="space-y-0.5">
+                            <Label className="text-[10px]">Bearbeitet nach</Label>
+                            <Input
+                              type="date"
+                              className="h-7 text-xs px-1.5"
+                              value={editedAfter}
+                              onChange={(e) => setEditedAfter(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-0.5">
+                            <Label className="text-[10px]">Angesehen nach</Label>
+                            <Input
+                              type="date"
+                              className="h-7 text-xs px-1.5"
+                              value={viewedAfter}
+                              onChange={(e) => setViewedAfter(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-0.5">
+                            <Label className="text-[10px]">Erstellt nach</Label>
+                            <Input
+                              type="date"
+                              className="h-7 text-xs px-1.5"
+                              value={createdAfter}
+                              onChange={(e) => setCreatedAfter(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Tabs>
+              </CardContent>
+            </Card>
+            
+            <BrowoKo_WikiSearchResults
+              results={wikiResults}
+              searchQuery={wikiSearchQuery}
+              loading={wikiLoading}
+              onSelectArticle={handleSelectArticle}
+            />
+            <BrowoKo_WikiArticleView
+              article={selectedArticle}
+              open={selectedArticle !== null}
+              onOpenChange={(open) => !open && setSelectedArticle(null)}
+            />
+          </div>
         </TabsContent>
 
         {/* ========================================
@@ -527,13 +706,6 @@ export default function LearningScreen() {
           </div>
         </TabsContent>
       </Tabs>
-      
-      {/* Wiki View Dialog */}
-      <BrowoKo_WikiArticleView
-        article={selectedWikiArticle}
-        open={isViewWikiOpen}
-        onOpenChange={setIsViewWikiOpen}
-      />
       </div> {/* ✅ Close max-width container */}
     </div>
   );

@@ -3,6 +3,7 @@ import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";
 import { createClient } from "npm:@supabase/supabase-js";
 import * as kv from "./kv_store.tsx";
+import { testSubmissionsApp } from "./testSubmissions.ts";
 // TODO: Re-enable when timeAccountCalculation.ts is implemented
 // import { calculateTimeAccount, calculateTimeAccountsForAllUsers } from "./timeAccountCalculation.ts";
 
@@ -826,6 +827,11 @@ app.get('/make-server-f659121d/storage/sign', async (c) => {
     return c.json({ error: error.message || 'Failed to create signed URL' }, 500);
   }
 });
+
+// ============================================
+// TEST SUBMISSIONS & REVIEW API
+// ============================================
+app.route('/make-server-f659121d/tests', testSubmissionsApp);
 
 // Initialize server after ensuring buckets exist
 (async () => {

@@ -588,13 +588,13 @@ export class LearningService extends ApiService {
   async updateVideoProgress(
     userId: string,
     videoId: string,
-    progress: number,
+    watchedSeconds: number,
     completed: boolean = false
   ): Promise<LearningProgress> {
     this.logRequest('updateVideoProgress', 'LearningService', {
       userId,
       videoId,
-      progress,
+      watchedSeconds,
       completed,
     });
 
@@ -615,7 +615,7 @@ export class LearningService extends ApiService {
         .upsert({
           user_id: userId,
           video_id: videoId,
-          progress,
+          watched_seconds: watchedSeconds,
           completed,
           last_watched_at: new Date().toISOString(),
         })

@@ -340,3 +340,156 @@ export const safeValidateTest = (data: unknown) => TestSchema.safeParse(data);
 export const safeValidateCreateTest = (data: unknown) => CreateTestSchema.safeParse(data);
 export const safeValidateTestBlock = (data: unknown) => TestBlockSchema.safeParse(data);
 export const safeValidateCreateTestBlock = (data: unknown) => CreateTestBlockSchema.safeParse(data);
+
+/**
+ * ========================================
+ * TEST SUBMISSION & REVIEW SYSTEM
+ * ========================================
+ */
+
+/**
+ * TEST SUBMISSION STATUS
+ */
+export const TestSubmissionStatusEnum = z.enum([
+  'DRAFT',            // User ist noch am Bearbeiten
+  'PENDING_REVIEW',   // Abgegeben, wartet auf Prüfer
+  'NEEDS_REVISION',   // Abgelehnt, User muss überarbeiten
+  'APPROVED',         // Bestanden
+  'FAILED'            // Durchgefallen (endgültig)
+]);
+
+export type TestSubmissionStatus = z.infer<typeof TestSubmissionStatusEnum>;
+
+/**
+ * PRACTICAL SUBMISSION (File/Video Upload)
+ */
+export const PracticalSubmissionSchema = z.object({
+  blockId: z.string().uuid(),
+  type: z.enum(['file', 'video']),
+  fileUrl: z.string().url(),
+  fileName: z.string().optional(),
+  fileSize: z.number().optional(),
+  userExplanation: z.string().max(2000).optional(),
+  reviewStatus: z.enum(['pending', 'approved', 'rejected']).default('pending'),
+});
+
+export type PracticalSubmission = z.infer<typeof PracticalSubmissionSchema>;
+
+/**
+ * TEST SUBMISSION SCHEMA
+ */
+export const TestSubmissionSchema = z.object({
+  id: z.string().uuid().optional(),
+  userId: z.string().uuid(),
+  testId: z.string().uuid(),
+  videoId: z.string().uuid().nullable().optional(),
+  status: TestSubmissionStatusEnum.default('DRAFT'),
+  attemptNumber: z.number().int().min(1).max(3).default(1),
+  
+  // Auto-Scores (sofort berechnet)
+  autoAnswers: z.record(z.any()).optional(), // { blockId: answer }
+  autoScore: z.number().min(0).default(0),
+  autoMaxScore: z.number().min(0).default(0),
+  autoPercentage: z.number().min(0).max(100).default(0),
+  
+  // Praktische Aufgaben
+  practicalSubmissions: z.array(PracticalSubmissionSchema).default([]),
+  
+  // Review Data
+  reviewerId: z.string().uuid().nullable().optional(),
+  reviewedAt: z.string().datetime().nullable().optional(),
+  reviewDecision: z.enum(['approve', 'needs_revision', 'fail']).nullable().optional(),
+  reviewReason: z.string().max(2000).nullable().optional(),
+  reviewStars: z.number().int().min(1).max(5).nullable().optional(),
+  
+  // Calculated
+  finalScore: z.number().min(0).max(100).default(0),
+  finalPercentage: z.number().min(0).max(100).default(0),
+  passed: z.boolean().default(false),
+  
+  submittedAt: z.string().datetime().nullable().optional(),
+  createdAt: z.string().datetime().optional(),
+  updatedAt: z.string().datetime().optional(),
+});
+
+export type TestSubmission = z.infer<typeof TestSubmissionSchema>;
+
+/**
+ * REVIEW COMMENT SCHEMA
+ */
+export const ReviewCommentSchema = z.object({
+  id: z.string().uuid().optional(),
+  submissionId: z.string().uuid(),
+  blockId: z.string().uuid(),
+  reviewerId: z.string().uuid(),
+  
+  type: z.enum(['image', 'video']),
+  
+  // For image comments (position as % from top/left)
+  positionX: z.number().min(0).max(100).nullable().optional(),
+  positionY: z.number().min(0).max(100).nullable().optional(),
+  
+  // For video comments (timestamp in seconds)
+  timestamp: z.number().min(0).nullable().optional(),
+  
+  text: z.string().min(1).max(1000),
+  createdAt: z.string().datetime().optional(),
+});
+
+export type ReviewComment = z.infer<typeof ReviewCommentSchema>;
+
+/**
+ * CREATE SUBMISSION SCHEMA
+ */
+export const CreateTestSubmissionSchema = z.object({
+  testId: z.string().uuid(),
+  userId: z.string().uuid(),
+  videoId: z.string().uuid().nullable().optional(),
+  autoAnswers: z.record(z.any()).optional(),
+  practicalSubmissions: z.array(PracticalSubmissionSchema).optional(),
+});
+
+export type CreateTestSubmissionData = z.infer<typeof CreateTestSubmissionSchema>;
+
+/**
+ * UPDATE SUBMISSION SCHEMA
+ */
+export const UpdateTestSubmissionSchema = z.object({
+  autoAnswers: z.record(z.any()).optional(),
+  practicalSubmissions: z.array(PracticalSubmissionSchema).optional(),
+  status: TestSubmissionStatusEnum.optional(),
+});
+
+export type UpdateTestSubmissionData = z.infer<typeof UpdateTestSubmissionSchema>;
+
+/**
+ * SUBMIT FOR REVIEW SCHEMA
+ */
+export const SubmitForReviewSchema = z.object({
+  submissionId: z.string().uuid(),
+  autoAnswers: z.record(z.any()),
+  practicalSubmissions: z.array(PracticalSubmissionSchema),
+});
+
+export type SubmitForReviewData = z.infer<typeof SubmitForReviewSchema>;
+
+/**
+ * REVIEW SUBMISSION SCHEMA
+ */
+export const ReviewSubmissionSchema = z.object({
+  submissionId: z.string().uuid(),
+  reviewerId: z.string().uuid(),
+  decision: z.enum(['approve', 'needs_revision', 'fail']),
+  reason: z.string().min(20, 'Begründung muss mindestens 20 Zeichen lang sein').max(2000),
+  stars: z.number().int().min(1).max(5).optional(),
+  comments: z.array(z.object({
+    blockId: z.string().uuid(),
+    type: z.enum(['image', 'video']),
+    positionX: z.number().min(0).max(100).nullable().optional(),
+    positionY: z.number().min(0).max(100).nullable().optional(),
+    timestamp: z.number().min(0).nullable().optional(),
+    text: z.string().min(1).max(1000),
+  })).optional(),
+});
+
+export type ReviewSubmissionData = z.infer<typeof ReviewSubmissionSchema>;
