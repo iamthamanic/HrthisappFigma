@@ -39,6 +39,7 @@ const ChatScreen = lazy(() => import('./screens/ChatScreen'));
 // Admin Screens
 const TeamUndMitarbeiterverwaltung = lazy(() => import('./screens/admin/TeamUndMitarbeiterverwaltung'));
 const AddEmployeeScreen = lazy(() => import('./screens/admin/AddEmployeeScreen'));
+const AddEmployeeWizardScreen = lazy(() => import('./screens/admin/AddEmployeeWizardScreen'));
 const TeamMemberDetailsScreen = lazy(() => import('./screens/admin/TeamMemberDetailsScreen'));
 const OrganigramCanvasScreen = lazy(() => import('./screens/admin/OrganigramCanvasScreenV2'));
 const OrganigramUnifiedScreen = lazy(() => import('./screens/admin/OrganigramUnifiedScreen'));
@@ -46,6 +47,7 @@ const CompanySettingsScreen = lazy(() => import('./screens/admin/CompanySettings
 const FieldManagementScreen = lazy(() => import('./screens/admin/FieldManagementScreen'));
 const VehicleDetailScreen = lazy(() => import('./screens/admin/VehicleDetailScreen'));
 const EquipmentManagementScreen = lazy(() => import('./screens/admin/EquipmentManagementScreen'));
+const ITEquipmentManagementScreen = lazy(() => import('./screens/admin/ITEquipmentManagementScreen'));
 const AvatarSystemAdminScreen = lazy(() => import('./screens/admin/AvatarSystemAdminScreen'));
 const BenefitsManagementScreen = lazy(() => import('./screens/admin/BenefitsManagementScreen'));
 const DashboardAnnouncementsScreen = lazy(() => import('./screens/admin/DashboardAnnouncementsScreen'));
@@ -55,6 +57,8 @@ const TimeAccountTestScreen = lazy(() => import('./screens/admin/TimeAccountTest
 const TimesheetManagementScreen = lazy(() => import('./screens/admin/TimesheetManagementScreen'));
 const AutomationManagementScreen = lazy(() => import('./screens/admin/AutomationManagementScreen'));
 const SystemHealthScreen = lazy(() => import('./screens/admin/SystemHealthScreen'));
+const WorkflowsScreen = lazy(() => import('./screens/admin/WorkflowsScreen'));
+const WorkflowDetailScreen = lazy(() => import('./screens/admin/WorkflowDetailScreen'));
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -358,6 +362,11 @@ export default function App() {
               <AddEmployeeScreen />
             </Suspense>
           } />
+          <Route path="team-und-mitarbeiterverwaltung/add-employee-wizard" element={
+            <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
+              <AddEmployeeWizardScreen />
+            </Suspense>
+          } />
           <Route path="team-und-mitarbeiterverwaltung/user/:userId" element={
             <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
               <TeamMemberDetailsScreen />
@@ -418,6 +427,12 @@ export default function App() {
               <EquipmentManagementScreen />
             </Suspense>
           } />
+          {/* NEW: IT Equipment Management Screen */}
+          <Route path="it-equipment-management" element={
+            <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
+              <ITEquipmentManagementScreen />
+            </Suspense>
+          } />
           <Route path="avatar-management" element={
             <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
               <AvatarSystemAdminScreen />
@@ -469,6 +484,17 @@ export default function App() {
           <Route path="system-health" element={
             <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
               <SystemHealthScreen />
+            </Suspense>
+          } />
+          {/* NEW: Workflows System */}
+          <Route path="workflows" element={
+            <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
+              <WorkflowsScreen />
+            </Suspense>
+          } />
+          <Route path="workflows/builder/:workflowId" element={
+            <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
+              <WorkflowDetailScreen />
             </Suspense>
           } />
         </Route>

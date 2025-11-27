@@ -18,10 +18,10 @@ export default function TestEdgeFunctionCORS() {
 
     try {
       console.log('🧪 Testing Edge Function CORS...');
-      console.log(`📍 URL: https://${projectId}.supabase.co/functions/v1/make-server-f659121d/health`);
+      console.log(`📍 URL: https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/health`);
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-f659121d/health`,
+        `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/health`,
         {
           method: 'GET',
           headers: {
@@ -89,7 +89,7 @@ export default function TestEdgeFunctionCORS() {
       const testPassword = 'TestPassword123!';
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-f659121d/users/create`,
+        `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/users/create`,
         {
           method: 'POST',
           headers: {

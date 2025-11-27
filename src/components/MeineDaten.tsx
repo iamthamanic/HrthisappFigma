@@ -237,7 +237,7 @@ export default function MeineDaten() {
       formData.append('userId', user.id);
 
       const uploadResponse = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-f659121d/documents/upload`,
+        `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/documents/upload`,
         {
           method: 'POST',
           headers: {

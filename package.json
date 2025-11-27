@@ -67,6 +67,7 @@
           "react-router-dom": "*",
           "react-window": "*",
           "react-zoom-pan-pinch": "*",
+          "reactflow": "*",
           "recharts": "^2.15.2",
           "sonner": "^2.0.3",
           "tailwind-merge": "*",

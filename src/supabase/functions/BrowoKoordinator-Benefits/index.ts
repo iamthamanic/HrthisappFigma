@@ -24,6 +24,48 @@ import { cors } from 'npm:hono/cors';
 import { logger } from 'npm:hono/logger';
 import { createClient } from 'npm:@supabase/supabase-js';
 
+// ==================== INLINE TRIGGER HELPER ====================
+const TRIGGER_TYPES = {
+  BENEFIT_ASSIGNED: 'BENEFIT_ASSIGNED',
+  BENEFIT_REMOVED: 'BENEFIT_REMOVED',
+};
+
+async function triggerWorkflows(
+  triggerType: string,
+  context: Record<string, any>,
+  authToken: string
+): Promise<void> {
+  try {
+    const projectId = Deno.env.get('SUPABASE_URL')?.split('//')[1]?.split('.')[0];
+    if (!projectId) return;
+
+    console.log(`🔔 Triggering workflows for event: ${triggerType}`);
+
+    const response = await fetch(
+      `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Workflows/trigger`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authToken,
+        },
+        body: JSON.stringify({ trigger_type: triggerType, context }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.warn(`[triggerWorkflows] Failed:`, error);
+      return;
+    }
+
+    const result = await response.json();
+    console.log(`✅ Workflows triggered:`, result);
+  } catch (error) {
+    console.error(`[triggerWorkflows] Error:`, error);
+  }
+}
+
 const app = new Hono();
 
 const corsHeaders = {
@@ -578,7 +620,7 @@ app.post('/BrowoKoordinator-Benefits/approve/:id', async (c) => {
     await sendNotification(
       request.user_id,
       'Benefit genehmigt!',
-      `Dein Antrag für "${request.benefits.title}" wurde genehmigt!`,
+      `Dein Antrag für \"${request.benefits.title}\" wurde genehmigt!`,
       'BENEFIT_APPROVED',
       '/benefits',
       {
@@ -586,6 +628,36 @@ app.post('/BrowoKoordinator-Benefits/approve/:id', async (c) => {
         benefit_id: request.benefit_id,
       }
     );
+    
+    // 🔔 TRIGGER WORKFLOWS: BENEFIT_ASSIGNED
+    try {
+      const authHeaderValue = `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`;
+      
+      // Get user info for context
+      const { data: userData } = await supabase
+        .from('users')
+        .select('first_name, last_name, organization_id')
+        .eq('id', request.user_id)
+        .single();
+      
+      if (userData) {
+        await triggerWorkflows(
+          TRIGGER_TYPES.BENEFIT_ASSIGNED,
+          {
+            benefitId: request.benefit_id,
+            benefitName: request.benefits.title,
+            userId: request.user_id,
+            userName: `${userData.first_name} ${userData.last_name}`,
+            assignmentDate: new Date().toISOString(),
+            organizationId: userData.organization_id,
+          },
+          authHeaderValue
+        );
+        console.log(`✅ BENEFIT_ASSIGNED workflows triggered`);
+      }
+    } catch (triggerError) {
+      console.error('⚠️ Failed to trigger workflows (non-fatal):', triggerError);
+    }
 
     return c.json({
       success: true,
@@ -675,7 +747,7 @@ app.post('/BrowoKoordinator-Benefits/reject/:id', async (c) => {
     await sendNotification(
       request.user_id,
       'Benefit abgelehnt',
-      `Dein Antrag für "${request.benefits.title}" wurde abgelehnt. Grund: ${rejection_reason}`,
+      `Dein Antrag für \"${request.benefits.title}\" wurde abgelehnt. Grund: ${rejection_reason}`,
       'BENEFIT_REJECTED',
       '/benefits',
       {
@@ -684,6 +756,37 @@ app.post('/BrowoKoordinator-Benefits/reject/:id', async (c) => {
         reason: rejection_reason,
       }
     );
+    
+    // 🔔 TRIGGER WORKFLOWS: BENEFIT_REMOVED
+    try {
+      const authHeaderValue = `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`;
+      
+      // Get user info for context
+      const { data: userData } = await supabase
+        .from('users')
+        .select('first_name, last_name, organization_id')
+        .eq('id', request.user_id)
+        .single();
+      
+      if (userData) {
+        await triggerWorkflows(
+          TRIGGER_TYPES.BENEFIT_REMOVED,
+          {
+            benefitId: request.benefit_id,
+            benefitName: request.benefits.title,
+            userId: request.user_id,
+            userName: `${userData.first_name} ${userData.last_name}`,
+            removalDate: new Date().toISOString(),
+            removalReason: rejection_reason,
+            organizationId: userData.organization_id,
+          },
+          authHeaderValue
+        );
+        console.log(`✅ BENEFIT_REMOVED workflows triggered`);
+      }
+    } catch (triggerError) {
+      console.error('⚠️ Failed to trigger workflows (non-fatal):', triggerError);
+    }
 
     return c.json({
       success: true,

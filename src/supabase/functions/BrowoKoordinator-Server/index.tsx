@@ -2,13 +2,11 @@ import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";
 import { createClient } from "npm:@supabase/supabase-js";
-import * as kv from "./kv_store.tsx";
-import { testSubmissionsApp } from "./testSubmissions.ts";
-import { executeWorkflowGraph } from "./workflowEngine.ts";
-// TODO: Re-enable when timeAccountCalculation.ts is implemented
-// import { calculateTimeAccount, calculateTimeAccountsForAllUsers } from "./timeAccountCalculation.ts";
+// ❌ REMOVED: import * as kv from "./kv_store.tsx";
+// ❌ REMOVED: import { testSubmissionsApp } from "./testSubmissions.ts";
+// ❌ REMOVED: import { executeWorkflowGraph } from "./workflowEngine.ts";
 
-// ==================== INLINE TRIGGER HELPER ====================
+// ==================== TRIGGER TYPES & HELPER ====================
 const TRIGGER_TYPES = {
   EMPLOYEE_CREATED: 'EMPLOYEE_CREATED',
   EMPLOYEE_UPDATED: 'EMPLOYEE_UPDATED',
@@ -68,6 +66,654 @@ async function triggerWorkflows(
   }
 }
 
+// ==================== INLINE KV STORE ====================
+// (Previously from kv_store.tsx)
+const kvClient = () => createClient(
+  Deno.env.get("SUPABASE_URL"),
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+);
+
+const kv = {
+  set: async (key: string, value: any): Promise<void> => {
+    const supabase = kvClient();
+    const { error } = await supabase.from("kv_store_f659121d").upsert({ key, value });
+    if (error) throw new Error(error.message);
+  },
+  
+  get: async (key: string): Promise<any> => {
+    const supabase = kvClient();
+    const { data, error } = await supabase.from("kv_store_f659121d").select("value").eq("key", key).maybeSingle();
+    if (error) throw new Error(error.message);
+    return data?.value;
+  },
+  
+  del: async (key: string): Promise<void> => {
+    const supabase = kvClient();
+    const { error } = await supabase.from("kv_store_f659121d").delete().eq("key", key);
+    if (error) throw new Error(error.message);
+  },
+  
+  mset: async (keys: string[], values: any[]): Promise<void> => {
+    const supabase = kvClient();
+    const { error } = await supabase.from("kv_store_f659121d").upsert(keys.map((k, i) => ({ key: k, value: values[i] })));
+    if (error) throw new Error(error.message);
+  },
+  
+  mget: async (keys: string[]): Promise<any[]> => {
+    const supabase = kvClient();
+    const { data, error } = await supabase.from("kv_store_f659121d").select("value").in("key", keys);
+    if (error) throw new Error(error.message);
+    return data?.map((d) => d.value) ?? [];
+  },
+  
+  mdel: async (keys: string[]): Promise<void> => {
+    const supabase = kvClient();
+    const { error } = await supabase.from("kv_store_f659121d").delete().in("key", keys);
+    if (error) throw new Error(error.message);
+  },
+  
+  getByPrefix: async (prefix: string): Promise<any[]> => {
+    const supabase = kvClient();
+    const { data, error } = await supabase.from("kv_store_f659121d").select("key, value").like("key", prefix + "%");
+    if (error) throw new Error(error.message);
+    return data?.map((d) => d.value) ?? [];
+  }
+};
+
+// ==================== INLINE WORKFLOW ENGINE ====================
+// (Previously from workflowEngine.ts)
+interface WorkflowNode {
+  id: string;
+  type: string;
+  data: {
+    label: string;
+    type?: string;
+    triggerType?: string;
+    config?: any;
+  };
+}
+
+interface WorkflowEdge {
+  id: string;
+  source: string;
+  target: string;
+}
+
+interface Workflow {
+  id: string;
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+}
+
+interface ExecutionContext {
+  userId?: string;
+  employeeId?: string;
+  [key: string]: any;
+}
+
+const getNextNodes = (nodes: WorkflowNode[], edges: WorkflowEdge[], currentNodeId: string) => {
+  const outgoingEdges = edges.filter(e => e.source === currentNodeId);
+  const targetNodeIds = outgoingEdges.map(e => e.target);
+  return nodes.filter(n => targetNodeIds.includes(n.id));
+};
+
+const executeAction = async (node: WorkflowNode, context: ExecutionContext) => {
+  const actionType = node.data.type;
+  const label = node.data.label;
+  
+  console.log(`⚡ Executing Action: [${actionType}] ${label}`);
+  
+  switch (actionType) {
+    case 'SEND_EMAIL':
+      console.log(`📧 Email sent to user ${context.userId}: Subject: "Update from HR"`);
+      break;
+    case 'ASSIGN_DOCUMENT':
+      if (context.userId) {
+         const docId = `doc_${Date.now()}`;
+         await kv.set(`user_document:${context.userId}:${docId}`, {
+           documentName: "Onboarding Checklist",
+           assignedAt: new Date().toISOString(),
+           status: "PENDING"
+         });
+         console.log(`📄 Document assigned to ${context.userId}`);
+      }
+      break;
+    case 'ASSIGN_EQUIPMENT':
+      console.log(`💻 Equipment request created for ${context.userId}`);
+      break;
+    case 'ASSIGN_BENEFITS':
+      console.log(`🎁 Benefit assigned to ${context.userId}`);
+      break;
+    case 'DISTRIBUTE_COINS':
+      if (context.userId) {
+        console.log(`🪙 100 Coins distributed to ${context.userId}`);
+      }
+      break;
+    case 'DELAY':
+      console.log(`⏱️ Delay requested. (Skipping for immediate execution prototype)`);
+      break;
+    default:
+      console.log(`⚠️ Unknown action type: ${actionType}`);
+  }
+  
+  return { success: true, action: actionType };
+};
+
+const executeWorkflowGraph = async (workflow: Workflow, context: ExecutionContext) => {
+  const { nodes, edges } = workflow;
+  const logs: string[] = [];
+  
+  const log = (msg: string) => {
+    console.log(msg);
+    logs.push(msg);
+  };
+
+  log(`🚀 Starting Workflow Execution for ${workflow.id}`);
+
+  const startNode = nodes.find(n => n.type === 'trigger');
+  
+  if (!startNode) {
+    throw new Error("No trigger node found in workflow.");
+  }
+
+  log(`🟢 Trigger fired: ${startNode.data.label}`);
+
+  let queue: WorkflowNode[] = [startNode];
+  const visited = new Set<string>();
+
+  while (queue.length > 0) {
+    const currentNode = queue.shift()!;
+    
+    if (visited.has(currentNode.id)) continue;
+    visited.add(currentNode.id);
+
+    if (currentNode.type === 'action') {
+      try {
+        await executeAction(currentNode, context);
+        log(`✅ Action executed: ${currentNode.data.label}`);
+      } catch (e: any) {
+        log(`❌ Action failed: ${currentNode.data.label} - ${e.message}`);
+      }
+    }
+
+    const nextNodes = getNextNodes(nodes, edges, currentNode.id);
+    queue = [...queue, ...nextNodes];
+  }
+
+  log(`🏁 Workflow Execution Completed.`);
+  return { success: true, logs };
+};
+
+// ==================== INLINE TEST SUBMISSIONS APP ====================
+// (Previously from testSubmissions.ts)
+const testSubmissionsApp = new Hono();
+
+const testSubmissionsSupabase = createClient(
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+);
+
+const SUBMISSIONS_BUCKET = 'make-f659121d-submissions';
+
+async function ensureSubmissionsBucketExists() {
+  try {
+    const { data: buckets } = await testSubmissionsSupabase.storage.listBuckets();
+    const bucketExists = buckets?.some(bucket => bucket.name === SUBMISSIONS_BUCKET);
+    
+    if (!bucketExists) {
+      console.log(`📦 Creating storage bucket: ${SUBMISSIONS_BUCKET}`);
+      const { error } = await testSubmissionsSupabase.storage.createBucket(SUBMISSIONS_BUCKET, {
+        public: false,
+        fileSizeLimit: 52428800,
+      });
+      
+      if (error) {
+        console.error(`❌ Error creating bucket ${SUBMISSIONS_BUCKET}:`, error);
+        return false;
+      }
+      console.log(`✅ Storage bucket ${SUBMISSIONS_BUCKET} created`);
+    }
+    return true;
+  } catch (error) {
+    console.error(`❌ Error ensuring submissions bucket:`, error);
+    return false;
+  }
+}
+
+ensureSubmissionsBucketExists();
+
+function calculateAutoScore(
+  autoAnswers: Record<string, any>,
+  testBlocks: any[]
+): { score: number; maxScore: number; percentage: number } {
+  let score = 0;
+  let maxScore = 0;
+
+  for (const block of testBlocks) {
+    const autoBlockTypes = ['MULTIPLE_CHOICE', 'MULTIPLE_SELECT', 'TRUE_FALSE', 'SHORT_TEXT'];
+    
+    if (!autoBlockTypes.includes(block.type)) continue;
+    
+    maxScore += block.points || 10;
+    
+    const userAnswer = autoAnswers[block.id];
+    const correctAnswer = block.content?.correctAnswer;
+    
+    if (!userAnswer || !correctAnswer) continue;
+    
+    let isCorrect = false;
+    
+    if (block.type === 'MULTIPLE_CHOICE' || block.type === 'TRUE_FALSE') {
+      isCorrect = userAnswer === correctAnswer;
+    } else if (block.type === 'MULTIPLE_SELECT') {
+      const userSet = new Set(userAnswer);
+      const correctSet = new Set(correctAnswer);
+      isCorrect = userSet.size === correctSet.size && [...userSet].every(x => correctSet.has(x));
+    } else if (block.type === 'SHORT_TEXT') {
+      isCorrect = userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+    }
+    
+    if (isCorrect) {
+      score += block.points || 10;
+    }
+  }
+
+  const percentage = maxScore > 0 ? (score / maxScore) * 100 : 0;
+  
+  return { score, maxScore, percentage };
+}
+
+function calculateFinalScore(
+  autoPercentage: number,
+  practicalPassed: boolean,
+  test: any
+): { finalScore: number; finalPercentage: number; passed: boolean } {
+  const autoWeight = 0.6;
+  const practicalWeight = 0.4;
+  
+  const practicalScore = practicalPassed ? 100 : 0;
+  const finalPercentage = (autoPercentage * autoWeight) + (practicalScore * practicalWeight);
+  const passPercentage = test.pass_percentage || 80;
+  
+  return {
+    finalScore: Math.round(finalPercentage),
+    finalPercentage: Math.round(finalPercentage),
+    passed: finalPercentage >= passPercentage
+  };
+}
+
+testSubmissionsApp.get('/submissions', async (c) => {
+  try {
+    const status = c.req.query('status');
+    const userId = c.req.query('userId');
+    const testId = c.req.query('testId');
+    
+    let query = testSubmissionsSupabase
+      .from('test_submissions')
+      .select(`
+        *,
+        test:tests!inner(id, title, pass_percentage),
+        user:users!test_submissions_user_id_fkey(id, first_name, last_name, email),
+        reviewer:users!test_submissions_reviewer_id_fkey(id, first_name, last_name)
+      `)
+      .order('created_at', { ascending: false });
+    
+    if (status) query = query.eq('status', status);
+    if (userId) query = query.eq('user_id', userId);
+    if (testId) query = query.eq('test_id', testId);
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    
+    return c.json({ success: true, data });
+  } catch (error: any) {
+    console.error('❌ Error fetching submissions:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+testSubmissionsApp.get('/submissions/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    
+    const { data: submission, error } = await testSubmissionsSupabase
+      .from('test_submissions')
+      .select(`
+        *,
+        test:tests!inner(*),
+        user:users!test_submissions_user_id_fkey(id, first_name, last_name, email),
+        reviewer:users!test_submissions_reviewer_id_fkey(id, first_name, last_name)
+      `)
+      .eq('id', id)
+      .single();
+    
+    if (error) throw error;
+    
+    const { data: blocks } = await testSubmissionsSupabase
+      .from('test_blocks')
+      .select('*')
+      .eq('test_id', submission.test_id)
+      .order('position');
+    
+    const { data: comments } = await testSubmissionsSupabase
+      .from('review_comments')
+      .select('*')
+      .eq('submission_id', id)
+      .order('created_at');
+    
+    return c.json({ 
+      success: true, 
+      data: {
+        ...submission,
+        blocks: blocks || [],
+        comments: comments || []
+      }
+    });
+  } catch (error: any) {
+    console.error('❌ Error fetching submission:', error);
+    return c.json({ success: false, error: error.message }, 404);
+  }
+});
+
+testSubmissionsApp.post('/submissions', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { testId, userId, videoId } = body;
+    
+    const { data: existing } = await testSubmissionsSupabase
+      .from('test_submissions')
+      .select('id')
+      .eq('test_id', testId)
+      .eq('user_id', userId)
+      .eq('status', 'DRAFT')
+      .maybeSingle();
+    
+    if (existing) {
+      return c.json({ success: true, data: existing, message: 'Draft already exists' });
+    }
+    
+    const { data: attempts } = await testSubmissionsSupabase
+      .from('test_submissions')
+      .select('attempt_number')
+      .eq('test_id', testId)
+      .eq('user_id', userId)
+      .order('attempt_number', { ascending: false })
+      .limit(1);
+    
+    const attemptNumber = (attempts?.[0]?.attempt_number || 0) + 1;
+    
+    if (attemptNumber > 3) {
+      return c.json({ success: false, error: 'Maximale Anzahl an Versuchen erreicht (3)' }, 400);
+    }
+    
+    const { data, error } = await testSubmissionsSupabase
+      .from('test_submissions')
+      .insert({
+        test_id: testId,
+        user_id: userId,
+        video_id: videoId,
+        status: 'DRAFT',
+        attempt_number: attemptNumber,
+        auto_answers: {},
+        practical_submissions: [],
+        auto_score: 0,
+        auto_max_score: 0,
+        auto_percentage: 0,
+        final_score: 0,
+        final_percentage: 0,
+        passed: false,
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return c.json({ success: true, data });
+  } catch (error: any) {
+    console.error('❌ Error creating submission:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+testSubmissionsApp.patch('/submissions/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    const { autoAnswers, practicalSubmissions, status } = body;
+    
+    const updates: any = { updated_at: new Date().toISOString() };
+    
+    if (autoAnswers) updates.auto_answers = autoAnswers;
+    if (practicalSubmissions) updates.practical_submissions = practicalSubmissions;
+    if (status) updates.status = status;
+    
+    const { data, error } = await testSubmissionsSupabase
+      .from('test_submissions')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return c.json({ success: true, data });
+  } catch (error: any) {
+    console.error('❌ Error updating submission:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+testSubmissionsApp.post('/submissions/:id/submit', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    const { autoAnswers, practicalSubmissions } = body;
+    
+    const { data: submission, error: subError } = await testSubmissionsSupabase
+      .from('test_submissions')
+      .select('*, test:tests!inner(*)')
+      .eq('id', id)
+      .single();
+    
+    if (subError) throw subError;
+    
+    const { data: blocks, error: blocksError } = await testSubmissionsSupabase
+      .from('test_blocks')
+      .select('*')
+      .eq('test_id', submission.test_id);
+    
+    if (blocksError) throw blocksError;
+    
+    const autoScoreData = calculateAutoScore(autoAnswers, blocks || []);
+    
+    const hasPracticalBlocks = blocks?.some(b => b.type === 'FILE_UPLOAD' || b.type === 'VIDEO');
+    
+    const updates: any = {
+      auto_answers: autoAnswers,
+      practical_submissions: practicalSubmissions || [],
+      auto_score: autoScoreData.score,
+      auto_max_score: autoScoreData.maxScore,
+      auto_percentage: autoScoreData.percentage,
+      submitted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    
+    if (hasPracticalBlocks) {
+      updates.status = 'PENDING_REVIEW';
+    } else {
+      const finalScoreData = calculateFinalScore(autoScoreData.percentage, true, submission.test);
+      updates.status = finalScoreData.passed ? 'APPROVED' : 'FAILED';
+      updates.final_score = finalScoreData.finalScore;
+      updates.final_percentage = finalScoreData.finalPercentage;
+      updates.passed = finalScoreData.passed;
+    }
+    
+    const { data, error } = await testSubmissionsSupabase
+      .from('test_submissions')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return c.json({ success: true, data });
+  } catch (error: any) {
+    console.error('❌ Error submitting for review:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+testSubmissionsApp.post('/submissions/:id/review', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    const { reviewerId, decision, reason, stars, comments } = body;
+    
+    if (!['approve', 'needs_revision', 'fail'].includes(decision)) {
+      return c.json({ success: false, error: 'Invalid decision' }, 400);
+    }
+    
+    if (!reason || reason.length < 20) {
+      return c.json({ success: false, error: 'Begründung muss mindestens 20 Zeichen lang sein' }, 400);
+    }
+    
+    const { data: submission, error: subError } = await testSubmissionsSupabase
+      .from('test_submissions')
+      .select('*, test:tests!inner(*)')
+      .eq('id', id)
+      .single();
+    
+    if (subError) throw subError;
+    
+    const practicalPassed = decision === 'approve';
+    const finalScoreData = calculateFinalScore(submission.auto_percentage, practicalPassed, submission.test);
+    
+    let newStatus = 'PENDING_REVIEW';
+    if (decision === 'approve') {
+      newStatus = finalScoreData.passed ? 'APPROVED' : 'FAILED';
+    } else if (decision === 'needs_revision') {
+      newStatus = 'NEEDS_REVISION';
+    } else if (decision === 'fail') {
+      newStatus = 'FAILED';
+    }
+    
+    const { data, error } = await testSubmissionsSupabase
+      .from('test_submissions')
+      .update({
+        reviewer_id: reviewerId,
+        reviewed_at: new Date().toISOString(),
+        review_decision: decision,
+        review_reason: reason,
+        review_stars: stars || null,
+        status: newStatus,
+        final_score: finalScoreData.finalScore,
+        final_percentage: finalScoreData.finalPercentage,
+        passed: finalScoreData.passed,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    if (comments && comments.length > 0) {
+      const commentInserts = comments.map((comment: any) => ({
+        submission_id: id,
+        block_id: comment.blockId,
+        reviewer_id: reviewerId,
+        type: comment.type,
+        position_x: comment.positionX,
+        position_y: comment.positionY,
+        timestamp: comment.timestamp,
+        text: comment.text,
+      }));
+      
+      await testSubmissionsSupabase.from('review_comments').insert(commentInserts);
+    }
+    
+    return c.json({ success: true, data });
+  } catch (error: any) {
+    console.error('❌ Error reviewing submission:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+testSubmissionsApp.post('/upload-submission-file', async (c) => {
+  try {
+    const formData = await c.req.formData();
+    const file = formData.get('file') as File;
+    const submissionId = formData.get('submissionId') as string;
+    const blockId = formData.get('blockId') as string;
+    
+    if (!file || !submissionId || !blockId) {
+      return c.json({ success: false, error: 'Missing required fields' }, 400);
+    }
+    
+    const timestamp = Date.now();
+    const ext = file.name.split('.').pop();
+    const fileName = `${submissionId}/${blockId}-${timestamp}.${ext}`;
+    
+    const fileBuffer = await file.arrayBuffer();
+    const { data, error } = await testSubmissionsSupabase.storage
+      .from(SUBMISSIONS_BUCKET)
+      .upload(fileName, fileBuffer, {
+        contentType: file.type,
+        upsert: false,
+      });
+    
+    if (error) throw error;
+    
+    const { data: signedUrlData } = await testSubmissionsSupabase.storage
+      .from(SUBMISSIONS_BUCKET)
+      .createSignedUrl(fileName, 604800);
+    
+    return c.json({ 
+      success: true, 
+      data: {
+        fileUrl: signedUrlData?.signedUrl,
+        fileName: file.name,
+        fileSize: file.size,
+        filePath: fileName,
+      }
+    });
+  } catch (error: any) {
+    console.error('❌ Error uploading file:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+testSubmissionsApp.delete('/submissions/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    
+    const { data: submission } = await testSubmissionsSupabase
+      .from('test_submissions')
+      .select('status')
+      .eq('id', id)
+      .single();
+    
+    if (submission?.status !== 'DRAFT') {
+      return c.json({ success: false, error: 'Nur Entwürfe können gelöscht werden' }, 400);
+    }
+    
+    const { error } = await testSubmissionsSupabase
+      .from('test_submissions')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+    
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('❌ Error deleting submission:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ==================== MAIN SERVER CODE ====================
 const app = new Hono();
 
 // Initialize Supabase client with service role key for admin operations
@@ -1018,16 +1664,18 @@ app.post("/workflows/trigger", async (c) => {
     const { triggerType, context } = await c.req.json();
     console.log(`🚀 Triggering Workflows: ${triggerType}`);
     
-    if (!triggerType || !TRIGGER_TYPES.includes(triggerType)) {
+    if (!triggerType || !Object.values(TRIGGER_TYPES).includes(triggerType)) {
       return c.json({ error: 'Invalid trigger type' }, 400);
     }
 
-    const triggeredWorkflows = await triggerWorkflows(triggerType, context || {});
+    // Note: triggerWorkflows expects authToken, but we don't need it here for the /trigger route
+    // We'll pass an empty string or fetch it from headers if needed
+    const authHeader = c.req.header('Authorization') || `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`;
+    await triggerWorkflows(triggerType, context || {}, authHeader);
     
     return c.json({ 
       success: true, 
       message: 'Workflows triggered successfully',
-      triggeredWorkflows
     });
   } catch (e: any) {
     console.error('❌ Trigger error:', e);
@@ -1068,301 +1716,6 @@ app.delete("/it-equipment/:id", async (c) => {
     return c.json({ success: true });
   } catch (e: any) {
     return c.json({ error: e.message }, 500);
-  }
-});
-
-// ============================================
-// VEHICLE STATISTICS API (for n8n integration)
-// ============================================
-
-// Get all statistics for a vehicle (with optional month filter)
-app.get("/BrowoKoordinator-Server/api/vehicles/:id/statistics", async (c) => {
-  try {
-    const vehicleId = c.req.param('id');
-    const month = c.req.query('month'); // Optional: YYYY-MM format
-    
-    console.log(`📊 Fetching statistics for vehicle ${vehicleId}${month ? ` (month: ${month})` : ''}`);
-    
-    const statisticsData = await kv.get(`vehicle_statistics_${vehicleId}`);
-    const statistics = statisticsData ? JSON.parse(statisticsData as string) : [];
-    
-    // Filter by month if provided
-    let filteredStats = statistics;
-    if (month) {
-      filteredStats = statistics.filter((stat: any) => stat.month === month);
-    }
-    
-    return c.json({ 
-      success: true,
-      statistics: filteredStats,
-      count: filteredStats.length
-    });
-  } catch (error: any) {
-    console.error('❌ Get statistics error:', error);
-    return c.json({ 
-      error: error.message || 'Failed to get statistics' 
-    }, 500);
-  }
-});
-
-// Create new statistic entry for a vehicle
-app.post("/BrowoKoordinator-Server/api/vehicles/:id/statistics", async (c) => {
-  try {
-    const vehicleId = c.req.param('id');
-    const body = await c.req.json();
-    
-    console.log(`📊 Creating statistic for vehicle ${vehicleId}:`, body);
-    
-    // Validate required fields
-    if (!body.month) {
-      return c.json({ error: 'Month is required (format: YYYY-MM)' }, 400);
-    }
-    
-    // Get existing statistics
-    const statisticsData = await kv.get(`vehicle_statistics_${vehicleId}`);
-    const statistics = statisticsData ? JSON.parse(statisticsData as string) : [];
-    
-    // Create new statistic entry with auto-timestamps
-    const newStatistic = {
-      id: `stat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      month: body.month,
-      verbrauchskosten: parseFloat(body.verbrauchskosten || 0),
-      wartungskosten: parseFloat(body.wartungskosten || 0),
-      sonstige_kosten: parseFloat(body.sonstige_kosten || 0),
-      custom_fields: body.custom_fields || {},
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    
-    // Merge any additional custom fields from body (for n8n flexibility)
-    Object.keys(body).forEach(key => {
-      if (!['month', 'verbrauchskosten', 'wartungskosten', 'sonstige_kosten', 'custom_fields'].includes(key)) {
-        newStatistic.custom_fields[key] = body[key];
-      }
-    });
-    
-    statistics.push(newStatistic);
-    
-    // Save back to KV store
-    await kv.set(`vehicle_statistics_${vehicleId}`, JSON.stringify(statistics));
-    
-    console.log(`✅ Statistic created: ${newStatistic.id}`);
-    
-    return c.json({ 
-      success: true,
-      statistic: newStatistic
-    });
-  } catch (error: any) {
-    console.error('❌ Create statistic error:', error);
-    return c.json({ 
-      error: error.message || 'Failed to create statistic' 
-    }, 500);
-  }
-});
-
-// Update existing statistic
-app.put("/BrowoKoordinator-Server/api/vehicles/:id/statistics/:statId", async (c) => {
-  try {
-    const vehicleId = c.req.param('id');
-    const statId = c.req.param('statId');
-    const body = await c.req.json();
-    
-    console.log(`📊 Updating statistic ${statId} for vehicle ${vehicleId}`);
-    
-    // Get existing statistics
-    const statisticsData = await kv.get(`vehicle_statistics_${vehicleId}`);
-    if (!statisticsData) {
-      return c.json({ error: 'Vehicle statistics not found' }, 404);
-    }
-    
-    const statistics = JSON.parse(statisticsData as string);
-    const statIndex = statistics.findIndex((s: any) => s.id === statId);
-    
-    if (statIndex === -1) {
-      return c.json({ error: 'Statistic not found' }, 404);
-    }
-    
-    // Update statistic with auto-timestamp
-    const updatedStatistic = {
-      ...statistics[statIndex],
-      ...body,
-      id: statId, // Preserve ID
-      updated_at: new Date().toISOString(),
-    };
-    
-    // Merge custom fields if provided
-    if (body.custom_fields) {
-      updatedStatistic.custom_fields = {
-        ...statistics[statIndex].custom_fields,
-        ...body.custom_fields
-      };
-    }
-    
-    // Update any custom fields from body root
-    Object.keys(body).forEach(key => {
-      if (!['id', 'month', 'verbrauchskosten', 'wartungskosten', 'sonstige_kosten', 'custom_fields', 'created_at', 'updated_at'].includes(key)) {
-        if (!updatedStatistic.custom_fields) {
-          updatedStatistic.custom_fields = {};
-        }
-        updatedStatistic.custom_fields[key] = body[key];
-      }
-    });
-    
-    statistics[statIndex] = updatedStatistic;
-    
-    // Save back to KV store
-    await kv.set(`vehicle_statistics_${vehicleId}`, JSON.stringify(statistics));
-    
-    console.log(`✅ Statistic updated: ${statId}`);
-    
-    return c.json({ 
-      success: true,
-      statistic: updatedStatistic
-    });
-  } catch (error: any) {
-    console.error('❌ Update statistic error:', error);
-    return c.json({ 
-      error: error.message || 'Failed to update statistic' 
-    }, 500);
-  }
-});
-
-// Delete statistic
-app.delete("/BrowoKoordinator-Server/api/vehicles/:id/statistics/:statId", async (c) => {
-  try {
-    const vehicleId = c.req.param('id');
-    const statId = c.req.param('statId');
-    
-    console.log(`📊 Deleting statistic ${statId} for vehicle ${vehicleId}`);
-    
-    // Get existing statistics
-    const statisticsData = await kv.get(`vehicle_statistics_${vehicleId}`);
-    if (!statisticsData) {
-      return c.json({ error: 'Vehicle statistics not found' }, 404);
-    }
-    
-    const statistics = JSON.parse(statisticsData as string);
-    const filteredStats = statistics.filter((s: any) => s.id !== statId);
-    
-    if (filteredStats.length === statistics.length) {
-      return c.json({ error: 'Statistic not found' }, 404);
-    }
-    
-    // Save back to KV store
-    await kv.set(`vehicle_statistics_${vehicleId}`, JSON.stringify(filteredStats));
-    
-    console.log(`✅ Statistic deleted: ${statId}`);
-    
-    return c.json({ 
-      success: true,
-      message: 'Statistic deleted successfully'
-    });
-  } catch (error: any) {
-    console.error('❌ Delete statistic error:', error);
-    return c.json({ 
-      error: error.message || 'Failed to delete statistic' 
-    }, 500);
-  }
-});
-
-// Get all custom columns (global)
-app.get("/BrowoKoordinator-Server/api/statistics/columns", async (c) => {
-  try {
-    console.log(`📊 Fetching custom statistics columns`);
-    
-    const columnsData = await kv.get('vehicle_statistics_columns');
-    const columns = columnsData ? JSON.parse(columnsData as string) : [];
-    
-    return c.json({ 
-      success: true,
-      columns: columns
-    });
-  } catch (error: any) {
-    console.error('❌ Get columns error:', error);
-    return c.json({ 
-      error: error.message || 'Failed to get columns' 
-    }, 500);
-  }
-});
-
-// Create new custom column (global)
-app.post("/BrowoKoordinator-Server/api/statistics/columns", async (c) => {
-  try {
-    const body = await c.req.json();
-    
-    console.log(`📊 Creating custom column:`, body);
-    
-    // Validate required fields
-    if (!body.name) {
-      return c.json({ error: 'Column name is required' }, 400);
-    }
-    
-    // Get existing columns
-    const columnsData = await kv.get('vehicle_statistics_columns');
-    const columns = columnsData ? JSON.parse(columnsData as string) : [];
-    
-    // Create new column
-    const newColumn = {
-      id: `col-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      name: body.name,
-      type: body.type || 'currency', // currency, number, text
-      unit: body.unit || '',
-      created_at: new Date().toISOString(),
-    };
-    
-    columns.push(newColumn);
-    
-    // Save back to KV store
-    await kv.set('vehicle_statistics_columns', JSON.stringify(columns));
-    
-    console.log(`✅ Column created: ${newColumn.id}`);
-    
-    return c.json({ 
-      success: true,
-      column: newColumn
-    });
-  } catch (error: any) {
-    console.error('❌ Create column error:', error);
-    return c.json({ 
-      error: error.message || 'Failed to create column' 
-    }, 500);
-  }
-});
-
-// Delete custom column
-app.delete("/BrowoKoordinator-Server/api/statistics/columns/:columnId", async (c) => {
-  try {
-    const columnId = c.req.param('columnId');
-    
-    console.log(`📊 Deleting column ${columnId}`);
-    
-    // Get existing columns
-    const columnsData = await kv.get('vehicle_statistics_columns');
-    if (!columnsData) {
-      return c.json({ error: 'Columns not found' }, 404);
-    }
-    
-    const columns = JSON.parse(columnsData as string);
-    const filteredColumns = columns.filter((col: any) => col.id !== columnId);
-    
-    if (filteredColumns.length === columns.length) {
-      return c.json({ error: 'Column not found' }, 404);
-    }
-    
-    // Save back to KV store
-    await kv.set('vehicle_statistics_columns', JSON.stringify(filteredColumns));
-    
-    console.log(`✅ Column deleted: ${columnId}`);
-    
-    return c.json({ 
-      success: true,
-      message: 'Column deleted successfully'
-    });
-  } catch (error: any) {
-    console.error('❌ Delete column error:', error);
-    return c.json({ 
-      error: error.message || 'Failed to delete column' 
-    }, 500);
   }
 });
 

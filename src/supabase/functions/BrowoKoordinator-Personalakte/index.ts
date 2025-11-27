@@ -12,6 +12,9 @@
  * - GET  /employees/:id/notes - Get employee notes (HR/ADMIN)
  * - POST /employees/:id/notes - Add note to employee (HR/ADMIN)
  * - DELETE /employees/:id/notes/:note_id - Delete note (HR/ADMIN)
+ * - DELETE /employees/:id - Delete employee (HR/ADMIN)
+ * - POST /employees/:id/onboarding/start - Start onboarding process (HR/ADMIN)
+ * - POST /employees/:id/offboarding/start - Start offboarding process (HR/ADMIN)
  * 
  * SCHEMA NOTES (v1.0.2):
  * - users.department is TEXT, not UUID (no department_id!)
@@ -29,6 +32,51 @@ import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";
 import { createClient } from "npm:@supabase/supabase-js";
+
+// ==================== INLINE TRIGGER HELPER ====================
+const TRIGGER_TYPES = {
+  EMPLOYEE_CREATED: 'EMPLOYEE_CREATED',
+  EMPLOYEE_UPDATED: 'EMPLOYEE_UPDATED',
+  EMPLOYEE_DELETED: 'EMPLOYEE_DELETED',
+  ONBOARDING_START: 'ONBOARDING_START',
+  OFFBOARDING_START: 'OFFBOARDING_START',
+};
+
+async function triggerWorkflows(
+  triggerType: string,
+  context: Record<string, any>,
+  authToken: string
+): Promise<void> {
+  try {
+    const projectId = Deno.env.get('SUPABASE_URL')?.split('//')[1]?.split('.')[0];
+    if (!projectId) return;
+
+    console.log(`🔔 Triggering workflows for event: ${triggerType}`);
+
+    const response = await fetch(
+      `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Workflows/trigger`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authToken,
+        },
+        body: JSON.stringify({ trigger_type: triggerType, context }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.warn(`[triggerWorkflows] Failed:`, error);
+      return;
+    }
+
+    const result = await response.json();
+    console.log(`✅ Workflows triggered:`, result);
+  } catch (error) {
+    console.error(`[triggerWorkflows] Error:`, error);
+  }
+}
 
 const app = new Hono();
 
@@ -370,10 +418,10 @@ app.put("/BrowoKoordinator-Personalakte/employees/:id", async (c) => {
 
     const supabase = getSupabaseClient();
 
-    // Verify employee exists
+    // Verify employee exists and get current data
     const { data: existingEmployee, error: checkError } = await supabase
       .from('users')
-      .select('id')
+      .select('id, first_name, last_name, organization_id')
       .eq('id', employeeId)
       .eq('organization_id', user.organization_id)
       .single();
@@ -453,6 +501,29 @@ app.put("/BrowoKoordinator-Personalakte/employees/:id", async (c) => {
     if (updateError) {
       console.error('[Personalakte] Error updating employee:', updateError);
       return c.json({ error: 'Failed to update employee', details: updateError.message }, 500);
+    }
+
+    console.log(`✅ Employee updated successfully: ${employeeId}`);
+    
+    // 🔔 TRIGGER WORKFLOWS: EMPLOYEE_UPDATED
+    try {
+      const authHeaderValue = authHeader || `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`;
+      
+      await triggerWorkflows(
+        TRIGGER_TYPES.EMPLOYEE_UPDATED,
+        {
+          userId: employeeId,
+          employeeId: employeeId,
+          employeeName: `${existingEmployee.first_name} ${existingEmployee.last_name}`,
+          changedFields: Object.keys(updateFields),
+          organizationId: existingEmployee.organization_id,
+        },
+        authHeaderValue
+      );
+      
+      console.log(`✅ EMPLOYEE_UPDATED workflows triggered`);
+    } catch (triggerError) {
+      console.error('⚠️ Failed to trigger workflows (non-fatal):', triggerError);
     }
 
     return c.json({
@@ -727,6 +798,227 @@ app.delete("/BrowoKoordinator-Personalakte/employees/:id/notes/:note_id", async 
 
   } catch (error) {
     console.error('[Personalakte] Delete note error:', error);
+    return c.json({ error: 'Internal server error', details: error.message }, 500);
+  }
+});
+
+// ==================== DELETE EMPLOYEE ====================
+// Delete Employee (HR/Admin only) - Triggers EMPLOYEE_DELETED
+app.delete("/BrowoKoordinator-Personalakte/employees/:id", async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization');
+    const user = await verifyAuth(authHeader ?? null);
+    
+    if (!user) {
+      console.warn('[Personalakte] Unauthorized delete employee');
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    if (!isHROrAdmin(user.role)) {
+      return c.json({ error: 'Insufficient permissions - HR or Admin required' }, 403);
+    }
+
+    const employeeId = c.req.param('id');
+
+    console.log('[Personalakte] Delete employee:', { userId: user.id, employeeId });
+
+    const supabase = getSupabaseClient();
+
+    // Get employee data before deleting
+    const { data: employee, error: fetchError } = await supabase
+      .from('users')
+      .select('id, first_name, last_name, organization_id')
+      .eq('id', employeeId)
+      .eq('organization_id', user.organization_id)
+      .single();
+
+    if (fetchError || !employee) {
+      return c.json({ error: 'Employee not found' }, 404);
+    }
+
+    // Delete employee (soft delete by setting is_active = false)
+    const { error: deleteError } = await supabase
+      .from('users')
+      .update({ is_active: false })
+      .eq('id', employeeId);
+
+    if (deleteError) {
+      console.error('[Personalakte] Error deleting employee:', deleteError);
+      return c.json({ error: 'Failed to delete employee', details: deleteError.message }, 500);
+    }
+
+    console.log(`✅ Employee deleted: ${employeeId}`);
+    
+    // 🔔 TRIGGER WORKFLOWS: EMPLOYEE_DELETED
+    try {
+      const authHeaderValue = authHeader || `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`;
+      
+      await triggerWorkflows(
+        TRIGGER_TYPES.EMPLOYEE_DELETED,
+        {
+          userId: employeeId,
+          employeeId: employeeId,
+          employeeName: `${employee.first_name} ${employee.last_name}`,
+          organizationId: employee.organization_id,
+        },
+        authHeaderValue
+      );
+      
+      console.log(`✅ EMPLOYEE_DELETED workflows triggered`);
+    } catch (triggerError) {
+      console.error('⚠️ Failed to trigger workflows (non-fatal):', triggerError);
+    }
+
+    return c.json({
+      success: true,
+      message: 'Employee deleted successfully',
+      timestamp: new Date().toISOString(),
+    });
+
+  } catch (error) {
+    console.error('[Personalakte] Delete employee error:', error);
+    return c.json({ error: 'Internal server error', details: error.message }, 500);
+  }
+});
+
+// ==================== ONBOARDING START ====================
+// Start Onboarding Process - Triggers ONBOARDING_START
+app.post("/BrowoKoordinator-Personalakte/employees/:id/onboarding/start", async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization');
+    const user = await verifyAuth(authHeader ?? null);
+    
+    if (!user) {
+      console.warn('[Personalakte] Unauthorized onboarding start');
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    if (!isHROrAdmin(user.role)) {
+      return c.json({ error: 'Insufficient permissions - HR or Admin required' }, 403);
+    }
+
+    const employeeId = c.req.param('id');
+    const body = await c.req.json();
+    const { start_date } = body;
+
+    console.log('[Personalakte] Start onboarding:', { userId: user.id, employeeId, start_date });
+
+    const supabase = getSupabaseClient();
+
+    // Get employee data
+    const { data: employee, error: fetchError } = await supabase
+      .from('users')
+      .select('id, first_name, last_name, organization_id, start_date')
+      .eq('id', employeeId)
+      .eq('organization_id', user.organization_id)
+      .single();
+
+    if (fetchError || !employee) {
+      return c.json({ error: 'Employee not found' }, 404);
+    }
+
+    console.log(`✅ Onboarding started for: ${employeeId}`);
+    
+    // 🔔 TRIGGER WORKFLOWS: ONBOARDING_START
+    try {
+      const authHeaderValue = authHeader || `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`;
+      
+      await triggerWorkflows(
+        TRIGGER_TYPES.ONBOARDING_START,
+        {
+          userId: employeeId,
+          employeeId: employeeId,
+          employeeName: `${employee.first_name} ${employee.last_name}`,
+          startDate: start_date || employee.start_date || new Date().toISOString(),
+          organizationId: employee.organization_id,
+        },
+        authHeaderValue
+      );
+      
+      console.log(`✅ ONBOARDING_START workflows triggered`);
+    } catch (triggerError) {
+      console.error('⚠️ Failed to trigger workflows (non-fatal):', triggerError);
+    }
+
+    return c.json({
+      success: true,
+      message: 'Onboarding process started',
+      timestamp: new Date().toISOString(),
+    });
+
+  } catch (error) {
+    console.error('[Personalakte] Onboarding start error:', error);
+    return c.json({ error: 'Internal server error', details: error.message }, 500);
+  }
+});
+
+// ==================== OFFBOARDING START ====================
+// Start Offboarding Process - Triggers OFFBOARDING_START
+app.post("/BrowoKoordinator-Personalakte/employees/:id/offboarding/start", async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization');
+    const user = await verifyAuth(authHeader ?? null);
+    
+    if (!user) {
+      console.warn('[Personalakte] Unauthorized offboarding start');
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    if (!isHROrAdmin(user.role)) {
+      return c.json({ error: 'Insufficient permissions - HR or Admin required' }, 403);
+    }
+
+    const employeeId = c.req.param('id');
+    const body = await c.req.json();
+    const { end_date } = body;
+
+    console.log('[Personalakte] Start offboarding:', { userId: user.id, employeeId, end_date });
+
+    const supabase = getSupabaseClient();
+
+    // Get employee data
+    const { data: employee, error: fetchError } = await supabase
+      .from('users')
+      .select('id, first_name, last_name, organization_id, end_date')
+      .eq('id', employeeId)
+      .eq('organization_id', user.organization_id)
+      .single();
+
+    if (fetchError || !employee) {
+      return c.json({ error: 'Employee not found' }, 404);
+    }
+
+    console.log(`✅ Offboarding started for: ${employeeId}`);
+    
+    // 🔔 TRIGGER WORKFLOWS: OFFBOARDING_START
+    try {
+      const authHeaderValue = authHeader || `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`;
+      
+      await triggerWorkflows(
+        TRIGGER_TYPES.OFFBOARDING_START,
+        {
+          userId: employeeId,
+          employeeId: employeeId,
+          employeeName: `${employee.first_name} ${employee.last_name}`,
+          endDate: end_date || employee.end_date || new Date().toISOString(),
+          organizationId: employee.organization_id,
+        },
+        authHeaderValue
+      );
+      
+      console.log(`✅ OFFBOARDING_START workflows triggered`);
+    } catch (triggerError) {
+      console.error('⚠️ Failed to trigger workflows (non-fatal):', triggerError);
+    }
+
+    return c.json({
+      success: true,
+      message: 'Offboarding process started',
+      timestamp: new Date().toISOString(),
+    });
+
+  } catch (error) {
+    console.error('[Personalakte] Offboarding start error:', error);
     return c.json({ error: 'Internal server error', details: error.message }, 500);
   }
 });

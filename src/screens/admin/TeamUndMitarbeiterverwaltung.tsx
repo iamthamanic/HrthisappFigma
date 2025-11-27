@@ -517,7 +517,7 @@ export default function TeamUndMitarbeiterverwaltung() {
                   <span className="sm:hidden">Export</span>
                 </Button>
                 <Button 
-                  onClick={() => navigate('/admin/team-und-mitarbeiterverwaltung/add-employee')}
+                  onClick={() => navigate('/admin/team-und-mitarbeiterverwaltung/add-employee-wizard')}
                   className="w-full sm:w-auto"
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -579,7 +579,7 @@ export default function TeamUndMitarbeiterverwaltung() {
             onSelectAll={handleSelectAll}
             onClearSelection={handleClearSelection}
             onQuickAction={handleQuickAction}
-            onAddEmployee={() => navigate('/admin/team-und-mitarbeiterverwaltung/add-employee')}
+            onAddEmployee={() => navigate('/admin/team-und-mitarbeiterverwaltung/add-employee-wizard')}
             onExport={() => setShowExportDialog(true)}
             onResetFilters={employeeFiltering.resetFilters}
             onApplySavedSearch={handleApplySavedSearch}

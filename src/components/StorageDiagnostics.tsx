@@ -28,7 +28,7 @@ export default function StorageDiagnostics() {
     setLoading(true);
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-f659121d/storage/status`,
+        `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/storage/status`,
         {
           headers: {
             'Authorization': `Bearer ${publicAnonKey}`,

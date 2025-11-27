@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {  ArrowLeft, Truck, Calendar, Weight, FileText, Wrench, AlertTriangle, Image as ImageIcon, Package, Edit, X, Save } from '../../components/icons/BrowoKoIcons';
+import {  ArrowLeft, Truck, Calendar, Weight, FileText, Wrench, AlertTriangle, Image as ImageIcon, Package, Edit, X, Save, BarChart3, Plus, Trash2, Download } from '../../components/icons/BrowoKoIcons';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
@@ -16,10 +16,12 @@ import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
 import { Calendar as CalendarUI } from '../../components/ui/calendar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../../components/ui/dialog';
 import { EquipmentAddDialog, type EquipmentFormData } from '../../components/BrowoKo_EquipmentAddDialog';
 import { toast } from 'sonner@2.0.3';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
 interface Equipment {
   id: string;
@@ -68,11 +70,39 @@ export default function VehicleDetailScreen() {
   const [editLadekapazitaet, setEditLadekapazitaet] = useState('');
   const [editDienstStart, setEditDienstStart] = useState('');
   const [editLetzteWartung, setEditLetzteWartung] = useState('');
+  
+  // Statistics state
+  const [statistics, setStatistics] = useState<any[]>([]);
+  const [customColumns, setCustomColumns] = useState<any[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [editingCell, setEditingCell] = useState<{statId: string, field: string} | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [addColumnDialogOpen, setAddColumnDialogOpen] = useState(false);
+  const [newColumnName, setNewColumnName] = useState('');
+  const [newColumnType, setNewColumnType] = useState('currency');
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [apiConnected, setApiConnected] = useState(true);
+  const [hasInitializedStats, setHasInitializedStats] = useState(false);
 
   // Load vehicle data
   useEffect(() => {
     loadVehicle();
   }, [vehicleId]);
+  
+  // Load statistics when tab changes to statistics
+  useEffect(() => {
+    if (activeTab === 'statistics' && vehicleId && !hasInitializedStats) {
+      initializeStatistics();
+      setHasInitializedStats(true);
+    }
+  }, [activeTab, vehicleId]);
+  
+  // Reload statistics when month filter changes
+  useEffect(() => {
+    if (activeTab === 'statistics' && vehicleId && hasInitializedStats) {
+      loadStatistics();
+    }
+  }, [selectedMonth]);
 
   const loadVehicle = () => {
     try {
@@ -192,6 +222,378 @@ export default function VehicleDetailScreen() {
     }
   };
 
+  // ============================================
+  // STATISTICS FUNCTIONS
+  // ============================================
+  
+  const initializeStatistics = async () => {
+    setLoadingStats(true);
+    
+    // Create default table with 12 months
+    const currentDate = new Date();
+    const defaultStats = [];
+    
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const month = format(date, 'yyyy-MM');
+      defaultStats.push({
+        id: `default-${month}`,
+        month: month,
+        verbrauchskosten: 0,
+        wartungskosten: 0,
+        sonstige_kosten: 0,
+        custom_fields: {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        isDefault: true,
+      });
+    }
+    
+    setStatistics(defaultStats);
+    
+    // Try to load from API
+    await loadStatistics();
+    await loadCustomColumns();
+  };
+  
+  const loadStatistics = async () => {
+    if (!vehicleId) return;
+    
+    try {
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/vehicles/${vehicleId}/statistics${selectedMonth ? `?month=${selectedMonth}` : ''}`;
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+        },
+      });
+      
+      if (!response.ok) {
+        console.warn('API not connected or error occurred');
+        setApiConnected(false);
+        setLoadingStats(false);
+        return;
+      }
+      
+      const data = await response.json();
+      setApiConnected(true);
+      
+      // Merge API data with default months if exists
+      if (data.statistics && data.statistics.length > 0) {
+        setStatistics(data.statistics);
+      }
+    } catch (error: any) {
+      console.error('Load statistics error:', error);
+      setApiConnected(false);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+  
+  const loadCustomColumns = async () => {
+    try {
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/statistics/columns`;
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+        },
+      });
+      
+      if (!response.ok) {
+        console.warn('Failed to load columns - API not connected');
+        return;
+      }
+      
+      const data = await response.json();
+      setCustomColumns(data.columns || []);
+    } catch (error: any) {
+      console.error('Load columns error:', error);
+    }
+  };
+  
+  const handleAddStatistic = async () => {
+    if (!vehicleId) return;
+    
+    if (!apiConnected) {
+      toast.error('API nicht verbunden - Bitte stellen Sie sicher, dass BrowoKoordinator-Server deployed ist');
+      return;
+    }
+    
+    const currentMonth = format(new Date(), 'yyyy-MM');
+    
+    try {
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/vehicles/${vehicleId}/statistics`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          month: currentMonth,
+          verbrauchskosten: 0,
+          wartungskosten: 0,
+          sonstige_kosten: 0,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create statistic');
+      }
+      
+      toast.success('Statistik-Eintrag erstellt');
+      loadStatistics();
+    } catch (error: any) {
+      console.error('Add statistic error:', error);
+      toast.error('Fehler beim Erstellen: ' + error.message);
+      setApiConnected(false);
+    }
+  };
+  
+  const handleDeleteStatistic = async (statId: string) => {
+    if (!vehicleId || !confirm('Möchten Sie diesen Eintrag wirklich löschen?')) return;
+    
+    if (!apiConnected) {
+      toast.error('API nicht verbunden');
+      return;
+    }
+    
+    try {
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/vehicles/${vehicleId}/statistics/${statId}`;
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete statistic');
+      }
+      
+      toast.success('Eintrag gelöscht');
+      loadStatistics();
+    } catch (error: any) {
+      console.error('Delete statistic error:', error);
+      toast.error('Fehler beim Löschen: ' + error.message);
+      setApiConnected(false);
+    }
+  };
+  
+  const handleCellEdit = (statId: string, field: string, currentValue: any) => {
+    setEditingCell({ statId, field });
+    setEditValue(currentValue?.toString() || '');
+  };
+  
+  const handleCellSave = async () => {
+    if (!editingCell || !vehicleId) return;
+    
+    const { statId, field } = editingCell;
+    const stat = statistics.find(s => s.id === statId);
+    if (!stat) return;
+    
+    // Update local state immediately for better UX
+    const updatedStats = statistics.map(s => {
+      if (s.id === statId) {
+        if (['verbrauchskosten', 'wartungskosten', 'sonstige_kosten', 'month'].includes(field)) {
+          return { ...s, [field]: field === 'month' ? editValue : parseFloat(editValue) || 0 };
+        } else {
+          return {
+            ...s,
+            custom_fields: {
+              ...(s.custom_fields || {}),
+              [field]: parseFloat(editValue) || 0,
+            }
+          };
+        }
+      }
+      return s;
+    });
+    setStatistics(updatedStats);
+    setEditingCell(null);
+    setEditValue('');
+    
+    if (!apiConnected) {
+      toast.warning('API nicht verbunden - Änderung nur lokal gespeichert');
+      return;
+    }
+    
+    try {
+      let updateData: any = {};
+      
+      // Check if it's a custom field
+      if (['verbrauchskosten', 'wartungskosten', 'sonstige_kosten', 'month'].includes(field)) {
+        updateData[field] = field === 'month' ? editValue : parseFloat(editValue) || 0;
+      } else {
+        // Custom field
+        updateData.custom_fields = {
+          ...(stat.custom_fields || {}),
+          [field]: parseFloat(editValue) || 0,
+        };
+      }
+      
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/vehicles/${vehicleId}/statistics/${statId}`;
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update statistic');
+      }
+      
+      loadStatistics();
+    } catch (error: any) {
+      console.error('Cell save error:', error);
+      toast.error('Fehler beim Speichern in API: ' + error.message);
+      setApiConnected(false);
+    }
+  };
+  
+  const handleAddCustomColumn = async () => {
+    if (!newColumnName.trim()) {
+      toast.error('Bitte geben Sie einen Spaltennamen ein');
+      return;
+    }
+    
+    if (!apiConnected) {
+      toast.error('API nicht verbunden - Bitte stellen Sie sicher, dass BrowoKoordinator-Server deployed ist');
+      return;
+    }
+    
+    try {
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/statistics/columns`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newColumnName,
+          type: newColumnType,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create column');
+      }
+      
+      toast.success('Spalte hinzugefügt');
+      setAddColumnDialogOpen(false);
+      setNewColumnName('');
+      setNewColumnType('currency');
+      loadCustomColumns();
+    } catch (error: any) {
+      console.error('Add column error:', error);
+      toast.error('Fehler beim Hinzufügen: ' + error.message);
+      setApiConnected(false);
+    }
+  };
+  
+  const handleDeleteColumn = async (columnId: string) => {
+    if (!confirm('Möchten Sie diese Spalte wirklich löschen? Die Daten in dieser Spalte gehen verloren.')) return;
+    
+    if (!apiConnected) {
+      toast.error('API nicht verbunden');
+      return;
+    }
+    
+    try {
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/statistics/columns/${columnId}`;
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete column');
+      }
+      
+      toast.success('Spalte gelöscht');
+      loadCustomColumns();
+      loadStatistics();
+    } catch (error: any) {
+      console.error('Delete column error:', error);
+      toast.error('Fehler beim Löschen: ' + error.message);
+      setApiConnected(false);
+    }
+  };
+  
+  const handleExportCSV = () => {
+    if (statistics.length === 0) {
+      toast.error('Keine Daten zum Exportieren');
+      return;
+    }
+    
+    // Prepare CSV headers
+    const headers = ['Monat', 'Verbrauchskosten', 'Wartungskosten', 'Sonstige Kosten'];
+    customColumns.forEach(col => headers.push(col.name));
+    
+    // Prepare CSV rows
+    const rows = statistics.map(stat => {
+      const row = [
+        stat.month,
+        stat.verbrauchskosten?.toFixed(2) || '0.00',
+        stat.wartungskosten?.toFixed(2) || '0.00',
+        stat.sonstige_kosten?.toFixed(2) || '0.00',
+      ];
+      
+      customColumns.forEach(col => {
+        const value = stat.custom_fields?.[col.name] || 0;
+        row.push(value.toFixed(2));
+      });
+      
+      return row;
+    });
+    
+    // Add sum row
+    const sumRow = ['SUMME'];
+    const verbrauchSum = statistics.reduce((sum, s) => sum + (s.verbrauchskosten || 0), 0);
+    const wartungSum = statistics.reduce((sum, s) => sum + (s.wartungskosten || 0), 0);
+    const sonstigeSum = statistics.reduce((sum, s) => sum + (s.sonstige_kosten || 0), 0);
+    
+    sumRow.push(verbrauchSum.toFixed(2), wartungSum.toFixed(2), sonstigeSum.toFixed(2));
+    
+    customColumns.forEach(col => {
+      const sum = statistics.reduce((sum, s) => sum + (s.custom_fields?.[col.name] || 0), 0);
+      sumRow.push(sum.toFixed(2));
+    });
+    
+    rows.push(sumRow);
+    
+    // Create CSV content
+    const csvContent = [
+      headers.join(';'),
+      ...rows.map(row => row.join(';'))
+    ].join('\n');
+    
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `fahrzeug_${vehicle?.kennzeichen}_statistiken_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success('CSV exportiert');
+  };
+  
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(value || 0);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
@@ -246,7 +648,7 @@ export default function VehicleDetailScreen() {
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Tabs Navigation */}
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto mb-6">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto mb-6">
             <TabsTrigger value="overview" className="tab-trigger-responsive">
               <Truck className="w-4 h-4" />
               <span>Übersicht</span>
@@ -266,6 +668,10 @@ export default function VehicleDetailScreen() {
             <TabsTrigger value="equipment" className="tab-trigger-responsive">
               <Package className="w-4 h-4" />
               <span>Equipment</span>
+            </TabsTrigger>
+            <TabsTrigger value="statistics" className="tab-trigger-responsive">
+              <BarChart3 className="w-4 h-4" />
+              <span>Statistiken</span>
             </TabsTrigger>
           </TabsList>
 
@@ -728,6 +1134,306 @@ export default function VehicleDetailScreen() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Tab 6: Statistics */}
+          <TabsContent value="statistics" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5" />
+                    Kostenstatistiken
+                  </CardTitle>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Month Filter */}
+                    <Input
+                      type="month"
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="w-auto"
+                      placeholder="Alle Monate"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedMonth('')}
+                    >
+                      Filter zurücksetzen
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleExportCSV}
+                      className="gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      CSV Export
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setAddColumnDialogOpen(true)}
+                      className="gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Spalte
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleAddStatistic}
+                      className="gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Eintrag
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {/* API Status Banner */}
+                {!apiConnected && (
+                  <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-amber-900 mb-1">API Disconnected</h4>
+                        <p className="text-sm text-amber-800 mb-2">
+                          Die BrowoKoordinator-Server Edge Function ist nicht erreichbar. 
+                          Änderungen werden nur lokal gespeichert.
+                        </p>
+                        <p className="text-xs text-amber-700">
+                          <strong>Lösung:</strong> Deployen Sie die Edge Function "BrowoKoordinator-Server" im Supabase Dashboard
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {loadingStats ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : statistics.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b-2 border-gray-300">
+                          <th className="text-left p-3 bg-gray-50 font-semibold">Monat</th>
+                          <th className="text-right p-3 bg-gray-50 font-semibold">Verbrauchskosten</th>
+                          <th className="text-right p-3 bg-gray-50 font-semibold">Wartungskosten</th>
+                          <th className="text-right p-3 bg-gray-50 font-semibold">Sonstige Kosten</th>
+                          {customColumns.map(col => (
+                            <th key={col.id} className="text-right p-3 bg-gray-50 font-semibold group relative">
+                              <div className="flex items-center justify-end gap-2">
+                                <span>{col.name}</span>
+                                <button
+                                  onClick={() => handleDeleteColumn(col.id)}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                  title="Spalte löschen"
+                                >
+                                  <Trash2 className="w-3 h-3 text-red-600 hover:text-red-700" />
+                                </button>
+                              </div>
+                            </th>
+                          ))}
+                          <th className="text-center p-3 bg-gray-50 font-semibold w-20">Aktionen</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {statistics.map((stat, index) => (
+                          <tr key={stat.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                            {/* Month */}
+                            <td className="p-3 border-b border-gray-200">
+                              {editingCell?.statId === stat.id && editingCell?.field === 'month' ? (
+                                <Input
+                                  type="month"
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  onBlur={handleCellSave}
+                                  onKeyDown={(e) => e.key === 'Enter' && handleCellSave()}
+                                  autoFocus
+                                  className="w-40"
+                                />
+                              ) : (
+                                <div
+                                  onClick={() => handleCellEdit(stat.id, 'month', stat.month)}
+                                  className="cursor-pointer hover:bg-blue-50 p-1 rounded"
+                                >
+                                  {stat.month}
+                                </div>
+                              )}
+                            </td>
+                            
+                            {/* Verbrauchskosten */}
+                            <td className="p-3 border-b border-gray-200 text-right">
+                              {editingCell?.statId === stat.id && editingCell?.field === 'verbrauchskosten' ? (
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  onBlur={handleCellSave}
+                                  onKeyDown={(e) => e.key === 'Enter' && handleCellSave()}
+                                  autoFocus
+                                  className="w-32 text-right"
+                                />
+                              ) : (
+                                <div
+                                  onClick={() => handleCellEdit(stat.id, 'verbrauchskosten', stat.verbrauchskosten)}
+                                  className="cursor-pointer hover:bg-blue-50 p-1 rounded"
+                                >
+                                  {formatCurrency(stat.verbrauchskosten)}
+                                </div>
+                              )}
+                            </td>
+                            
+                            {/* Wartungskosten */}
+                            <td className="p-3 border-b border-gray-200 text-right">
+                              {editingCell?.statId === stat.id && editingCell?.field === 'wartungskosten' ? (
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  onBlur={handleCellSave}
+                                  onKeyDown={(e) => e.key === 'Enter' && handleCellSave()}
+                                  autoFocus
+                                  className="w-32 text-right"
+                                />
+                              ) : (
+                                <div
+                                  onClick={() => handleCellEdit(stat.id, 'wartungskosten', stat.wartungskosten)}
+                                  className="cursor-pointer hover:bg-blue-50 p-1 rounded"
+                                >
+                                  {formatCurrency(stat.wartungskosten)}
+                                </div>
+                              )}
+                            </td>
+                            
+                            {/* Sonstige Kosten */}
+                            <td className="p-3 border-b border-gray-200 text-right">
+                              {editingCell?.statId === stat.id && editingCell?.field === 'sonstige_kosten' ? (
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  onBlur={handleCellSave}
+                                  onKeyDown={(e) => e.key === 'Enter' && handleCellSave()}
+                                  autoFocus
+                                  className="w-32 text-right"
+                                />
+                              ) : (
+                                <div
+                                  onClick={() => handleCellEdit(stat.id, 'sonstige_kosten', stat.sonstige_kosten)}
+                                  className="cursor-pointer hover:bg-blue-50 p-1 rounded"
+                                >
+                                  {formatCurrency(stat.sonstige_kosten)}
+                                </div>
+                              )}
+                            </td>
+                            
+                            {/* Custom Columns */}
+                            {customColumns.map(col => {
+                              const value = stat.custom_fields?.[col.name] || 0;
+                              return (
+                                <td key={col.id} className="p-3 border-b border-gray-200 text-right">
+                                  {editingCell?.statId === stat.id && editingCell?.field === col.name ? (
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={editValue}
+                                      onChange={(e) => setEditValue(e.target.value)}
+                                      onBlur={handleCellSave}
+                                      onKeyDown={(e) => e.key === 'Enter' && handleCellSave()}
+                                      autoFocus
+                                      className="w-32 text-right"
+                                    />
+                                  ) : (
+                                    <div
+                                      onClick={() => handleCellEdit(stat.id, col.name, value)}
+                                      className="cursor-pointer hover:bg-blue-50 p-1 rounded"
+                                    >
+                                      {formatCurrency(value)}
+                                    </div>
+                                  )}
+                                </td>
+                              );
+                            })}
+                            
+                            {/* Actions */}
+                            <td className="p-3 border-b border-gray-200 text-center">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDeleteStatistic(stat.id)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-600" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                        
+                        {/* Sum Row */}
+                        <tr className="bg-blue-50 border-t-2 border-blue-300 font-semibold">
+                          <td className="p-3">SUMME</td>
+                          <td className="p-3 text-right">
+                            {formatCurrency(statistics.reduce((sum, s) => sum + (s.verbrauchskosten || 0), 0))}
+                          </td>
+                          <td className="p-3 text-right">
+                            {formatCurrency(statistics.reduce((sum, s) => sum + (s.wartungskosten || 0), 0))}
+                          </td>
+                          <td className="p-3 text-right">
+                            {formatCurrency(statistics.reduce((sum, s) => sum + (s.sonstige_kosten || 0), 0))}
+                          </td>
+                          {customColumns.map(col => {
+                            const sum = statistics.reduce((sum, s) => sum + (s.custom_fields?.[col.name] || 0), 0);
+                            return (
+                              <td key={col.id} className="p-3 text-right">
+                                {formatCurrency(sum)}
+                              </td>
+                            );
+                          })}
+                          <td className="p-3"></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    
+                    {/* Info Text */}
+                    <div className="mt-4 text-sm text-gray-500 space-y-2">
+                      <p>💡 <strong>Inline-Bearbeitung:</strong> Klicken Sie auf eine Zelle, um den Wert zu bearbeiten</p>
+                      <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                        <p className="text-blue-900 font-semibold mb-2">📊 n8n Integration API</p>
+                        <p className="text-xs text-blue-800 mb-1">
+                          <strong>Endpoint:</strong> POST /BrowoKoordinator-Server/api/vehicles/{`{vehicleId}`}/statistics
+                        </p>
+                        <p className="text-xs text-blue-800 mb-2">
+                          <strong>URL:</strong> https://{projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/vehicles/{vehicleId}/statistics
+                        </p>
+                        <p className="font-mono text-xs bg-white p-2 rounded border border-blue-300">
+                          {`{\n  "month": "2024-11",\n  "verbrauchskosten": 250.00,\n  "wartungskosten": 180.00,\n  "sonstige_kosten": 50.00\n}`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-gray-400">
+                    <BarChart3 className="w-12 h-12 mx-auto mb-3" />
+                    <p className="mb-4">Noch keine Statistiken erfasst</p>
+                    <Button 
+                      size="sm"
+                      onClick={handleAddStatistic}
+                      className="gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Ersten Eintrag erstellen
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -737,6 +1443,61 @@ export default function VehicleDetailScreen() {
         onClose={() => setEquipmentDialogOpen(false)}
         onSave={handleAddEquipment}
       />
+      
+      {/* Add Column Dialog */}
+      <Dialog open={addColumnDialogOpen} onOpenChange={setAddColumnDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Neue Spalte hinzufügen</DialogTitle>
+            <DialogDescription>
+              Erstellen Sie eine benutzerdefinierte Spalte für zusätzliche Kostenarten.
+              Diese Spalte wird für alle Fahrzeuge verfügbar sein.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="columnName">Spaltenname *</Label>
+              <Input
+                id="columnName"
+                value={newColumnName}
+                onChange={(e) => setNewColumnName(e.target.value)}
+                placeholder="z.B. Reinigungskosten, Versicherung"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="columnType">Typ</Label>
+              <Select value={newColumnType} onValueChange={setNewColumnType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="currency">Währung (€)</SelectItem>
+                  <SelectItem value="number">Zahl</SelectItem>
+                  <SelectItem value="text">Text</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAddColumnDialogOpen(false);
+                setNewColumnName('');
+                setNewColumnType('currency');
+              }}
+            >
+              Abbrechen
+            </Button>
+            <Button onClick={handleAddCustomColumn}>
+              Spalte hinzufügen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

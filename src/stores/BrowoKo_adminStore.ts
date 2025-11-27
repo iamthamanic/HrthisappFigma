@@ -148,7 +148,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
       try {
-        const url = `https://${projectId}.supabase.co/functions/v1/make-server-f659121d/users/create`;
+        const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/users/create`;
         console.log('🌐 Request URL:', url);
         console.log('🔑 Using auth token:', publicAnonKey.substring(0, 20) + '...');
         

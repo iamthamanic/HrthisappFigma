@@ -78,6 +78,7 @@ import {
   UserCheck,
   Undo2,
   Redo2,
+  ThumbsUp,
   
   // Media & Player Icons
   Play,
@@ -147,6 +148,7 @@ import {
   Weight,
   Package,
   Hash,
+  Laptop,
   
   // Misc UI Icons
   Search,
@@ -169,6 +171,7 @@ import {
   // Charts & Analytics
   TrendingUp,
   Activity,
+  BarChart3,
   
   // Quiz & Learning
   HelpCircle,
@@ -253,6 +256,7 @@ export {
   UserCheck,
   Undo2,
   Redo2,
+  ThumbsUp,
   
   // Media & Player Icons
   Play,
@@ -322,6 +326,7 @@ export {
   Weight,
   Package,
   Hash,
+  Laptop,
   
   // Misc UI Icons
   Search,
@@ -344,6 +349,7 @@ export {
   // Charts & Analytics
   TrendingUp,
   Activity,
+  BarChart3,
   
   // Quiz & Learning
   HelpCircle,
@@ -431,6 +437,7 @@ export const icons = {
   userCheck: UserCheck,
   undo2: Undo2,
   redo2: Redo2,
+  thumbsUp: ThumbsUp,
   
   // Media & Player Icons
   play: Play,
@@ -520,6 +527,7 @@ export const icons = {
   // Charts & Analytics
   trendingUp: TrendingUp,
   activity: Activity,
+  barChart3: BarChart3,
   
   // Quiz & Learning
   helpCircle: HelpCircle,

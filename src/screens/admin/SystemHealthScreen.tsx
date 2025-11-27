@@ -128,7 +128,7 @@ export default function SystemHealthScreen() {
   // Health Check für eine einzelne Function
   const checkFunctionHealth = useCallback(async (functionName: string): Promise<Partial<EdgeFunctionStatus>> => {
     const startTime = Date.now();
-    const url = `https://${projectId}.supabase.co/functions/v1/${functionName}/make-server-f659121d/health`;
+    const url = `https://${projectId}.supabase.co/functions/v1/${functionName}/health`;
     
     try {
       const response = await fetch(url, {

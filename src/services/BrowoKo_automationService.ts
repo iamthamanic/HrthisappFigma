@@ -62,7 +62,7 @@ class AutomationService {
   constructor() {
     // Edge Function Base URL - Use projectId from info.tsx
     const supabaseUrl = `https://${projectId}.supabase.co`;
-    this.baseUrl = `${supabaseUrl}/functions/v1/BrowoKoordinator-Automation/make-server-f659121d`;
+    this.baseUrl = `${supabaseUrl}/functions/v1/BrowoKoordinator-Automation`;
   }
 
   /**

@@ -38,7 +38,7 @@ import type { TestSubmission, ReviewComment } from '../types/schemas/BrowoKo_lea
 import { BrowoKo_ImageCommentTool } from './BrowoKo_ImageCommentTool';
 import { BrowoKo_VideoCommentTool } from './BrowoKo_VideoCommentTool';
 
-const API_URL = `https://${projectId}.supabase.co/functions/v1/make-server-f659121d`;
+const API_URL = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server`;
 
 interface ReviewModalProps {
   isOpen: boolean;

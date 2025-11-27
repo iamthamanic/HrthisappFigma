@@ -30,6 +30,48 @@ import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";
 import { createClient } from "npm:@supabase/supabase-js";
 
+// ==================== INLINE TRIGGER HELPER ====================
+const TRIGGER_TYPES = {
+  TASK_CREATED: 'TASK_CREATED',
+  TASK_COMPLETED: 'TASK_COMPLETED',
+};
+
+async function triggerWorkflows(
+  triggerType: string,
+  context: Record<string, any>,
+  authToken: string
+): Promise<void> {
+  try {
+    const projectId = Deno.env.get('SUPABASE_URL')?.split('//')[1]?.split('.')[0];
+    if (!projectId) return;
+
+    console.log(`🔔 Triggering workflows for event: ${triggerType}`);
+
+    const response = await fetch(
+      `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Workflows/trigger`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authToken,
+        },
+        body: JSON.stringify({ trigger_type: triggerType, context }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.warn(`[triggerWorkflows] Failed:`, error);
+      return;
+    }
+
+    const result = await response.json();
+    console.log(`✅ Workflows triggered:`, result);
+  } catch (error) {
+    console.error(`[triggerWorkflows] Error:`, error);
+  }
+}
+
 const app = new Hono();
 
 // Initialize Supabase client with service role key for admin operations
@@ -408,6 +450,43 @@ app.post("/BrowoKoordinator-Tasks/tasks", async (c) => {
 
     // Get full task details
     const fullTask = await getTaskWithDetails(supabase, task.id);
+
+    console.log(`✅ Task created: ${task.id}`);
+    
+    // 🔔 TRIGGER WORKFLOWS: TASK_CREATED
+    try {
+      const authHeaderValue = authHeader || `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`;
+      
+      // Get assignee names
+      const assigneeNames: string[] = [];
+      if (assigned_to && Array.isArray(assigned_to) && assigned_to.length > 0) {
+        const { data: assignees } = await supabase
+          .from('users')
+          .select('first_name, last_name')
+          .in('id', assigned_to);
+        
+        if (assignees) {
+          assigneeNames.push(...assignees.map((a: any) => `${a.first_name} ${a.last_name}`));
+        }
+      }
+      
+      await triggerWorkflows(
+        TRIGGER_TYPES.TASK_CREATED,
+        {
+          taskId: task.id,
+          taskTitle: task.title,
+          assignedTo: assigned_to && assigned_to.length > 0 ? assigned_to[0] : null,
+          assignedToName: assigneeNames.length > 0 ? assigneeNames[0] : 'Niemand',
+          createdBy: user.id,
+          organizationId: user.organization_id,
+        },
+        authHeaderValue
+      );
+      
+      console.log(`✅ TASK_CREATED workflows triggered`);
+    } catch (triggerError) {
+      console.error('⚠️ Failed to trigger workflows (non-fatal):', triggerError);
+    }
 
     return c.json({
       success: true,
@@ -907,6 +986,41 @@ app.post("/BrowoKoordinator-Tasks/tasks/:id/status", async (c) => {
 
     // Get full task details
     const fullTask = await getTaskWithDetails(supabase, taskId);
+
+    // 🔔 TRIGGER WORKFLOWS: TASK_COMPLETED (if status changed to DONE)
+    if (status === 'DONE') {
+      try {
+        const authHeaderValue = authHeader || `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`;
+        
+        // Get task creator and assignments
+        const { data: taskCreator } = await supabase
+          .from('users')
+          .select('first_name, last_name')
+          .eq('id', task.created_by)
+          .single();
+        
+        const creatorName = taskCreator 
+          ? `${taskCreator.first_name} ${taskCreator.last_name}`
+          : 'Unknown';
+        
+        await triggerWorkflows(
+          TRIGGER_TYPES.TASK_COMPLETED,
+          {
+            taskId: taskId,
+            taskTitle: task.title,
+            completedBy: user.id,
+            completedByName: `${user.email || 'Unknown'}`,
+            completionDate: updates.completed_at,
+            organizationId: task.organization_id,
+          },
+          authHeaderValue
+        );
+        
+        console.log(`✅ TASK_COMPLETED workflows triggered`);
+      } catch (triggerError) {
+        console.error('⚠️ Failed to trigger workflows (non-fatal):', triggerError);
+      }
+    }
 
     return c.json({
       success: true,

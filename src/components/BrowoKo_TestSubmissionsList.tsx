@@ -40,7 +40,7 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { BrowoKo_ReviewModal } from './BrowoKo_ReviewModal';
 import type { TestSubmission } from '../types/schemas/BrowoKo_learningSchemas';
 
-const API_URL = `https://${projectId}.supabase.co/functions/v1/make-server-f659121d`;
+const API_URL = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server`;
 
 const statusConfig = {
   DRAFT: { 

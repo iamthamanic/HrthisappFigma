@@ -318,7 +318,7 @@ function generateOpenAPISchema() {
 // ============================================================================
 
 // Health Check
-app.get('/BrowoKoordinator-Automation/make-server-f659121d/automation/health', (c) => {
+app.get('/BrowoKoordinator-Automation/automation/health', (c) => {
   return c.json({
     status: 'healthy',
     service: 'BrowoKoordinator-Automation',
