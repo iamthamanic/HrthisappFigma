@@ -28,101 +28,64 @@ import { Input } from '../../components/ui/input';
 import { Checkbox } from '../../components/ui/checkbox';
 import { VehicleAddDialog, type VehicleFormData } from '../../components/BrowoKo_VehicleAddDialog';
 import { VehicleListItem } from '../../components/BrowoKo_VehicleListItem';
-import { BrowoKo_ShiftPlanningTab } from '../../components/BrowoKo_ShiftPlanningTab'; // ✅ ECHTE VERSION mit Backend!
+import { BrowoKo_ShiftPlanningTab } from '../../components/BrowoKo_ShiftPlanningTab';
+import { useVehicleSearch, type Vehicle } from '../../hooks/useVehicleSearch';
 import { toast } from 'sonner@2.0.3';
-
-interface Vehicle {
-  id: string;
-  kennzeichen: string;
-  modell: string;
-  fahrzeugtyp: string;
-  ladekapazitaet: number;
-  dienst_start?: string;
-  letzte_wartung?: string;
-  images: string[];
-  documents: { name: string; url: string }[];
-  wartungen: { date: string; description: string; cost?: number }[];
-  unfaelle: { date: string; description: string; damage?: string }[];
-  created_at: string;
-  thumbnail?: string;
-}
 
 export default function FieldManagementScreen() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('einsatzplanung'); // Changed from 'tourenplanung'
-  const [einsatzSubTab, setEinsatzSubTab] = useState('tourenplanung'); // NEW: Sub-tab state
+  const [activeTab, setActiveTab] = useState('einsatzplanung');
+  const [einsatzSubTab, setEinsatzSubTab] = useState('tourenplanung');
   const [vehicleDialogOpen, setVehicleDialogOpen] = useState(false);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
+  
+  // Use PostgreSQL FTS hook
+  const { vehicles: searchResults, loading: searchLoading, error: searchError } = useVehicleSearch(searchQuery);
 
-  // Load vehicles from localStorage
-  useEffect(() => {
-    loadVehicles();
-  }, []);
+  // Note: Vehicles are now loaded via useVehicleSearch hook
+  // No need for manual loading or localStorage
 
-  const loadVehicles = () => {
-    try {
-      const stored = localStorage.getItem('vehicles');
-      if (stored) {
-        setVehicles(JSON.parse(stored));
-      }
-    } catch (error) {
-      console.error('Load vehicles error:', error);
-    }
-  };
-
-  // Save vehicle
+  // Save vehicle via PostgreSQL API
   const handleSaveVehicle = async (vehicleData: VehicleFormData) => {
     try {
-      // Convert File objects to data URLs for storage
-      const imageUrls: string[] = [];
-      for (const file of vehicleData.images) {
-        const url = await fileToDataURL(file);
-        imageUrls.push(url);
+      const { projectId, publicAnonKey } = await import('../utils/supabase/info');
+      
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Fahrzeuge/api/vehicles`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${publicAnonKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            kennzeichen: vehicleData.kennzeichen,
+            modell: vehicleData.modell,
+            typ: vehicleData.fahrzeugtyp,
+            ladekapazitaet: vehicleData.ladekapazitaet?.toString(),
+            standort: vehicleData.standort || null,
+            notizen: vehicleData.notizen || null,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create vehicle');
       }
-
-      const documentUrls: { name: string; url: string }[] = [];
-      for (const file of vehicleData.documents) {
-        const url = await fileToDataURL(file);
-        documentUrls.push({ name: file.name, url });
-      }
-
-      const newVehicle: Vehicle = {
-        id: vehicleData.id || crypto.randomUUID(),
-        kennzeichen: vehicleData.kennzeichen,
-        modell: vehicleData.modell,
-        fahrzeugtyp: vehicleData.fahrzeugtyp,
-        ladekapazitaet: vehicleData.ladekapazitaet,
-        dienst_start: vehicleData.dienst_start,
-        letzte_wartung: vehicleData.letzte_wartung,
-        images: imageUrls,
-        documents: documentUrls,
-        wartungen: [],
-        unfaelle: [],
-        created_at: vehicleData.created_at || new Date().toISOString(),
-        thumbnail: imageUrls[0] || undefined,
-      };
-
-      const updatedVehicles = [...vehicles, newVehicle];
-      setVehicles(updatedVehicles);
-      localStorage.setItem('vehicles', JSON.stringify(updatedVehicles));
 
       toast.success('Fahrzeug erfolgreich hinzugefügt! 🚗');
-    } catch (error) {
+      
+      // Trigger refresh by clearing and resetting search
+      setSearchQuery('');
+      setTimeout(() => setSearchQuery(''), 100);
+      
+    } catch (error: any) {
       console.error('Save vehicle error:', error);
-      toast.error('Fehler beim Speichern des Fahrzeugs');
+      toast.error(error.message || 'Fehler beim Speichern des Fahrzeugs');
     }
-  };
-
-  // Helper: Convert File to Data URL
-  const fileToDataURL = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
   };
 
   // Navigate to vehicle details
@@ -148,46 +111,48 @@ export default function FieldManagementScreen() {
     }
   };
 
-  // Handle bulk delete
-  const handleBulkDelete = () => {
+  // Handle bulk delete via PostgreSQL API
+  const handleBulkDelete = async () => {
     if (selectedVehicles.length === 0) return;
 
     if (!confirm(`Möchtest du ${selectedVehicles.length} Fahrzeug(e) wirklich löschen?`)) {
       return;
     }
 
-    const updatedVehicles = vehicles.filter(v => !selectedVehicles.includes(v.id));
-    setVehicles(updatedVehicles);
-    localStorage.setItem('vehicles', JSON.stringify(updatedVehicles));
-    setSelectedVehicles([]);
-    toast.success(`${selectedVehicles.length} Fahrzeug(e) gelöscht`);
+    try {
+      const { projectId, publicAnonKey } = await import('../utils/supabase/info');
+      
+      // Delete all selected vehicles
+      const deletePromises = selectedVehicles.map(vehicleId =>
+        fetch(
+          `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Fahrzeuge/api/vehicles/${vehicleId}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${publicAnonKey}`,
+            },
+          }
+        )
+      );
+
+      await Promise.all(deletePromises);
+
+      toast.success(`${selectedVehicles.length} Fahrzeug(e) gelöscht`);
+      setSelectedVehicles([]);
+      
+      // Trigger refresh by clearing and resetting search
+      setSearchQuery('');
+      setTimeout(() => setSearchQuery(''), 100);
+      
+    } catch (error: any) {
+      console.error('Bulk delete error:', error);
+      toast.error('Fehler beim Löschen der Fahrzeuge');
+    }
   };
 
-  // Filter vehicles based on search query - VOLLTEXT SUCHE!
-  const filteredVehicles = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return vehicles;
-    }
-
-    const query = searchQuery.toLowerCase().trim();
-
-    return vehicles.filter(vehicle => {
-      // Search in: Kennzeichen, Modell, Fahrzeugtyp, Ladekapazität, Dienst Start, Letzte Wartung
-      const searchableText = [
-        vehicle.kennzeichen,
-        vehicle.modell,
-        vehicle.fahrzeugtyp,
-        vehicle.ladekapazitaet.toString(),
-        vehicle.dienst_start ? new Date(vehicle.dienst_start).toLocaleDateString('de-DE') : '',
-        vehicle.letzte_wartung ? new Date(vehicle.letzte_wartung).toLocaleDateString('de-DE') : '',
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-
-      return searchableText.includes(query);
-    });
-  }, [vehicles, searchQuery]);
+  // Vehicles are now filtered via PostgreSQL FTS in useVehicleSearch hook
+  // searchResults contains the FTS-ranked results
+  const filteredVehicles = searchResults;
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] pt-20 md:pt-6">
@@ -298,8 +263,9 @@ export default function FieldManagementScreen() {
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">Fahrzeugflotte</h2>
                   <p className="text-sm text-gray-500">
-                    {filteredVehicles.length} von {vehicles.length} Fahrzeug(en)
-                    {searchQuery && ` gefunden`}
+                    {filteredVehicles.length} Fahrzeug(e)
+                    {searchQuery && ` für "${searchQuery}" gefunden`}
+                    {searchLoading && ` - Suche läuft...`}
                   </p>
                 </div>
                 <Button 
@@ -311,24 +277,31 @@ export default function FieldManagementScreen() {
                 </Button>
               </div>
 
-              {/* Search Bar - only show if vehicles exist */}
-              {vehicles.length > 0 && (
+              {/* Search Bar - Always show (FTS will return all or filtered) */}
+              {(searchResults.length > 0 || searchLoading || !searchError) && (
                 <div className="relative w-full md:w-96">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
                     type="text"
-                    placeholder="Suche: Kennzeichen, Modell, Typ, Ladekapazität..."
+                    placeholder="🔍 Volltext-Suche: Kennzeichen, Modell, Typ, Standort..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10 pr-10"
+                    disabled={searchLoading}
                   />
-                  {searchQuery && (
+                  {searchQuery && !searchLoading && (
                     <button
                       onClick={() => setSearchQuery('')}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      title="Suche zurücksetzen"
                     >
                       <X className="w-4 h-4" />
                     </button>
+                  )}
+                  {searchLoading && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                    </div>
                   )}
                 </div>
               )}
@@ -367,8 +340,30 @@ export default function FieldManagementScreen() {
               </div>
             )}
 
+            {/* Error Display */}
+            {searchError && (
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="pt-6">
+                  <div className="text-center py-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
+                      <X className="w-8 h-8 text-red-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-red-900 mb-2">Fehler beim Laden der Fahrzeuge</h3>
+                    <p className="text-red-700 mb-4">{searchError}</p>
+                    <Button 
+                      onClick={() => window.location.reload()}
+                      variant="outline"
+                      className="border-red-300 text-red-700 hover:bg-red-100"
+                    >
+                      Seite neu laden
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Vehicles List */}
-            {vehicles.length > 0 ? (
+            {!searchError && (searchResults.length > 0 || searchLoading) ? (
               filteredVehicles.length > 0 ? (
                 <div className="space-y-3">
                   {/* Select All Row */}

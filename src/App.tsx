@@ -35,6 +35,7 @@ const SettingsScreen = lazy(() => import('./screens/SettingsScreen'));
 const OrganigramViewScreen = lazy(() => import('./screens/OrganigramViewScreen'));
 const FieldScreen = lazy(() => import('./screens/FieldScreen'));
 const ChatScreen = lazy(() => import('./screens/ChatScreen'));
+const TasksScreen = lazy(() => import('./screens/TasksScreen'));
 
 // Admin Screens
 const TeamUndMitarbeiterverwaltung = lazy(() => import('./screens/admin/TeamUndMitarbeiterverwaltung'));
@@ -297,6 +298,11 @@ export default function App() {
           <Route path="achievements" element={
             <Suspense fallback={<LoadingState loading={true} type="skeleton" skeletonType="card" />}>
               <AchievementsScreen />
+            </Suspense>
+          } />
+          <Route path="tasks" element={
+            <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
+              <TasksScreen />
             </Suspense>
           } />
           <Route path="avatar" element={

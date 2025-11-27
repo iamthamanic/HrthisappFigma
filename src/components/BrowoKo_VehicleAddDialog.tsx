@@ -16,7 +16,7 @@
 
 import { useState } from 'react';
 import { X, Upload, Image as ImageIcon, FileText, Trash2, Calendar } from '../components/icons/BrowoKoIcons';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -35,6 +35,8 @@ export interface VehicleFormData {
   modell: string;
   fahrzeugtyp: string;
   ladekapazitaet: number;
+  standort?: string;
+  notizen?: string;
   dienst_start?: string;
   letzte_wartung?: string;
   images: File[];
@@ -53,6 +55,8 @@ export function VehicleAddDialog({ open, onOpenChange, onSave }: VehicleAddDialo
   const [modell, setModell] = useState('');
   const [fahrzeugtyp, setFahrzeugtyp] = useState('');
   const [ladekapazitaet, setLadekapazitaet] = useState('');
+  const [standort, setStandort] = useState('');
+  const [notizen, setNotizen] = useState('');
   const [dienstStart, setDienstStart] = useState('');
   const [letzteWartung, setLetzteWartung] = useState('');
   const [images, setImages] = useState<File[]>([]);
@@ -130,11 +134,12 @@ export function VehicleAddDialog({ open, onOpenChange, onSave }: VehicleAddDialo
       modell: modell.trim(),
       fahrzeugtyp,
       ladekapazitaet: parseFloat(ladekapazitaet),
+      standort: standort.trim() || undefined,
+      notizen: notizen.trim() || undefined,
       dienst_start: dienstStart || undefined,
       letzte_wartung: letzteWartung || undefined,
       images,
       documents,
-      equipment: [], // Initialize empty equipment array
       created_at: new Date().toISOString(),
     };
 
@@ -144,6 +149,8 @@ export function VehicleAddDialog({ open, onOpenChange, onSave }: VehicleAddDialo
     setKennzeichen('');
     setModell('');
     setFahrzeugtyp('');
+    setStandort('');
+    setNotizen('');
     setLadekapazitaet('');
     setDienstStart('');
     setLetzteWartung('');
@@ -163,6 +170,9 @@ export function VehicleAddDialog({ open, onOpenChange, onSave }: VehicleAddDialo
           <DialogTitle className="text-xl font-semibold text-gray-900">
             Neues Fahrzeug hinzufügen
           </DialogTitle>
+          <DialogDescription>
+            Fügen Sie ein neues Fahrzeug mit allen relevanten Details hinzu.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
@@ -278,6 +288,34 @@ export function VehicleAddDialog({ open, onOpenChange, onSave }: VehicleAddDialo
               placeholder="z.B. 1000"
               min="0"
               step="100"
+              className="text-base"
+            />
+          </div>
+
+          {/* Standort */}
+          <div>
+            <Label htmlFor="standort" className="text-sm font-medium text-gray-700 mb-2 block">
+              Standort (optional)
+            </Label>
+            <Input
+              id="standort"
+              value={standort}
+              onChange={(e) => setStandort(e.target.value)}
+              placeholder="z.B. Berlin Mitte"
+              className="text-base"
+            />
+          </div>
+
+          {/* Notizen */}
+          <div>
+            <Label htmlFor="notizen" className="text-sm font-medium text-gray-700 mb-2 block">
+              Notizen (optional)
+            </Label>
+            <Input
+              id="notizen"
+              value={notizen}
+              onChange={(e) => setNotizen(e.target.value)}
+              placeholder="z.B. Hauptfahrzeug für Lieferungen"
               className="text-base"
             />
           </div>

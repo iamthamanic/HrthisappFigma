@@ -85,6 +85,8 @@ export default function DashboardScreen() {
         xpProgress={stats.xpProgress}
         currentXP={stats.currentXP}
         nextLevelXP={stats.nextLevelXP}
+        completedTasks={stats.completedTasks}
+        totalTasks={stats.totalTasks}
       />
 
       {/* Organigram Card */}

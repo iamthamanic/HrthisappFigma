@@ -20,11 +20,12 @@ interface VehicleListItemProps {
     id: string;
     kennzeichen: string;
     modell: string;
-    fahrzeugtyp: string;
-    ladekapazitaet: number;
-    dienst_start?: string;
-    letzte_wartung?: string;
-    thumbnail?: string;
+    typ: string;
+    ladekapazitaet: string | null;
+    standort?: string | null;
+    notizen?: string | null;
+    status?: string;
+    created_at?: string;
   };
   isSelected: boolean;
   onSelect: (id: string, checked: boolean) => void;
@@ -78,26 +79,26 @@ export function VehicleListItem({ vehicle, isSelected, onSelect, onClick }: Vehi
           </span>
         </div>
 
-        {/* Row 2: Fahrzeugtyp Badge + Ladekapazität */}
+        {/* Row 2: Fahrzeugtyp Badge + Ladekapazität + Standort */}
         <div className="flex flex-wrap items-center gap-3">
           <Badge 
             variant="secondary" 
             className="bg-blue-100 text-blue-700"
           >
-            {vehicle.fahrzeugtyp}
+            {vehicle.typ}
           </Badge>
           
-          <div className="flex items-center gap-1.5 text-sm text-gray-600">
-            <Weight className="w-4 h-4" />
-            <span>{vehicle.ladekapazitaet.toLocaleString('de-DE')} kg</span>
-          </div>
+          {vehicle.ladekapazitaet && (
+            <div className="flex items-center gap-1.5 text-sm text-gray-600">
+              <Weight className="w-4 h-4" />
+              <span>{vehicle.ladekapazitaet}</span>
+            </div>
+          )}
 
-          {vehicle.dienst_start && (
+          {vehicle.standort && (
             <div className="flex items-center gap-1.5 text-sm text-gray-500">
               <Calendar className="w-4 h-4" />
-              <span>
-                Seit {new Date(vehicle.dienst_start).toLocaleDateString('de-DE')}
-              </span>
+              <span>{vehicle.standort}</span>
             </div>
           )}
         </div>

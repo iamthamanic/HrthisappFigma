@@ -1,19 +1,25 @@
 /**
  * @file BrowoKo_useDashboardStats.ts
  * @domain BrowoKo - Dashboard
- * @description Custom hook for dashboard statistics (vacation, gamification)
+ * @description Custom hook for dashboard statistics (vacation, gamification, tasks)
  * @created Phase 2.2 - Priority 4 Refactoring
  * @updated v4.10.15 - Time tracking removed
+ * @updated v4.10.16 - Added tasks statistics
  */
 
 import { useEffect, useState } from 'react';
 import { useGamificationStore } from '../stores/gamificationStore';
 import { useAuthStore } from '../stores/BrowoKo_authStore';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 export function useDashboardStats() {
   const { user, profile } = useAuthStore();
   const { coins, xp, level, loadUserStats } = useGamificationStore();
   const [loading, setLoading] = useState(true);
+  const [tasksStats, setTasksStats] = useState({
+    completedTasks: 0,
+    totalTasks: 0,
+  });
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -21,6 +27,28 @@ export function useDashboardStats() {
 
       try {
         await loadUserStats(user.id);
+        
+        // Load tasks statistics
+        const accessToken = (await user.getIdToken?.()) || publicAnonKey;
+        const tasksResponse = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Tasks/my-tasks`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+          }
+        );
+        
+        if (tasksResponse.ok) {
+          const tasksData = await tasksResponse.json();
+          if (tasksData.success && tasksData.tasks) {
+            const completed = tasksData.tasks.filter((t: any) => t.status === 'DONE').length;
+            setTasksStats({
+              completedTasks: completed,
+              totalTasks: tasksData.tasks.length,
+            });
+          }
+        }
       } catch (error) {
         console.error('Load dashboard data error:', error);
       } finally {
@@ -56,5 +84,9 @@ export function useDashboardStats() {
     nextLevelXP,
     currentXP,
     xpProgress,
+    
+    // Tasks
+    completedTasks: tasksStats.completedTasks,
+    totalTasks: tasksStats.totalTasks,
   };
 }

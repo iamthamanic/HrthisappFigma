@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {  ArrowLeft, Truck, Calendar, Weight, FileText, Wrench, AlertTriangle, Image as ImageIcon, Package, Edit, X, Save, BarChart3, Plus, Trash2, Download } from '../../components/icons/BrowoKoIcons';
+import {  ArrowLeft, Truck, Calendar, Weight, FileText, Wrench, AlertTriangle, Image as ImageIcon, Package, Edit, X, Save, BarChart3, Plus, Trash2, Download, Upload } from '../../components/icons/BrowoKoIcons';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
@@ -18,6 +18,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/pop
 import { Calendar as CalendarUI } from '../../components/ui/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../../components/ui/dialog';
 import { EquipmentAddDialog, type EquipmentFormData } from '../../components/BrowoKo_EquipmentAddDialog';
+import { VehicleDocumentUploadDialog } from '../../components/BrowoKo_VehicleDocumentUploadDialog';
+import { VehicleMaintenanceDialog, type Maintenance } from '../../components/BrowoKo_VehicleMaintenanceDialog';
 import { toast } from 'sonner@2.0.3';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -84,6 +86,17 @@ export default function VehicleDetailScreen() {
   const [apiConnected, setApiConnected] = useState(true);
   const [hasInitializedStats, setHasInitializedStats] = useState(false);
 
+  // Documents State
+  const [documentDialogOpen, setDocumentDialogOpen] = useState(false);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+
+  // Maintenance State
+  const [maintenanceDialogOpen, setMaintenanceDialogOpen] = useState(false);
+  const [selectedMaintenance, setSelectedMaintenance] = useState<Maintenance | null>(null);
+  const [maintenances, setMaintenances] = useState<any[]>([]);
+  const [loadingMaintenances, setLoadingMaintenances] = useState(false);
+
   // Load vehicle data
   useEffect(() => {
     loadVehicle();
@@ -94,6 +107,20 @@ export default function VehicleDetailScreen() {
     if (activeTab === 'statistics' && vehicleId && !hasInitializedStats) {
       initializeStatistics();
       setHasInitializedStats(true);
+    }
+  }, [activeTab, vehicleId]);
+  
+  // Dokumente laden wenn Tab geöffnet wird
+  useEffect(() => {
+    if (activeTab === 'documents' && vehicleId) {
+      loadDocuments();
+    }
+  }, [activeTab, vehicleId]);
+
+  // Wartungen laden wenn Tab geöffnet wird
+  useEffect(() => {
+    if (activeTab === 'maintenance' && vehicleId) {
+      loadMaintenances();
     }
   }, [activeTab, vehicleId]);
   
@@ -124,6 +151,60 @@ export default function VehicleDetailScreen() {
       toast.error('Fehler beim Laden des Fahrzeugs');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Documents laden
+  const loadDocuments = async () => {
+    if (!vehicleId) return;
+    
+    setLoadingDocs(true);
+    try {
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Fahrzeuge/api/vehicles/${vehicleId}/documents`;
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to load documents');
+      }
+      
+      const data = await response.json();
+      setDocuments(data.documents || []);
+    } catch (error: any) {
+      console.error('Load documents error:', error);
+      toast.error('Fehler beim Laden der Dokumente');
+    } finally {
+      setLoadingDocs(false);
+    }
+  };
+
+  // Maintenances laden
+  const loadMaintenances = async () => {
+    if (!vehicleId) return;
+    
+    setLoadingMaintenances(true);
+    try {
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Fahrzeuge/api/vehicles/${vehicleId}/maintenances`;
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to load maintenances');
+      }
+      
+      const data = await response.json();
+      setMaintenances(data.maintenances || []);
+    } catch (error: any) {
+      console.error('Load maintenances error:', error);
+      toast.error('Fehler beim Laden der Wartungen');
+    } finally {
+      setLoadingMaintenances(false);
     }
   };
 
@@ -223,6 +304,72 @@ export default function VehicleDetailScreen() {
   };
 
   // ============================================
+  // DOCUMENTS FUNCTIONS
+  // ============================================
+  
+  const handleDeleteDocument = async (docId: string) => {
+    if (!vehicleId || !confirm('Möchten Sie dieses Dokument wirklich löschen?')) return;
+    
+    try {
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Fahrzeuge/api/vehicles/${vehicleId}/documents/${docId}`;
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete document');
+      }
+      
+      toast.success('Dokument gelöscht');
+      loadDocuments();
+    } catch (error: any) {
+      console.error('Delete document error:', error);
+      toast.error('Fehler beim Löschen');
+    }
+  };
+
+  // ============================================
+  // MAINTENANCE FUNCTIONS
+  // ============================================
+  
+  const handleDeleteMaintenance = async (maintId: string) => {
+    if (!vehicleId || !confirm('Möchten Sie diese Wartung wirklich löschen?')) return;
+    
+    try {
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Fahrzeuge/api/vehicles/${vehicleId}/maintenances/${maintId}`;
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete maintenance');
+      }
+      
+      toast.success('Wartung gelöscht');
+      loadMaintenances();
+    } catch (error: any) {
+      console.error('Delete maintenance error:', error);
+      toast.error('Fehler beim Löschen');
+    }
+  };
+
+  const handleEditMaintenance = (maintenance: any) => {
+    setSelectedMaintenance(maintenance);
+    setMaintenanceDialogOpen(true);
+  };
+
+  const handleAddMaintenance = () => {
+    setSelectedMaintenance(null);
+    setMaintenanceDialogOpen(true);
+  };
+
+  // ============================================
   // STATISTICS FUNCTIONS
   // ============================================
   
@@ -260,7 +407,7 @@ export default function VehicleDetailScreen() {
     if (!vehicleId) return;
     
     try {
-      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/vehicles/${vehicleId}/statistics${selectedMonth ? `?month=${selectedMonth}` : ''}`;
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Fahrzeuge/api/vehicles/${vehicleId}/statistics${selectedMonth ? `?month=${selectedMonth}` : ''}`;
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${publicAnonKey}`,
@@ -291,7 +438,7 @@ export default function VehicleDetailScreen() {
   
   const loadCustomColumns = async () => {
     try {
-      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/statistics/columns`;
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Fahrzeuge/api/statistics/columns`;
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${publicAnonKey}`,
@@ -314,14 +461,14 @@ export default function VehicleDetailScreen() {
     if (!vehicleId) return;
     
     if (!apiConnected) {
-      toast.error('API nicht verbunden - Bitte stellen Sie sicher, dass BrowoKoordinator-Server deployed ist');
+      toast.error('API nicht verbunden - Bitte stellen Sie sicher, dass BrowoKoordinator-Fahrzeuge deployed ist');
       return;
     }
     
     const currentMonth = format(new Date(), 'yyyy-MM');
     
     try {
-      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/vehicles/${vehicleId}/statistics`;
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Fahrzeuge/api/vehicles/${vehicleId}/statistics`;
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -358,7 +505,7 @@ export default function VehicleDetailScreen() {
     }
     
     try {
-      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/vehicles/${vehicleId}/statistics/${statId}`;
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Fahrzeuge/api/vehicles/${vehicleId}/statistics/${statId}`;
       const response = await fetch(url, {
         method: 'DELETE',
         headers: {
@@ -431,7 +578,7 @@ export default function VehicleDetailScreen() {
         };
       }
       
-      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/vehicles/${vehicleId}/statistics/${statId}`;
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Fahrzeuge/api/vehicles/${vehicleId}/statistics/${statId}`;
       const response = await fetch(url, {
         method: 'PUT',
         headers: {
@@ -460,12 +607,12 @@ export default function VehicleDetailScreen() {
     }
     
     if (!apiConnected) {
-      toast.error('API nicht verbunden - Bitte stellen Sie sicher, dass BrowoKoordinator-Server deployed ist');
+      toast.error('API nicht verbunden - Bitte stellen Sie sicher, dass BrowoKoordinator-Fahrzeuge deployed ist');
       return;
     }
     
     try {
-      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/statistics/columns`;
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Fahrzeuge/api/statistics/columns`;
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -503,7 +650,7 @@ export default function VehicleDetailScreen() {
     }
     
     try {
-      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/statistics/columns/${columnId}`;
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Fahrzeuge/api/statistics/columns/${columnId}`;
       const response = await fetch(url, {
         method: 'DELETE',
         headers: {
@@ -926,20 +1073,57 @@ export default function VehicleDetailScreen() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>Dokumente ({vehicle.documents.length})</CardTitle>
-                  <Button size="sm">+ Dokument hochladen</Button>
+                  <CardTitle>Dokumente ({documents.length})</CardTitle>
+                  <Button 
+                    size="sm" 
+                    onClick={() => setDocumentDialogOpen(true)}
+                    className="gap-2"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Dokument hochladen
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                {vehicle.documents.length > 0 ? (
+                {loadingDocs ? (
+                  <div className="text-center py-12">
+                    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-500">Lade Dokumente...</p>
+                  </div>
+                ) : documents.length > 0 ? (
                   <div className="space-y-2">
-                    {vehicle.documents.map((doc, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-5 h-5 text-gray-400" />
-                          <span className="text-sm text-gray-700">{doc.name}</span>
+                    {documents.map((doc) => (
+                      <div 
+                        key={doc.id} 
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
+                            <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {doc.type}
+                              </Badge>
+                              <span>{new Date(doc.uploaded_at).toLocaleDateString('de-DE')}</span>
+                              {doc.file_size && (
+                                <span>{(doc.file_size / 1024).toFixed(1)} KB</span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <Button size="sm" variant="ghost">Ansehen</Button>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="ghost">
+                            <FileText className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => handleDeleteDocument(doc.id)}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -947,7 +1131,12 @@ export default function VehicleDetailScreen() {
                   <div className="text-center py-12 text-gray-400">
                     <FileText className="w-12 h-12 mx-auto mb-3" />
                     <p className="mb-4">Keine Dokumente vorhanden</p>
-                    <Button size="sm">Erstes Dokument hochladen</Button>
+                    <Button 
+                      size="sm"
+                      onClick={() => setDocumentDialogOpen(true)}
+                    >
+                      Erstes Dokument hochladen
+                    </Button>
                   </div>
                 )}
               </CardContent>
@@ -959,29 +1148,75 @@ export default function VehicleDetailScreen() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>Wartungshistorie ({vehicle.wartungen.length})</CardTitle>
-                  <Button size="sm">+ Wartung hinzufügen</Button>
+                  <CardTitle>Wartungshistorie ({maintenances.length})</CardTitle>
+                  <Button 
+                    size="sm"
+                    onClick={handleAddMaintenance}
+                    className="gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Wartung hinzufügen
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                {vehicle.wartungen.length > 0 ? (
+                {loadingMaintenances ? (
+                  <div className="text-center py-12">
+                    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-500">Lade Wartungen...</p>
+                  </div>
+                ) : maintenances.length > 0 ? (
                   <div className="space-y-4">
-                    {vehicle.wartungen.map((wartung, index) => (
-                      <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                    {maintenances.map((wartung) => (
+                      <div key={wartung.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                         <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-gray-400" />
-                            <span className="font-medium text-gray-900">
-                              {new Date(wartung.date).toLocaleDateString('de-DE')}
-                            </span>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Calendar className="w-4 h-4 text-gray-400" />
+                              <span className="font-medium text-gray-900">
+                                {new Date(wartung.maintenance_date).toLocaleDateString('de-DE')}
+                              </span>
+                              <Badge 
+                                variant="secondary"
+                                className={
+                                  wartung.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                  wartung.status === 'overdue' ? 'bg-red-100 text-red-700' :
+                                  'bg-blue-100 text-blue-700'
+                                }
+                              >
+                                {wartung.status === 'completed' ? 'Abgeschlossen' :
+                                 wartung.status === 'overdue' ? 'Überfällig' : 'Geplant'}
+                              </Badge>
+                            </div>
+                            <h4 className="font-medium text-gray-900 mb-1">{wartung.title}</h4>
+                            {wartung.description && (
+                              <p className="text-sm text-gray-600 mb-2">{wartung.description}</p>
+                            )}
                           </div>
-                          {wartung.cost && (
-                            <Badge variant="secondary">
-                              {wartung.cost.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
-                            </Badge>
-                          )}
+                          <div className="flex flex-col items-end gap-2">
+                            {wartung.cost && (
+                              <Badge variant="secondary">
+                                {wartung.cost.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+                              </Badge>
+                            )}
+                            <div className="flex gap-1">
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={() => handleEditMaintenance(wartung)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={() => handleDeleteMaintenance(wartung.id)}
+                              >
+                                <Trash2 className="w-4 h-4 text-red-600" />
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-sm text-gray-600">{wartung.description}</p>
                       </div>
                     ))}
                   </div>
@@ -989,7 +1224,12 @@ export default function VehicleDetailScreen() {
                   <div className="text-center py-12 text-gray-400">
                     <Wrench className="w-12 h-12 mx-auto mb-3" />
                     <p className="mb-4">Keine Wartungen erfasst</p>
-                    <Button size="sm">Erste Wartung hinzufügen</Button>
+                    <Button 
+                      size="sm"
+                      onClick={handleAddMaintenance}
+                    >
+                      Erste Wartung hinzufügen
+                    </Button>
                   </div>
                 )}
               </CardContent>
@@ -1198,11 +1438,11 @@ export default function VehicleDetailScreen() {
                       <div className="flex-1">
                         <h4 className="font-semibold text-amber-900 mb-1">API Disconnected</h4>
                         <p className="text-sm text-amber-800 mb-2">
-                          Die BrowoKoordinator-Server Edge Function ist nicht erreichbar. 
+                          Die BrowoKoordinator-Fahrzeuge Edge Function ist nicht erreichbar. 
                           Änderungen werden nur lokal gespeichert.
                         </p>
                         <p className="text-xs text-amber-700">
-                          <strong>Lösung:</strong> Deployen Sie die Edge Function "BrowoKoordinator-Server" im Supabase Dashboard
+                          <strong>Lösung:</strong> Deployen Sie die Edge Function "BrowoKoordinator-Fahrzeuge" im Supabase Dashboard
                         </p>
                       </div>
                     </div>
@@ -1406,10 +1646,10 @@ export default function VehicleDetailScreen() {
                       <div className="bg-blue-50 p-3 rounded border border-blue-200">
                         <p className="text-blue-900 font-semibold mb-2">📊 n8n Integration API</p>
                         <p className="text-xs text-blue-800 mb-1">
-                          <strong>Endpoint:</strong> POST /BrowoKoordinator-Server/api/vehicles/{`{vehicleId}`}/statistics
+                          <strong>Endpoint:</strong> POST /api/vehicles/{`{vehicleId}`}/statistics
                         </p>
                         <p className="text-xs text-blue-800 mb-2">
-                          <strong>URL:</strong> https://{projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/vehicles/{vehicleId}/statistics
+                          <strong>URL:</strong> https://{projectId}.supabase.co/functions/v1/BrowoKoordinator-Fahrzeuge/api/vehicles/{vehicleId}/statistics
                         </p>
                         <p className="font-mono text-xs bg-white p-2 rounded border border-blue-300">
                           {`{\n  "month": "2024-11",\n  "verbrauchskosten": 250.00,\n  "wartungskosten": 180.00,\n  "sonstige_kosten": 50.00\n}`}
@@ -1498,6 +1738,30 @@ export default function VehicleDetailScreen() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Document Upload Dialog */}
+      {vehicleId && (
+        <VehicleDocumentUploadDialog
+          open={documentDialogOpen}
+          onOpenChange={setDocumentDialogOpen}
+          vehicleId={vehicleId}
+          onSuccess={loadDocuments}
+        />
+      )}
+
+      {/* Maintenance Dialog */}
+      {vehicleId && (
+        <VehicleMaintenanceDialog
+          open={maintenanceDialogOpen}
+          onOpenChange={(open) => {
+            setMaintenanceDialogOpen(open);
+            if (!open) setSelectedMaintenance(null);
+          }}
+          vehicleId={vehicleId}
+          maintenance={selectedMaintenance}
+          onSuccess={loadMaintenances}
+        />
+      )}
     </div>
   );
 }
