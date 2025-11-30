@@ -8,10 +8,12 @@ import AchievementDialog from '../../components/admin/BrowoKo_AchievementDialog'
 import AdminAchievementsList from '../../components/admin/BrowoKo_AdminAchievementsList';
 import { useBenefitsManagement } from '../../hooks/BrowoKo_useBenefitsManagement';
 import { useAchievementsManagement } from '../../hooks/BrowoKo_useAchievementsManagement';
+import { useAuthStore } from '../../stores/BrowoKo_authStore';
 import { Button } from '../../components/ui/button';
 
 export default function BenefitsManagementScreen() {
   const [activeTab, setActiveTab] = useState<'benefits' | 'achievements'>('benefits');
+  const { user } = useAuthStore();
 
   // Benefits Management
   const {
@@ -26,7 +28,7 @@ export default function BenefitsManagementScreen() {
     handleSubmit: handleBenefitSubmit,
     handleDelete: handleBenefitDelete,
     setFormData: setBenefitFormData
-  } = useBenefitsManagement();
+  } = useBenefitsManagement(user?.organization_id || null);
 
   // Achievements Management
   const {
@@ -41,7 +43,7 @@ export default function BenefitsManagementScreen() {
     handleSubmit: handleAchievementSubmit,
     handleDelete: handleAchievementDelete,
     setFormData: setAchievementFormData,
-  } = useAchievementsManagement();
+  } = useAchievementsManagement(user?.organization_id || null);
 
   return (
     <div className="min-h-screen pt-20 md:pt-6 px-4 md:px-6">

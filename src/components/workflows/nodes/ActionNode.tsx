@@ -58,9 +58,17 @@ const getLabel = (type: string) => {
 
 export default memo(({ data }: { data: any }) => {
   const type = data.actionType || data.type || 'CREATE_TASK';
+  const isConfigured = data.config && Object.keys(data.config).length > 0;
+  
+  // Determine border and status color
+  const borderColor = isConfigured ? 'border-green-500' : 'border-orange-400';
+  const statusColor = isConfigured ? 'bg-green-500' : 'bg-orange-400';
   
   return (
-    <div className="shadow-md rounded-md bg-white border border-gray-200 w-[250px] hover:shadow-lg transition-shadow">
+    <div className={`shadow-md rounded-md bg-white border-2 ${borderColor} w-[250px] hover:shadow-lg transition-all relative`}>
+      {/* Status Indicator */}
+      <div className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full ${statusColor} border-2 border-white z-10`}></div>
+      
       <Handle
         type="target"
         position={Position.Top}
@@ -76,7 +84,7 @@ export default memo(({ data }: { data: any }) => {
             {data.label || getLabel(type)}
           </div>
           <div className="text-xs text-gray-500 truncate">
-            {data.description || 'Bitte konfigurieren...'}
+            {isConfigured ? (data.config.description || 'Konfiguriert ✓') : 'Bitte konfigurieren...'}
           </div>
         </div>
       </div>

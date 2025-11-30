@@ -114,7 +114,7 @@ export function useTeamMemberDetails(userId: string | undefined) {
       // ⚡ PERFORMANCE: Spezifische Felder statt SELECT *
       const { data: timeData, error: timeError } = await supabase
         .from('work_sessions')
-        .select('id, user_id, start_time, end_time, calculated_hours, break_minutes, notes, created_at')
+        .select('id, user_id, start_time, end_time, break_minutes, notes, created_at')
         .eq('user_id', userId)
         .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
         .order('date', { ascending: false });

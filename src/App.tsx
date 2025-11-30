@@ -54,12 +54,11 @@ const BenefitsManagementScreen = lazy(() => import('./screens/admin/BenefitsMana
 const DashboardAnnouncementsScreen = lazy(() => import('./screens/admin/DashboardAnnouncementsScreen'));
 const LearningManagementScreen = lazy(() => import('./screens/admin/LearningManagementScreen'));
 const TestBuilderScreen = lazy(() => import('./screens/admin/TestBuilderScreen'));
-const TimeAccountTestScreen = lazy(() => import('./screens/admin/TimeAccountTestScreen'));
-const TimesheetManagementScreen = lazy(() => import('./screens/admin/TimesheetManagementScreen'));
 const AutomationManagementScreen = lazy(() => import('./screens/admin/AutomationManagementScreen'));
 const SystemHealthScreen = lazy(() => import('./screens/admin/SystemHealthScreen'));
 const WorkflowsScreen = lazy(() => import('./screens/admin/WorkflowsScreen'));
 const WorkflowDetailScreen = lazy(() => import('./screens/admin/WorkflowDetailScreen'));
+const EmailTemplatesScreen = lazy(() => import('./screens/admin/EmailTemplatesScreen'));
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -123,17 +122,31 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Version: 4.11.1 - AUTOMATION SYSTEM! 🤖⚡
-// Cache bust: 2025-01-28-HEALTH-DASHBOARD
+// Version: 4.13.0 - WORKFLOW SYSTEM PHASE 2C - RESEND EMAIL + SCHEDULING! 📧⏰🚀
+// Cache bust: 2025-01-28-WORKFLOW-PHASE2C
 export default function App() {
   const { initialize } = useAuthStore();
 
   // Initialize auth and security on mount - ONLY ONCE
   useEffect(() => {
-    console.log('🚀 Starting Browo Koordinator v4.11.2 - SYSTEM HEALTH DASHBOARD! 📊🔍');
-    console.log('🔥 Cache bust: 2025-01-28-HEALTH-DASHBOARD');
+    console.log('🚀 Starting Browo Koordinator v4.13.0 - WORKFLOW SYSTEM PHASE 2C! 📧⏰🔥');
+    console.log('🔥 Cache bust: 2025-01-28-WORKFLOW-PHASE2C');
     console.log('🔥 Current time:', new Date().toISOString());
-    console.log('✅ v4.11.2: System Health Dashboard - Edge Functions Monitoring!');
+    console.log('✅ v4.13.0: Workflow System Phase 2C - RESEND EMAIL + SCHEDULING!');
+    console.log('📧 Resend Email Integration:');
+    console.log('  • Echte Email-Versendung via Resend API');
+    console.log('  • HTML + Plain Text Emails');
+    console.log('  • Batch-Processing für "Alle Mitarbeiter"');
+    console.log('  • Email-Tracking (Sent, Delivered, Opened, Clicked)');
+    console.log('  • Webhook-Handler für Status-Updates');
+    console.log('  • Fallback zu Logging (ohne API Key)');
+    console.log('⏰ Scheduling System:');
+    console.log('  • Delay-Node mit echtem Scheduling');
+    console.log('  • Zeit-Einheiten: Minuten, Stunden, Tage, Wochen');
+    console.log('  • Scheduled Executions in KV Store');
+    console.log('  • Cron-Job für automatische Ausführung');
+    console.log('✅ v4.12.0: Email Templates + Rich-Text Editor!');
+    console.log('✅ v4.11.2: System Health Dashboard!');
     console.log('✅ v4.11.2: 14 Functions Health Check & Response Times!');
     console.log('✅ v4.11.2: Auto-Refresh alle 60 Sekunden!');
     console.log('📊 Health Dashboard Features:');
@@ -468,18 +481,6 @@ export default function App() {
               <TestBuilderScreen />
             </Suspense>
           } />
-          {/* TEST: Time Account System (Phase 1 Week 1) */}
-          <Route path="time-account-test" element={
-            <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
-              <TimeAccountTestScreen />
-            </Suspense>
-          } />
-          {/* NEW: Timesheet Management (Phase 1 Week 2) */}
-          <Route path="timesheet-management" element={
-            <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
-              <TimesheetManagementScreen />
-            </Suspense>
-          } />
           {/* NEW v4.11.0: Automationenverwaltung (n8n Integration) */}
           <Route path="automationenverwaltung" element={
             <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
@@ -501,6 +502,12 @@ export default function App() {
           <Route path="workflows/builder/:workflowId" element={
             <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
               <WorkflowDetailScreen />
+            </Suspense>
+          } />
+          {/* NEW: Email Templates System */}
+          <Route path="email-templates" element={
+            <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
+              <EmailTemplatesScreen />
             </Suspense>
           } />
         </Route>

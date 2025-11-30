@@ -154,12 +154,21 @@ export default function WorkflowsScreen() {
 
   const handleDelete = async (id: string) => {
     if (confirm('Workflow wirklich löschen?')) {
+      // Check if this is a mock workflow (has simple ID like wf_1, wf_2, etc.)
+      const isMockWorkflow = /^wf_\d+$/.test(id);
+      
       // Optimistic update
-      const previousWorkflows = [...workflows];
       setWorkflows(prev => prev.filter(w => w.id !== id));
       
+      if (isMockWorkflow) {
+        // Mock workflow - just update local state
+        toast.success('Workflow gelöscht (Mock)');
+        return;
+      }
+      
+      // Real workflow - call API
       try {
-        const response = await fetch(`https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/workflows/${id}`, {
+        const response = await fetch(`https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Workflows/workflows/${id}`, {
             method: 'DELETE',
             headers: {
               'Authorization': `Bearer ${publicAnonKey}`,
@@ -169,13 +178,47 @@ export default function WorkflowsScreen() {
         if (response.ok) {
            toast.success('Workflow gelöscht');
         } else {
-           throw new Error('Delete failed');
+           const errorText = await response.text();
+           console.error('❌ Workflow deletion failed:', response.status, errorText);
+           toast.error(`Fehler beim Löschen: ${response.status}`);
+           // Rollback optimistic update
+           const fetchData = async () => {
+             try {
+               const workflowsResponse = await fetch(`https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Workflows/workflows`, {
+                 headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+               });
+               if (workflowsResponse.ok) {
+                 const data = await workflowsResponse.json();
+                 if (data.workflows && Array.isArray(data.workflows)) {
+                   setWorkflows(data.workflows);
+                 }
+               }
+             } catch (e) {
+               console.error('Failed to refresh workflows', e);
+             }
+           };
+           fetchData();
         }
       } catch (e) {
-         console.error(e);
-         // If it was a mock workflow, it's fine. If it was real, we might want to revert or show error.
-         // For now, assume success or local deletion
-         toast.success('Workflow gelöscht');
+         console.error('❌ Workflow deletion error:', e);
+         toast.error('Netzwerkfehler beim Löschen');
+         // Rollback optimistic update
+         const fetchData = async () => {
+           try {
+             const workflowsResponse = await fetch(`https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Workflows/workflows`, {
+               headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+             });
+             if (workflowsResponse.ok) {
+               const data = await workflowsResponse.json();
+               if (data.workflows && Array.isArray(data.workflows)) {
+                 setWorkflows(data.workflows);
+               }
+             }
+           } catch (e) {
+             console.error('Failed to refresh workflows', e);
+           }
+         };
+         fetchData();
       }
     }
   };

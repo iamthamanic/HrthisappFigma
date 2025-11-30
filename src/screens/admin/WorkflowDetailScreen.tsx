@@ -21,7 +21,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-import { Save, ArrowLeft, CheckCircle2, XCircle, Clock, FileText, Edit3, Play, AlertCircle } from '../../components/icons/BrowoKoIcons';
+import { Save, ArrowLeft, CheckCircle2, XCircle, Clock, FileText, Edit3, Play, AlertCircle, CheckCheck } from '../../components/icons/BrowoKoIcons';
 import { Workflow as WorkflowIcon } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
@@ -34,6 +34,7 @@ import { projectId, publicAnonKey } from '../../utils/supabase/info';
 // Custom Nodes
 import TriggerNode from '../../components/workflows/nodes/TriggerNode';
 import ActionNode from '../../components/workflows/nodes/ActionNode';
+import NodeConfigPanel from '../../components/workflows/NodeConfigPanel';
 
 const nodeTypes = {
   trigger: TriggerNode,
@@ -100,6 +101,8 @@ const WorkflowDetailScreen = () => {
   const [selectedExecution, setSelectedExecution] = useState<WorkflowExecution | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [actionSearch, setActionSearch] = useState('');
+  const [showConfigPanel, setShowConfigPanel] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   
   // Determine active tab from URL query params
   const defaultTab = searchParams.get('tab') || 'editor';
@@ -261,10 +264,15 @@ const WorkflowDetailScreen = () => {
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
+    // Open config panel for action nodes
+    if (node.type === 'action') {
+      setShowConfigPanel(true);
+    }
   }, []);
 
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
+    setShowConfigPanel(false);
   }, []);
 
   const updateNodeLabel = (evt: React.ChangeEvent<HTMLInputElement>) => {
@@ -284,6 +292,62 @@ const WorkflowDetailScreen = () => {
       })
     );
   };
+
+  const updateNodeConfig = useCallback((nodeId: string, config: any) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              config: config,
+            },
+          };
+        }
+        return node;
+      })
+    );
+    toast.success('Konfiguration gespeichert!');
+  }, [setNodes]);
+
+  const validateWorkflow = useCallback(() => {
+    const errors: string[] = [];
+    
+    // Check if workflow has at least one action node
+    const actionNodes = nodes.filter(n => n.type === 'action');
+    if (actionNodes.length === 0) {
+      errors.push('Workflow muss mindestens eine Action-Node haben');
+    }
+
+    // Check if all action nodes are configured
+    const unconfiguredNodes = actionNodes.filter(n => !n.data.config || Object.keys(n.data.config).length === 0);
+    if (unconfiguredNodes.length > 0) {
+      errors.push(`${unconfiguredNodes.length} Node(s) sind nicht konfiguriert: ${unconfiguredNodes.map(n => n.data.label || 'Unbenannt').join(', ')}`);
+    }
+
+    // Check if nodes are connected
+    const connectedNodeIds = new Set<string>();
+    edges.forEach(edge => {
+      connectedNodeIds.add(edge.source);
+      connectedNodeIds.add(edge.target);
+    });
+
+    const disconnectedNodes = nodes.filter(n => n.type === 'action' && !connectedNodeIds.has(n.id));
+    if (disconnectedNodes.length > 0) {
+      errors.push(`${disconnectedNodes.length} Node(s) sind nicht verbunden`);
+    }
+
+    setValidationErrors(errors);
+
+    if (errors.length === 0) {
+      toast.success('✅ Workflow ist valide!', { duration: 3000 });
+      return true;
+    } else {
+      toast.error(`❌ ${errors.length} Validierungsfehler gefunden`, { duration: 5000 });
+      return false;
+    }
+  }, [nodes, edges]);
 
   const handleSave = async () => {
     if (reactFlowInstance) {
@@ -324,6 +388,13 @@ const WorkflowDetailScreen = () => {
 
   const handleExecute = async () => {
     if (!workflowId) return;
+
+    // Validate workflow before execution
+    const isValid = validateWorkflow();
+    if (!isValid) {
+      toast.error('Workflow kann nicht ausgeführt werden. Bitte behebe die Fehler.', { duration: 5000 });
+      return;
+    }
 
     const toastId = toast.loading('Führe Workflow aus...');
 
@@ -377,6 +448,10 @@ const WorkflowDetailScreen = () => {
         <div className="flex items-center gap-2">
           {activeTab === 'editor' && (
             <>
+              <Button variant="outline" onClick={validateWorkflow}>
+                <CheckCheck className="w-4 h-4 mr-2" />
+                Validieren
+              </Button>
               <Button variant="outline" onClick={handleExecute}>
                 <Play className="w-4 h-4 mr-2" />
                 Test Run
@@ -472,28 +547,41 @@ const WorkflowDetailScreen = () => {
               >
                 <Controls />
                 <Background gap={12} size={1} />
-                <Panel position="top-right">
-                  {selectedNode && (
-                    <Card className="w-72 p-4 shadow-xl border-blue-200">
-                      <h3 className="font-semibold mb-3 border-b pb-2">Einstellungen</h3>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-xs text-gray-500">Beschriftung</label>
-                          <Input 
-                            value={selectedNode.data.label} 
-                            onChange={updateNodeLabel} 
-                            className="mt-1"
-                          />
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          ID: {selectedNode.id}<br/>
-                          Type: {selectedNode.data.type}
+                
+                {/* Validation Errors Panel */}
+                {validationErrors.length > 0 && (
+                  <Panel position="top-left">
+                    <Card className="w-80 p-4 shadow-xl border-red-300 bg-red-50">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-red-900 mb-2">Validierungsfehler</h3>
+                          <ul className="space-y-1 text-sm text-red-800">
+                            {validationErrors.map((error, index) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <span className="text-red-600 shrink-0">•</span>
+                                <span>{error}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
                       </div>
                     </Card>
-                  )}
-                </Panel>
+                  </Panel>
+                )}
               </ReactFlow>
+              
+              {/* Node Configuration Panel */}
+              {showConfigPanel && selectedNode && (
+                <NodeConfigPanel 
+                  node={selectedNode}
+                  onClose={() => {
+                    setShowConfigPanel(false);
+                    setSelectedNode(null);
+                  }}
+                  onUpdateNode={updateNodeConfig}
+                />
+              )}
             </div>
           </div>
         </TabsContent>

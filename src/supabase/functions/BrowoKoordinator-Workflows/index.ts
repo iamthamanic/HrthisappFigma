@@ -37,6 +37,7 @@ import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";
 import { createClient } from "npm:@supabase/supabase-js";
+import { executeAction as executeActionV2 } from './actionExecutor.ts';
 
 const app = new Hono();
 
@@ -401,56 +402,16 @@ const getNextNodes = (nodes: WorkflowNode[], edges: WorkflowEdge[], currentNodeI
 };
 
 const executeAction = async (node: WorkflowNode, context: ExecutionContext) => {
-  const actionType = node.data.type;
-  const label = node.data.label;
-  
-  console.log(`⚡ Executing Action: [${actionType}] ${label}`);
-  
-  switch (actionType) {
-    case 'SEND_EMAIL':
-      console.log(`📧 Email sent to user ${context.userId}: Subject: "Update from HR"`);
-      break;
-
-    case 'ASSIGN_DOCUMENT':
-      if (context.userId) {
-         const docId = `doc_${Date.now()}`;
-         await kvSet(`user_document:${context.userId}:${docId}`, {
-           documentName: "Onboarding Checklist",
-           assignedAt: new Date().toISOString(),
-           status: "PENDING"
-         });
-         console.log(`📄 Document assigned to ${context.userId}`);
-      }
-      break;
-
-    case 'ASSIGN_EQUIPMENT':
-      console.log(`💻 Equipment request created for ${context.userId}`);
-      break;
-
-    case 'ASSIGN_BENEFITS':
-      console.log(`🎁 Benefit assigned to ${context.userId}`);
-      break;
-
-    case 'DISTRIBUTE_COINS':
-      if (context.userId) {
-        console.log(`🪙 100 Coins distributed to ${context.userId}`);
-      }
-      break;
-      
-    case 'DELAY':
-      console.log(`⏱️ Delay requested. (Skipping for immediate execution prototype)`);
-      break;
-
-    default:
-      console.log(`⚠️ Unknown action type: ${actionType}`);
-  }
-  
-  return { success: true, action: actionType };
+  // Use the new V2 executor with real API calls and variable parsing
+  return await executeActionV2(node, context);
 };
 
 const executeWorkflowGraph = async (workflow: Workflow, context: ExecutionContext) => {
   const { nodes, edges } = workflow;
   const logs: string[] = [];
+  
+  // Mutable context that gets enriched by each node
+  const workflowContext = { ...context };
   
   const log = (msg: string) => {
     console.log(msg);
@@ -458,6 +419,7 @@ const executeWorkflowGraph = async (workflow: Workflow, context: ExecutionContex
   };
 
   log(`🚀 Starting Workflow Execution for ${workflow.id}`);
+  log(`📊 Initial Context: ${JSON.stringify(context)}`);
 
   const startNode = nodes.find(n => n.type === 'trigger');
   
@@ -478,10 +440,17 @@ const executeWorkflowGraph = async (workflow: Workflow, context: ExecutionContex
 
     if (currentNode.type === 'action') {
       try {
-        await executeAction(currentNode, context);
-        log(`✅ Action executed: ${currentNode.data.label}`);
+        const result = await executeAction(currentNode, workflowContext);
+        log(`✅ ${result.message || `Action executed: ${currentNode.data.label}`}`);
+        
+        // Merge any context updates from the action into the workflow context
+        if (result.contextUpdates) {
+          Object.assign(workflowContext, result.contextUpdates);
+          log(`📊 Context updated: ${JSON.stringify(result.contextUpdates)}`);
+        }
       } catch (e: any) {
         log(`❌ Action failed: ${currentNode.data.label} - ${e.message}`);
+        // Continue execution even if one action fails (configurable behavior)
       }
     }
 
@@ -490,7 +459,8 @@ const executeWorkflowGraph = async (workflow: Workflow, context: ExecutionContex
   }
 
   log(`🏁 Workflow Execution Completed.`);
-  return { success: true, logs };
+  log(`📊 Final Context: ${JSON.stringify(workflowContext)}`);
+  return { success: true, logs, finalContext: workflowContext };
 };
 
 // ==================== SUPABASE CLIENT ====================

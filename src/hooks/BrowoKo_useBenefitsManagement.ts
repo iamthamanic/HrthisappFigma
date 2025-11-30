@@ -24,6 +24,17 @@ export interface Benefit {
 export function useBenefitsManagement(organizationId: string | null) {
   const [benefits, setBenefits] = useState<Benefit[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Dialog state
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingBenefit, setEditingBenefit] = useState<Benefit | null>(null);
+  const [formData, setFormData] = useState<Partial<Benefit>>({
+    title: '',
+    description: '',
+    icon: '🎁',
+    color: 'blue',
+    available: true,
+  });
 
   // Load all benefits
   const loadBenefits = async () => {
@@ -113,6 +124,55 @@ export function useBenefitsManagement(organizationId: string | null) {
       throw error;
     }
   };
+  
+  // Dialog handlers
+  const handleOpenDialog = (benefit?: Benefit) => {
+    if (benefit) {
+      setEditingBenefit(benefit);
+      setFormData(benefit);
+    } else {
+      setEditingBenefit(null);
+      setFormData({
+        title: '',
+        description: '',
+        icon: '🎁',
+        color: 'blue',
+        available: true,
+      });
+    }
+    setIsDialogOpen(true);
+  };
+  
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setEditingBenefit(null);
+    setFormData({
+      title: '',
+      description: '',
+      icon: '🎁',
+      color: 'blue',
+      available: true,
+    });
+  };
+  
+  const handleSubmit = async () => {
+    try {
+      if (editingBenefit) {
+        await updateBenefit(editingBenefit.id, formData);
+      } else {
+        await createBenefit(formData as Omit<Benefit, 'id' | 'organization_id' | 'created_at' | 'updated_at'>);
+      }
+      handleCloseDialog();
+      await loadBenefits();
+    } catch (error) {
+      // Error already toasted in create/update functions
+    }
+  };
+  
+  const handleDelete = async (benefitId: string) => {
+    if (!confirm('Möchtest du dieses Benefit wirklich löschen?')) return;
+    await deleteBenefit(benefitId);
+  };
 
   // Load benefits on mount
   useEffect(() => {
@@ -126,5 +186,15 @@ export function useBenefitsManagement(organizationId: string | null) {
     createBenefit,
     updateBenefit,
     deleteBenefit,
+    isDialogOpen,
+    setIsDialogOpen,
+    editingBenefit,
+    setEditingBenefit,
+    formData,
+    setFormData,
+    handleOpenDialog,
+    handleCloseDialog,
+    handleSubmit,
+    handleDelete,
   };
 }

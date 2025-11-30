@@ -56,23 +56,14 @@ export const useGamificationStore = create<GamificationState>((set, get) => ({
 
       if (error && error.code !== 'PGRST116') throw error;
 
-      // Create avatar if doesn't exist
+      // Avatar wird vom Database-Trigger erstellt (handle_new_user)
+      // Falls noch nicht vorhanden, leeren State setzen
       if (!data) {
-        const { data: newAvatar, error: createError } = await supabase
-          .from('user_avatars')
-          .insert({
-            user_id: userId,
-            level: 1,
-            total_xp: 0,
-          })
-          .select()
-          .single();
-
-        if (createError) throw createError;
+        console.warn('Avatar not found for user:', userId);
         set({ 
-          avatar: newAvatar, 
-          level: newAvatar.level || 1,
-          xp: newAvatar.total_xp || 0
+          avatar: null, 
+          level: 1,
+          xp: 0
         });
       } else {
         set({ 
