@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, useReactFlow } from 'reactflow';
 import { 
   Mail, 
   FileText, 
@@ -15,7 +15,8 @@ import {
   Bell,
   UserPlus,
   BookOpen,
-  ThumbsUp
+  ThumbsUp,
+  X
 } from '../../../components/icons/BrowoKoIcons';
 
 const getIcon = (type: string) => {
@@ -56,7 +57,8 @@ const getLabel = (type: string) => {
   }
 };
 
-export default memo(({ data }: { data: any }) => {
+export default memo(({ data, id }: { data: any; id: string }) => {
+  const { setNodes } = useReactFlow();
   const type = data.actionType || data.type || 'CREATE_TASK';
   const isConfigured = data.config && Object.keys(data.config).length > 0;
   
@@ -64,8 +66,12 @@ export default memo(({ data }: { data: any }) => {
   const borderColor = isConfigured ? 'border-green-500' : 'border-orange-400';
   const statusColor = isConfigured ? 'bg-green-500' : 'bg-orange-400';
   
+  const handleDelete = () => {
+    setNodes((nds) => nds.filter((node) => node.id !== id));
+  };
+  
   return (
-    <div className={`shadow-md rounded-md bg-white border-2 ${borderColor} w-[250px] hover:shadow-lg transition-all relative`}>
+    <div className={`shadow-md rounded-md bg-white border-2 ${borderColor} w-[250px] hover:shadow-lg transition-all relative group`}>
       {/* Status Indicator */}
       <div className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full ${statusColor} border-2 border-white z-10`}></div>
       
@@ -75,18 +81,23 @@ export default memo(({ data }: { data: any }) => {
         className="w-3 h-3 bg-gray-400 border-2 border-white"
       />
       
-      <div className="p-3 flex items-start gap-3">
-        <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center text-gray-600 shrink-0">
-          {getIcon(type)}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium text-gray-900 truncate">
-            {data.label || getLabel(type)}
+      {/* Header */}
+      <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-3 rounded-t-md flex items-center justify-between">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="bg-white/20 p-1.5 rounded">
+            {getIcon(type)}
           </div>
-          <div className="text-xs text-gray-500 truncate">
-            {isConfigured ? (data.config.description || 'Konfiguriert ✓') : 'Bitte konfigurieren...'}
-          </div>
+          <span className="font-medium text-white text-sm truncate">
+            {getLabel(type)}
+          </span>
         </div>
+        <button
+          onClick={handleDelete}
+          className="p-1.5 rounded bg-red-100 hover:bg-red-200 transition-colors text-red-600 shrink-0"
+          title="Node entfernen"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
       <Handle

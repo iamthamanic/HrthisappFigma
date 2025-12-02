@@ -281,7 +281,7 @@ export default function LearningScreen() {
                             video={video}
                             progressPercentage={getVideoProgressPercentage(video.id)}
                             isCompleted={isVideoCompleted(video.id)}
-                            showThumbnail={false}
+                            showThumbnail={true}
                           />
                         ))}
                     </div>

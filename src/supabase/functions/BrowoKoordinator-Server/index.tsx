@@ -2,7 +2,7 @@ import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";
 import { createClient } from "npm:@supabase/supabase-js";
-// ❌ REMOVED: import * as kv from "./kv_store.tsx";
+import * as kv from "./kv_store.tsx";
 // ❌ REMOVED: import { testSubmissionsApp } from "./testSubmissions.ts";
 // ❌ REMOVED: import { executeWorkflowGraph } from "./workflowEngine.ts";
 
@@ -1718,6 +1718,62 @@ app.delete("/it-equipment/:id", async (c) => {
     return c.json({ error: e.message }, 500);
   }
 });
+
+// ============================================
+// ENTITY MANAGEMENT APIs (Departments, Locations, Roles)
+// ============================================
+
+// Get all departments
+app.get("/api/departments", async (c) => {
+  try {
+    const departments = await kv.getByPrefix('department_');
+    const formattedDepartments = departments.map((dept: any) => ({
+      id: dept.id || dept.key?.replace('department_', '') || '',
+      name: dept.name || dept.value?.name || 'Unknown Department'
+    })).filter(d => d.id);
+    
+    return c.json({ departments: formattedDepartments });
+  } catch (error) {
+    console.error('❌ Error loading departments:', error);
+    return c.json({ departments: [] });
+  }
+});
+
+// Get all locations
+app.get("/api/locations", async (c) => {
+  try {
+    const locations = await kv.getByPrefix('location_');
+    const formattedLocations = locations.map((loc: any) => ({
+      id: loc.id || loc.key?.replace('location_', '') || '',
+      name: loc.name || loc.value?.name || 'Unknown Location'
+    })).filter(l => l.id);
+    
+    return c.json({ locations: formattedLocations });
+  } catch (error) {
+    console.error('❌ Error loading locations:', error);
+    return c.json({ locations: [] });
+  }
+});
+
+// Get all roles
+app.get("/api/roles", async (c) => {
+  try {
+    const roles = await kv.getByPrefix('role_');
+    const formattedRoles = roles.map((role: any) => ({
+      id: role.id || role.key?.replace('role_', '') || '',
+      name: role.name || role.value?.name || 'Unknown Role'
+    })).filter(r => r.id);
+    
+    return c.json({ roles: formattedRoles });
+  } catch (error) {
+    console.error('❌ Error loading roles:', error);
+    return c.json({ roles: [] });
+  }
+});
+
+// ============================================
+// END OF ENTITY MANAGEMENT APIs
+// ============================================
 
 // Initialize server after ensuring buckets exist
 (async () => {

@@ -1,0 +1,152 @@
+{
+  "examples": [
+    {
+      "name": "Slack Onboarding Notification",
+      "description": "Benachrichtige das Team über neue Mitarbeiter in Slack",
+      "config": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
+        "authType": "NONE",
+        "body": "{\n  \"text\": \"🎉 Neuer Mitarbeiter: {{ employeeName }}\",\n  \"blocks\": [\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Neuer Mitarbeiter gestartet!*\\n\\n👤 Name: {{ employeeName }}\\n📧 Email: {{ employeeEmail }}\\n📅 Startdatum: {{ startDate }}\"\n      }\n    }\n  ]\n}",
+        "timeout": 30,
+        "retries": 2,
+        "continueOnError": true
+      }
+    },
+    {
+      "name": "GitHub Issue erstellen",
+      "description": "Erstelle automatisch ein GitHub Issue für IT-Setup",
+      "config": {
+        "method": "POST",
+        "url": "https://api.github.com/repos/YOUR_ORG/YOUR_REPO/issues",
+        "authType": "BEARER_TOKEN",
+        "bearerToken": "ghp_YOUR_GITHUB_TOKEN",
+        "headers": "{\n  \"Accept\": \"application/vnd.github+json\",\n  \"X-GitHub-Api-Version\": \"2022-11-28\"\n}",
+        "body": "{\n  \"title\": \"[Onboarding] Setup für {{ employeeName }}\",\n  \"body\": \"## Neuer Mitarbeiter Onboarding\\n\\n**Name:** {{ employeeName }}\\n**Email:** {{ employeeEmail }}\\n**Startdatum:** {{ startDate }}\\n\\n### Aufgaben:\\n- [ ] Laptop vorbereiten\\n- [ ] Email-Konto erstellen\\n- [ ] Zugang zu Tools einrichten\\n- [ ] Willkommenspaket vorbereiten\",\n  \"labels\": [\"onboarding\", \"IT\"],\n  \"assignees\": [\"it-admin\"]\n}",
+        "responseVariable": "githubIssue",
+        "timeout": 30,
+        "retries": 3
+      }
+    },
+    {
+      "name": "n8n Workflow triggern",
+      "description": "Trigger einen n8n Workflow für erweiterte Automatisierung",
+      "config": {
+        "method": "POST",
+        "url": "https://YOUR_N8N_INSTANCE.app.n8n.cloud/webhook/browo-onboarding",
+        "authType": "NONE",
+        "body": "{\n  \"event\": \"employee_created\",\n  \"timestamp\": \"{{ $now }}\",\n  \"employee\": {\n    \"id\": \"{{ employeeId }}\",\n    \"name\": \"{{ employeeName }}\",\n    \"email\": \"{{ employeeEmail }}\",\n    \"startDate\": \"{{ startDate }}\",\n    \"organizationId\": \"{{ organizationId }}\"\n  }\n}",
+        "timeout": 45,
+        "retries": 2
+      }
+    },
+    {
+      "name": "Jira Ticket erstellen",
+      "description": "Erstelle Jira Ticket für HR Onboarding Tasks",
+      "config": {
+        "method": "POST",
+        "url": "https://YOUR_DOMAIN.atlassian.net/rest/api/3/issue",
+        "authType": "BASIC_AUTH",
+        "basicAuthUsername": "your.email@company.com",
+        "basicAuthPassword": "YOUR_JIRA_API_TOKEN",
+        "headers": "{\n  \"Content-Type\": \"application/json\"\n}",
+        "body": "{\n  \"fields\": {\n    \"project\": {\n      \"key\": \"HR\"\n    },\n    \"summary\": \"Onboarding: {{ employeeName }}\",\n    \"description\": {\n      \"type\": \"doc\",\n      \"version\": 1,\n      \"content\": [\n        {\n          \"type\": \"paragraph\",\n          \"content\": [\n            {\n              \"type\": \"text\",\n              \"text\": \"Neuer Mitarbeiter startet am {{ startDate }}\"\n            }\n          ]\n        }\n      ]\n    },\n    \"issuetype\": {\n      \"name\": \"Task\"\n    },\n    \"priority\": {\n      \"name\": \"High\"\n    }\n  }\n}",
+        "responseVariable": "jiraTicket",
+        "timeout": 30,
+        "retries": 3
+      }
+    },
+    {
+      "name": "Microsoft Teams Notification",
+      "description": "Sende Nachricht an Microsoft Teams Channel",
+      "config": {
+        "method": "POST",
+        "url": "https://YOUR_TENANT.webhook.office.com/webhookb2/YOUR_WEBHOOK_ID",
+        "authType": "NONE",
+        "body": "{\n  \"@type\": \"MessageCard\",\n  \"@context\": \"http://schema.org/extensions\",\n  \"themeColor\": \"0076D7\",\n  \"summary\": \"Neuer Mitarbeiter\",\n  \"sections\": [{\n    \"activityTitle\": \"🎉 Neuer Mitarbeiter gestartet!\",\n    \"facts\": [\n      {\n        \"name\": \"Name:\",\n        \"value\": \"{{ employeeName }}\"\n      },\n      {\n        \"name\": \"Email:\",\n        \"value\": \"{{ employeeEmail }}\"\n      },\n      {\n        \"name\": \"Startdatum:\",\n        \"value\": \"{{ startDate }}\"\n      }\n    ],\n    \"markdown\": true\n  }]\n}",
+        "timeout": 30,
+        "continueOnError": true
+      }
+    },
+    {
+      "name": "Zapier Webhook",
+      "description": "Trigger Zapier Workflow für weitere Automatisierungen",
+      "config": {
+        "method": "POST",
+        "url": "https://hooks.zapier.com/hooks/catch/YOUR_ZAPIER_WEBHOOK_ID/",
+        "authType": "NONE",
+        "body": "{\n  \"event\": \"new_employee\",\n  \"employee_name\": \"{{ employeeName }}\",\n  \"employee_email\": \"{{ employeeEmail }}\",\n  \"start_date\": \"{{ startDate }}\",\n  \"organization_id\": \"{{ organizationId }}\"\n}",
+        "timeout": 30,
+        "retries": 2,
+        "continueOnError": true
+      }
+    },
+    {
+      "name": "Custom API - User Sync",
+      "description": "Synchronisiere Mitarbeiter mit externem System",
+      "config": {
+        "method": "POST",
+        "url": "https://api.yourcompany.com/v1/users/sync",
+        "authType": "API_KEY",
+        "apiKeyName": "X-API-Key",
+        "apiKeyValue": "YOUR_API_KEY_HERE",
+        "apiKeyLocation": "HEADER",
+        "body": "{\n  \"user\": {\n    \"external_id\": \"{{ employeeId }}\",\n    \"name\": \"{{ employeeName }}\",\n    \"email\": \"{{ employeeEmail }}\",\n    \"start_date\": \"{{ startDate }}\",\n    \"metadata\": {\n      \"source\": \"browo_koordinator\",\n      \"organization_id\": \"{{ organizationId }}\"\n    }\n  }\n}",
+        "responseVariable": "syncResponse",
+        "timeout": 45,
+        "retries": 3,
+        "continueOnError": false
+      }
+    },
+    {
+      "name": "Analytics Event Tracking",
+      "description": "Sende Event an Analytics System (z.B. Mixpanel, Segment)",
+      "config": {
+        "method": "POST",
+        "url": "https://api.segment.io/v1/track",
+        "authType": "BASIC_AUTH",
+        "basicAuthUsername": "YOUR_WRITE_KEY",
+        "basicAuthPassword": "",
+        "body": "{\n  \"userId\": \"{{ employeeId }}\",\n  \"event\": \"Employee Onboarded\",\n  \"properties\": {\n    \"employee_name\": \"{{ employeeName }}\",\n    \"employee_email\": \"{{ employeeEmail }}\",\n    \"start_date\": \"{{ startDate }}\",\n    \"organization_id\": \"{{ organizationId }}\"\n  },\n  \"context\": {\n    \"source\": \"browo_koordinator_workflow\"\n  }\n}",
+        "timeout": 30,
+        "continueOnError": true
+      }
+    },
+    {
+      "name": "Make.com (Integromat) Webhook",
+      "description": "Trigger Make.com Scenario für komplexe Automatisierungen",
+      "config": {
+        "method": "POST",
+        "url": "https://hook.eu1.make.com/YOUR_WEBHOOK_ID",
+        "authType": "NONE",
+        "body": "{\n  \"trigger\": \"employee_onboarding\",\n  \"data\": {\n    \"employee\": {\n      \"id\": \"{{ employeeId }}\",\n      \"name\": \"{{ employeeName }}\",\n      \"email\": \"{{ employeeEmail }}\",\n      \"startDate\": \"{{ startDate }}\"\n    },\n    \"organization\": {\n      \"id\": \"{{ organizationId }}\"\n    }\n  }\n}",
+        "timeout": 30,
+        "retries": 2
+      }
+    },
+    {
+      "name": "Discord Notification",
+      "description": "Benachrichtige Team in Discord Channel",
+      "config": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN",
+        "authType": "NONE",
+        "body": "{\n  \"content\": \"🎉 **Neuer Mitarbeiter gestartet!**\",\n  \"embeds\": [\n    {\n      \"title\": \"{{ employeeName }}\",\n      \"color\": 3447003,\n      \"fields\": [\n        {\n          \"name\": \"📧 Email\",\n          \"value\": \"{{ employeeEmail }}\",\n          \"inline\": true\n        },\n        {\n          \"name\": \"📅 Startdatum\",\n          \"value\": \"{{ startDate }}\",\n          \"inline\": true\n        }\n      ],\n      \"timestamp\": \"{{ $now }}\"\n    }\n  ]\n}",
+        "timeout": 30,
+        "continueOnError": true
+      }
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "created": "2025-11-30",
+    "total_examples": 10,
+    "categories": [
+      "Messaging (Slack, Teams, Discord)",
+      "Project Management (GitHub, Jira)",
+      "Automation Platforms (n8n, Zapier, Make.com)",
+      "Analytics",
+      "Custom APIs"
+    ]
+  }
+}

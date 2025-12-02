@@ -5,6 +5,7 @@ import { createClient } from "npm:@supabase/supabase-js";
 import * as kv from "./kv_store.tsx";
 import { testSubmissionsApp } from "./testSubmissions.ts";
 import { executeWorkflowGraph } from "./workflowEngine.ts";
+// import * as envVarsManager from "./envVarsManager.ts";
 // TODO: Re-enable when timeAccountCalculation.ts is implemented
 // import { calculateTimeAccount, calculateTimeAccountsForAllUsers } from "./timeAccountCalculation.ts";
 
@@ -1072,10 +1073,133 @@ app.delete("/it-equipment/:id", async (c) => {
 });
 
 // ============================================
+// ENVIRONMENT VARIABLES SYSTEM (Phase 3B)
+// ============================================
+
+// Get all environment variables
+app.get("/make-server-f659121d/env-vars", async (c) => {
+  try {
+    // TODO: Re-enable when envVarsManager is properly deployed
+    return c.json({ variables: [], message: 'Environment variables feature temporarily disabled' });
+    
+    // TODO: Get organizationId from authenticated user
+    // const organizationId = 'default-org';
+    // const variables = await envVarsManager.getAllEnvVars(organizationId);
+    // return c.json({ variables });
+  } catch (e: any) {
+    console.error('❌ Get env vars error:', e);
+    return c.json({ error: e.message }, 500);
+  }
+});
+
+// Create environment variable
+app.post("/make-server-f659121d/env-vars", async (c) => {
+  try {
+    // TODO: Re-enable when envVarsManager is properly deployed
+    return c.json({ error: 'Environment variables feature temporarily disabled' }, 503);
+    
+    // const organizationId = 'default-org'; // TODO: Get from auth
+    // const input = await c.req.json();
+    // const variable = await envVarsManager.createEnvVar(organizationId, input);
+    // return c.json({ variable });
+  } catch (e: any) {
+    console.error('❌ Create env var error:', e);
+    return c.json({ error: e.message }, 400);
+  }
+});
+
+// Update environment variable
+app.put("/make-server-f659121d/env-vars/:id", async (c) => {
+  try {
+    // TODO: Re-enable when envVarsManager is properly deployed
+    return c.json({ error: 'Environment variables feature temporarily disabled' }, 503);
+    
+    // const organizationId = 'default-org'; // TODO: Get from auth
+    // const id = c.req.param('id');
+    // const input = await c.req.json();
+    // const variable = await envVarsManager.updateEnvVar(organizationId, id, input);
+    // return c.json({ variable });
+  } catch (e: any) {
+    console.error('❌ Update env var error:', e);
+    return c.json({ error: e.message }, 400);
+  }
+});
+
+// Delete environment variable
+app.delete("/make-server-f659121d/env-vars/:id", async (c) => {
+  try {
+    // TODO: Re-enable when envVarsManager is properly deployed
+    return c.json({ error: 'Environment variables feature temporarily disabled' }, 503);
+    
+    // const organizationId = 'default-org'; // TODO: Get from auth
+    // const id = c.req.param('id');
+    // await envVarsManager.deleteEnvVar(organizationId, id);
+    // return c.json({ success: true });
+  } catch (e: any) {
+    console.error('❌ Delete env var error:', e);
+    return c.json({ error: e.message }, 400);
+  }
+});
+
+// ============================================
 // VEHICLE STATISTICS API - MOVED TO BrowoKoordinator-Fahrzeuge
 // ============================================
-// All vehicle statistics endpoints have been moved to the dedicated
-// BrowoKoordinator-Fahrzeuge edge function for better separation of concerns
+
+// ============================================
+// ENTITY MANAGEMENT APIs (Departments, Locations, Roles)
+// ============================================
+
+// Get all departments
+app.get("/make-server-f659121d/api/departments", async (c) => {
+  try {
+    const departments = await kv.getByPrefix('department_');
+    const formattedDepartments = departments.map((dept: any) => ({
+      id: dept.id || dept.key?.replace('department_', '') || '',
+      name: dept.name || dept.value?.name || 'Unknown Department'
+    })).filter(d => d.id);
+    
+    return c.json({ departments: formattedDepartments });
+  } catch (error) {
+    console.error('❌ Error loading departments:', error);
+    return c.json({ departments: [] });
+  }
+});
+
+// Get all locations
+app.get("/make-server-f659121d/api/locations", async (c) => {
+  try {
+    const locations = await kv.getByPrefix('location_');
+    const formattedLocations = locations.map((loc: any) => ({
+      id: loc.id || loc.key?.replace('location_', '') || '',
+      name: loc.name || loc.value?.name || 'Unknown Location'
+    })).filter(l => l.id);
+    
+    return c.json({ locations: formattedLocations });
+  } catch (error) {
+    console.error('❌ Error loading locations:', error);
+    return c.json({ locations: [] });
+  }
+});
+
+// Get all roles
+app.get("/make-server-f659121d/api/roles", async (c) => {
+  try {
+    const roles = await kv.getByPrefix('role_');
+    const formattedRoles = roles.map((role: any) => ({
+      id: role.id || role.key?.replace('role_', '') || '',
+      name: role.name || role.value?.name || 'Unknown Role'
+    })).filter(r => r.id);
+    
+    return c.json({ roles: formattedRoles });
+  } catch (error) {
+    console.error('❌ Error loading roles:', error);
+    return c.json({ roles: [] });
+  }
+});
+
+// ============================================
+// END OF ENTITY MANAGEMENT APIs
+// ============================================
 
 // Initialize server after ensuring buckets exist
 (async () => {

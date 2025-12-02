@@ -4,6 +4,7 @@
  */
 
 import { createClient } from "npm:@supabase/supabase-js";
+import * as envVarsManager from './envVarsManager.ts';
 
 // ==================== TYPES ====================
 
@@ -82,6 +83,123 @@ const getProjectId = (): string => {
 const getAnonKey = (): string => {
   return Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 };
+
+// ==================== OAUTH2 TOKEN MANAGEMENT ====================
+
+interface OAuth2Token {
+  access_token: string;
+  refresh_token?: string;
+  token_type: string;
+  expires_at: number; // Unix timestamp
+  scope?: string;
+}
+
+interface OAuth2Config {
+  clientId: string;
+  clientSecret: string;
+  tokenUrl: string;
+  scopes?: string;
+  grantType?: 'client_credentials' | 'refresh_token';
+  refreshToken?: string;
+}
+
+/**
+ * Get or refresh OAuth2 token
+ * Stores tokens in KV store with organization scope
+ */
+async function getOAuth2Token(
+  organizationId: string,
+  connectionId: string,
+  config: OAuth2Config
+): Promise<string> {
+  const supabase = getSupabaseClient();
+  const tokenKey = `oauth_token:${organizationId}:${connectionId}`;
+  
+  // Try to get existing token from KV store
+  const { data: existingData } = await supabase
+    .from('kv_store_f659121d')
+    .select('value')
+    .eq('key', tokenKey)
+    .single();
+  
+  const existingToken = existingData?.value as OAuth2Token | null;
+  
+  // Check if token is still valid (with 5 minute buffer)
+  const now = Math.floor(Date.now() / 1000);
+  if (existingToken && existingToken.expires_at > now + 300) {
+    console.log(`🔐 Using cached OAuth2 token (expires in ${existingToken.expires_at - now}s)`);
+    return existingToken.access_token;
+  }
+  
+  // Token expired or doesn't exist - fetch new one
+  console.log(`🔄 Fetching new OAuth2 token from ${config.tokenUrl}`);
+  
+  // Determine grant type
+  let grantType = config.grantType || 'client_credentials';
+  let body: Record<string, string> = {
+    grant_type: grantType,
+  };
+  
+  // Add grant-specific parameters
+  if (grantType === 'client_credentials') {
+    if (config.scopes) {
+      body.scope = config.scopes;
+    }
+  } else if (grantType === 'refresh_token') {
+    if (!config.refreshToken && !existingToken?.refresh_token) {
+      throw new Error('Refresh token not available');
+    }
+    body.refresh_token = config.refreshToken || existingToken!.refresh_token!;
+  }
+  
+  // Encode credentials for Basic Auth
+  const credentials = btoa(`${config.clientId}:${config.clientSecret}`);
+  
+  try {
+    const response = await fetch(config.tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams(body).toString(),
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OAuth2 token request failed: ${response.status} - ${errorText}`);
+    }
+    
+    const tokenData = await response.json();
+    
+    // Calculate expiration timestamp
+    const expiresIn = tokenData.expires_in || 3600; // Default 1 hour
+    const expiresAt = now + expiresIn;
+    
+    const newToken: OAuth2Token = {
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token || existingToken?.refresh_token,
+      token_type: tokenData.token_type || 'Bearer',
+      expires_at: expiresAt,
+      scope: tokenData.scope,
+    };
+    
+    // Store token in KV store
+    await supabase
+      .from('kv_store_f659121d')
+      .upsert({
+        key: tokenKey,
+        value: newToken,
+      });
+    
+    console.log(`✅ OAuth2 token fetched and cached (expires in ${expiresIn}s)`);
+    
+    return newToken.access_token;
+  } catch (error: any) {
+    console.error(`❌ OAuth2 token fetch failed:`, error.message);
+    throw new Error(`Failed to obtain OAuth2 token: ${error.message}`);
+  }
+}
 
 /**
  * Bestimmt die Ziel-User-ID basierend auf Konfiguration
@@ -931,6 +1049,175 @@ async function executeApproveRequest(node: WorkflowNode, context: ExecutionConte
   };
 }
 
+/**
+ * HTTP Request - Call external APIs (n8n-style)
+ * Supports GET, POST, PUT, PATCH, DELETE
+ * Authentication: API Key, Bearer Token, Basic Auth
+ * Environment Variables: Supports {{ env.VAR_NAME }} syntax
+ */
+async function executeHttpRequest(node: WorkflowNode, context: ExecutionContext): Promise<{ success: boolean; message: string; contextUpdates?: any }> {
+  // First resolve environment variables in the entire config
+  const organizationId = context.organizationId || 'default-org';
+  const rawConfig = node.data.config || {};
+  
+  // Resolve env vars in config BEFORE parseConfigVariables
+  const configWithEnvVars = await envVarsManager.resolveEnvVarsInObject(organizationId, rawConfig);
+  
+  // Then resolve context variables ({{ employeeName }}, etc.)
+  const config = parseConfigVariables(configWithEnvVars, context);
+  
+  const method = config.method || 'GET';
+  const url = config.url;
+  const timeout = (config.timeout || 30) * 1000; // Convert to milliseconds
+  const retries = config.retries || 0;
+  const continueOnError = config.continueOnError || false;
+  
+  if (!url) {
+    throw new Error('URL is required for HTTP Request');
+  }
+  
+  console.log(`🔐 Environment variables resolved in HTTP config`);
+  
+  // Build headers
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  // Add authentication
+  if (config.authType === 'OAUTH2') {
+    // OAuth2 Client Credentials or Refresh Token Flow
+    const oauth2Config: OAuth2Config = {
+      clientId: config.oauth2ClientId,
+      clientSecret: config.oauth2ClientSecret,
+      tokenUrl: config.oauth2TokenUrl,
+      scopes: config.oauth2Scopes,
+      grantType: config.oauth2GrantType || 'client_credentials',
+      refreshToken: config.oauth2RefreshToken,
+    };
+    
+    // Generate connection ID (unique per client + token URL combination)
+    const connectionId = `${config.oauth2ClientId}_${btoa(config.oauth2TokenUrl).substring(0, 16)}`;
+    
+    try {
+      const accessToken = await getOAuth2Token(organizationId, connectionId, oauth2Config);
+      headers['Authorization'] = `Bearer ${accessToken}`;
+      console.log(`🔐 OAuth2 token applied to request`);
+    } catch (error: any) {
+      throw new Error(`OAuth2 authentication failed: ${error.message}`);
+    }
+  } else if (config.authType === 'API_KEY') {
+    if (config.apiKeyLocation === 'QUERY') {
+      // API Key will be added to URL below
+    } else {
+      // Add to header (default)
+      headers[config.apiKeyName || 'X-API-Key'] = config.apiKeyValue;
+    }
+  } else if (config.authType === 'BEARER_TOKEN') {
+    headers['Authorization'] = `Bearer ${config.bearerToken}`;
+  } else if (config.authType === 'BASIC_AUTH') {
+    const credentials = btoa(`${config.basicAuthUsername}:${config.basicAuthPassword}`);
+    headers['Authorization'] = `Basic ${credentials}`;
+  }
+  
+  // Add custom headers
+  if (config.headers) {
+    try {
+      const customHeaders = JSON.parse(config.headers);
+      Object.assign(headers, customHeaders);
+    } catch (e) {
+      console.warn('Failed to parse custom headers:', e);
+    }
+  }
+  
+  // Build final URL with query params
+  let finalUrl = url;
+  if (config.authType === 'API_KEY' && config.apiKeyLocation === 'QUERY') {
+    const separator = finalUrl.includes('?') ? '&' : '?';
+    finalUrl += `${separator}${config.apiKeyName || 'api_key'}=${config.apiKeyValue}`;
+  }
+  
+  // Build request options
+  const requestOptions: RequestInit = {
+    method,
+    headers,
+    signal: AbortSignal.timeout(timeout),
+  };
+  
+  // Add body for POST/PUT/PATCH
+  if (['POST', 'PUT', 'PATCH'].includes(method) && config.body) {
+    requestOptions.body = config.body;
+  }
+  
+  // Execute request with retries
+  let lastError: Error | null = null;
+  let attempt = 0;
+  
+  while (attempt <= retries) {
+    try {
+      console.log(`🌐 HTTP ${method} ${finalUrl} (Attempt ${attempt + 1}/${retries + 1})`);
+      
+      const startTime = Date.now();
+      const response = await fetch(finalUrl, requestOptions);
+      const duration = Date.now() - startTime;
+      
+      // Read response
+      let responseBody: any;
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType?.includes('application/json')) {
+        responseBody = await response.json();
+      } else {
+        responseBody = await response.text();
+      }
+      
+      // Check if successful
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      console.log(`✅ HTTP Request successful (${duration}ms)`);
+      console.log(`   Status: ${response.status}`);
+      console.log(`   Response:`, JSON.stringify(responseBody).substring(0, 200));
+      
+      // Store response in variable if configured
+      const contextUpdates: any = {};
+      if (config.responseVariable) {
+        contextUpdates[config.responseVariable] = responseBody;
+        console.log(`   💾 Response stored in variable: ${config.responseVariable}`);
+      }
+      
+      return {
+        success: true,
+        message: `🌐 HTTP ${method} ${finalUrl} → ${response.status}`,
+        contextUpdates,
+      };
+      
+    } catch (error: any) {
+      lastError = error;
+      console.error(`❌ HTTP Request failed (Attempt ${attempt + 1}):`, error.message);
+      
+      if (attempt < retries) {
+        const backoffDelay = Math.min(1000 * Math.pow(2, attempt), 10000); // Exponential backoff, max 10s
+        console.log(`   ⏳ Retrying in ${backoffDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoffDelay));
+      }
+      
+      attempt++;
+    }
+  }
+  
+  // All retries failed
+  if (continueOnError) {
+    console.warn(`⚠️ HTTP Request failed but continuing workflow (continueOnError=true)`);
+    return {
+      success: true, // Mark as success to continue workflow
+      message: `⚠️ HTTP ${method} failed: ${lastError?.message || 'Unknown error'}`,
+    };
+  }
+  
+  throw new Error(`HTTP Request failed after ${retries + 1} attempts: ${lastError?.message || 'Unknown error'}`);
+}
+
 // ==================== MAIN EXECUTOR ====================
 
 export async function executeAction(node: WorkflowNode, context: ExecutionContext): Promise<{ success: boolean; message: string; contextUpdates?: any }> {
@@ -963,6 +1250,9 @@ export async function executeAction(node: WorkflowNode, context: ExecutionContex
       
       case 'DELAY':
         return await executeDelay(node, context);
+      
+      case 'HTTP_REQUEST':
+        return await executeHttpRequest(node, context);
       
       case 'ASSIGN_EQUIPMENT':
         return await executeAssignEquipment(node, context);

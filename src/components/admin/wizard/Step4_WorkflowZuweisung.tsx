@@ -10,6 +10,7 @@ import { Badge } from '../../ui/badge';
 import { Network, Loader2 } from '../../icons/BrowoKoIcons';
 import { toast } from 'sonner@2.0.3';
 import { projectId, publicAnonKey } from '../../../utils/supabase/info';
+import { getTriggerBadge } from '../../../utils/workflowHelpers';
 
 interface Workflow {
   id: string;
@@ -71,22 +72,7 @@ export default function Step4_WorkflowZuweisung({ formData, onUpdate }: Step4Pro
     onUpdate({ assigned_workflows: updatedWorkflows });
   };
 
-  const getTriggerBadge = (type: string) => {
-    switch (type) {
-      case 'ONBOARDING_START':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Onboarding</Badge>;
-      case 'OFFBOARDING_START':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-200">Offboarding</Badge>;
-      case 'PROMOTION':
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">Beförderung</Badge>;
-      case 'TIME_BASED':
-        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">Zeitbasiert</Badge>;
-      case 'MANUAL':
-        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200">Manuell</Badge>;
-      default:
-        return <Badge variant="outline">{type}</Badge>;
-    }
-  };
+  // Removed - now using getTriggerBadge from utils/workflowHelpers
 
   if (loading) {
     return (

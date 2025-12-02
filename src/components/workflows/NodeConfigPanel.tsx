@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { Node } from 'reactflow';
-import { X, AlertCircle, CheckCircle2 } from '../../components/icons/BrowoKoIcons';
+import { X, AlertCircle, CheckCircle2, Globe, ChevronDown, Key } from '../../components/icons/BrowoKoIcons';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
+import { TriggerConfigForm } from './TriggerConfigForm';
 
 interface NodeConfigPanelProps {
   node: Node | null;
@@ -241,7 +242,17 @@ export default function NodeConfigPanel({ node, onClose, onUpdateNode }: NodeCon
           </Card>
         )}
 
-        {/* Configuration Forms based on actionType */}
+        {/* Configuration Forms based on node type */}
+        
+        {/* TRIGGER NODE CONFIGURATION */}
+        {node.type === 'trigger' && (
+          <TriggerConfigForm 
+            node={node}
+            config={config} 
+            updateConfig={updateConfig} 
+          />
+        )}
+        
         {actionType === 'SEND_EMAIL' && (
           <SendEmailConfig 
             config={config} 
@@ -292,6 +303,13 @@ export default function NodeConfigPanel({ node, onClose, onUpdateNode }: NodeCon
 
         {actionType === 'DELAY' && (
           <DelayConfig 
+            config={config} 
+            updateConfig={updateConfig} 
+          />
+        )}
+
+        {actionType === 'HTTP_REQUEST' && (
+          <HttpRequestConfig 
             config={config} 
             updateConfig={updateConfig} 
           />
@@ -867,6 +885,387 @@ function DelayConfig({ config, updateConfig }: any) {
         <p className="text-sm text-blue-900">
           Der Workflow wird für {config.duration || '...'} {config.unit === 'minutes' ? 'Minuten' : config.unit === 'hours' ? 'Stunden' : config.unit === 'weeks' ? 'Wochen' : 'Tage'} pausieren.
         </p>
+      </Card>
+    </div>
+  );
+}
+
+function HttpRequestConfig({ config, updateConfig }: any) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  return (
+    <div className="space-y-4">
+      <Card className="p-4 bg-purple-50 border-purple-200">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-purple-500 rounded">
+            <Globe className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-purple-900">HTTP Request Node</p>
+            <p className="text-xs text-purple-700 mt-1">
+              Rufe externe APIs auf wie in n8n. Unterstützt Authentication, Headers und mehr.
+            </p>
+            <div className="mt-2 pt-2 border-t border-purple-200">
+              <p className="text-xs text-purple-800">
+                🔐 <strong>Environment Variables:</strong> Nutze {'{{'} env.VAR_NAME {'}}'} für API Keys und Secrets
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <div>
+        <Label htmlFor="method">HTTP-Methode *</Label>
+        <Select value={config.method || 'GET'} onValueChange={(v) => updateConfig('method', v)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="GET">GET - Daten abrufen</SelectItem>
+            <SelectItem value="POST">POST - Daten erstellen</SelectItem>
+            <SelectItem value="PUT">PUT - Daten aktualisieren</SelectItem>
+            <SelectItem value="PATCH">PATCH - Teilweise aktualisieren</SelectItem>
+            <SelectItem value="DELETE">DELETE - Daten löschen</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <Label htmlFor="url">URL *</Label>
+        <Input 
+          id="url"
+          value={config.url || ''} 
+          onChange={(e) => updateConfig('url', e.target.value)}
+          placeholder="https://api.example.com/users"
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          💡 Variablen: {'{{'} employeeId {'}}'}, {'{{'} organizationId {'}}'}, {'{{'} env.API_BASE_URL {'}}'}
+        </p>
+      </div>
+
+      <div>
+        <Label htmlFor="authType">Authentication</Label>
+        <Select value={config.authType || 'NONE'} onValueChange={(v) => updateConfig('authType', v)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="NONE">Keine Authentication</SelectItem>
+            <SelectItem value="API_KEY">API Key</SelectItem>
+            <SelectItem value="BEARER_TOKEN">Bearer Token</SelectItem>
+            <SelectItem value="BASIC_AUTH">Basic Auth</SelectItem>
+            <SelectItem value="OAUTH2">OAuth2 (Client Credentials / Refresh Token)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {config.authType === 'API_KEY' && (
+        <>
+          <div>
+            <Label htmlFor="apiKeyLocation">API Key Location</Label>
+            <Select value={config.apiKeyLocation || 'HEADER'} onValueChange={(v) => updateConfig('apiKeyLocation', v)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="HEADER">Header</SelectItem>
+                <SelectItem value="QUERY">Query Parameter</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="apiKeyName">API Key Name *</Label>
+            <Input 
+              id="apiKeyName"
+              value={config.apiKeyName || ''} 
+              onChange={(e) => updateConfig('apiKeyName', e.target.value)}
+              placeholder={config.apiKeyLocation === 'QUERY' ? 'z.B. api_key' : 'z.B. X-API-Key'}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              💡 Env Vars: {'{{'} env.API_KEY_NAME {'}}'}
+            </p>
+          </div>
+          <div>
+            <Label htmlFor="apiKeyValue">API Key Value *</Label>
+            <Input 
+              id="apiKeyValue"
+              type="password"
+              value={config.apiKeyValue || ''} 
+              onChange={(e) => updateConfig('apiKeyValue', e.target.value)}
+              placeholder="Dein API Key oder {{ env.MY_API_KEY }}"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              💡 Env Vars: {'{{'} env.MY_API_KEY {'}}'}
+            </p>
+          </div>
+        </>
+      )}
+
+      {config.authType === 'BEARER_TOKEN' && (
+        <div>
+          <Label htmlFor="bearerToken">Bearer Token *</Label>
+          <Input 
+            id="bearerToken"
+            type="password"
+            value={config.bearerToken || ''} 
+            onChange={(e) => updateConfig('bearerToken', e.target.value)}
+            placeholder="Dein Bearer Token oder {{ env.BEARER_TOKEN }}"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            💡 Env Vars: {'{{'} env.BEARER_TOKEN {'}}'}
+          </p>
+        </div>
+      )}
+
+      {config.authType === 'BASIC_AUTH' && (
+        <>
+          <div>
+            <Label htmlFor="basicAuthUsername">Username *</Label>
+            <Input 
+              id="basicAuthUsername"
+              value={config.basicAuthUsername || ''} 
+              onChange={(e) => updateConfig('basicAuthUsername', e.target.value)}
+              placeholder="Username oder {{ env.USERNAME }}"
+            />
+          </div>
+          <div>
+            <Label htmlFor="basicAuthPassword">Password *</Label>
+            <Input 
+              id="basicAuthPassword"
+              type="password"
+              value={config.basicAuthPassword || ''} 
+              onChange={(e) => updateConfig('basicAuthPassword', e.target.value)}
+              placeholder="Password oder {{ env.PASSWORD }}"
+            />
+          </div>
+        </>
+      )}
+
+      {config.authType === 'OAUTH2' && (
+        <div className="space-y-4 p-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+          <div className="flex items-center gap-2 text-purple-900">
+            <Key className="w-4 h-4" />
+            <span className="font-medium text-sm">OAuth2 Konfiguration</span>
+          </div>
+          
+          <div>
+            <Label htmlFor="oauth2GrantType">Grant Type *</Label>
+            <Select value={config.oauth2GrantType || 'client_credentials'} onValueChange={(v) => updateConfig('oauth2GrantType', v)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="client_credentials">Client Credentials (Machine-to-Machine)</SelectItem>
+                <SelectItem value="refresh_token">Refresh Token (User Token)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500 mt-1">
+              Client Credentials für Server-to-Server, Refresh Token für User-spezifische APIs
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="oauth2ClientId">Client ID *</Label>
+            <Input 
+              id="oauth2ClientId"
+              value={config.oauth2ClientId || ''} 
+              onChange={(e) => updateConfig('oauth2ClientId', e.target.value)}
+              placeholder="Deine OAuth2 Client ID oder {{ env.OAUTH_CLIENT_ID }}"
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              💡 Env Vars: {'{{'} env.OAUTH_CLIENT_ID {'}}'}
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="oauth2ClientSecret">Client Secret *</Label>
+            <Input 
+              id="oauth2ClientSecret"
+              type="password"
+              value={config.oauth2ClientSecret || ''} 
+              onChange={(e) => updateConfig('oauth2ClientSecret', e.target.value)}
+              placeholder="Dein OAuth2 Client Secret oder {{ env.OAUTH_CLIENT_SECRET }}"
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              💡 Env Vars: {'{{'} env.OAUTH_CLIENT_SECRET {'}}'}
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="oauth2TokenUrl">Token URL *</Label>
+            <Input 
+              id="oauth2TokenUrl"
+              value={config.oauth2TokenUrl || ''} 
+              onChange={(e) => updateConfig('oauth2TokenUrl', e.target.value)}
+              placeholder="https://oauth.example.com/token oder {{ env.OAUTH_TOKEN_URL }}"
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              OAuth2 Token Endpoint (z.B. https://accounts.spotify.com/api/token)
+            </p>
+          </div>
+
+          {config.oauth2GrantType === 'client_credentials' && (
+            <div>
+              <Label htmlFor="oauth2Scopes">Scopes (Optional)</Label>
+              <Input 
+                id="oauth2Scopes"
+                value={config.oauth2Scopes || ''} 
+                onChange={(e) => updateConfig('oauth2Scopes', e.target.value)}
+                placeholder="user-read-private user-read-email"
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Space-separated scopes (z.B. "read:user write:repos")
+              </p>
+            </div>
+          )}
+
+          {config.oauth2GrantType === 'refresh_token' && (
+            <div>
+              <Label htmlFor="oauth2RefreshToken">Refresh Token *</Label>
+              <Input 
+                id="oauth2RefreshToken"
+                type="password"
+                value={config.oauth2RefreshToken || ''} 
+                onChange={(e) => updateConfig('oauth2RefreshToken', e.target.value)}
+                placeholder="Dein Refresh Token oder {{ env.OAUTH_REFRESH_TOKEN }}"
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                💡 Env Vars: {'{{'} env.OAUTH_REFRESH_TOKEN {'}}'}
+              </p>
+            </div>
+          )}
+
+          <Card className="p-3 bg-blue-50 border-blue-200">
+            <p className="text-xs text-blue-900">
+              <strong>ℹ️ OAuth2 Info:</strong> Tokens werden automatisch gecacht und bei Bedarf refreshed. 
+              Nutze Environment Variables für sensible Daten!
+            </p>
+          </Card>
+        </div>
+      )}
+
+      <div>
+        <Label htmlFor="headers">Custom Headers (Optional)</Label>
+        <Textarea 
+          id="headers"
+          value={config.headers || ''} 
+          onChange={(e) => updateConfig('headers', e.target.value)}
+          placeholder={'{\n  "Content-Type": "application/json",\n  "X-Custom-Header": "{{ variableName }}"\n}'}
+          rows={3}
+          className="font-mono text-sm"
+        />
+        <p className="text-xs text-gray-500 mt-1">JSON-Format. Unterstützt Variablen.</p>
+      </div>
+
+      {['POST', 'PUT', 'PATCH'].includes(config.method) && (
+        <div>
+          <Label htmlFor="body">Request Body *</Label>
+          <Textarea 
+            id="body"
+            value={config.body || ''} 
+            onChange={(e) => updateConfig('body', e.target.value)}
+            placeholder={'{\n  "name": "{{ employeeName }}",\n  "email": "{{ employeeEmail }}"\n}'}
+            rows={6}
+            className="font-mono text-sm"
+          />
+          <p className="text-xs text-gray-500 mt-1">JSON-Format. Nutze Variablen für dynamische Daten.</p>
+        </div>
+      )}
+
+      <div>
+        <Button 
+          type="button"
+          variant="ghost" 
+          size="sm" 
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="w-full justify-between"
+        >
+          Erweiterte Optionen
+          <ChevronDown className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+        </Button>
+        
+        {showAdvanced && (
+          <div className="space-y-4 mt-4 p-4 bg-gray-50 rounded-lg">
+            <div>
+              <Label htmlFor="timeout">Timeout (Sekunden)</Label>
+              <Input 
+                type="number"
+                id="timeout"
+                value={config.timeout || 30} 
+                onChange={(e) => updateConfig('timeout', parseInt(e.target.value))}
+                min="1"
+                max="300"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="retries">Wiederholungen bei Fehler</Label>
+              <Input 
+                type="number"
+                id="retries"
+                value={config.retries || 0} 
+                onChange={(e) => updateConfig('retries', parseInt(e.target.value))}
+                min="0"
+                max="5"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="continueOnError"
+                checked={config.continueOnError || false}
+                onChange={(e) => updateConfig('continueOnError', e.target.checked)}
+                className="w-4 h-4 text-purple-600 rounded"
+              />
+              <Label htmlFor="continueOnError" className="cursor-pointer">
+                Bei Fehler Workflow fortsetzen
+              </Label>
+            </div>
+            
+            <div>
+              <Label htmlFor="responseVariable">Response in Variable speichern</Label>
+              <Input 
+                id="responseVariable"
+                value={config.responseVariable || ''} 
+                onChange={(e) => updateConfig('responseVariable', e.target.value)}
+                placeholder="z.B. apiResponse"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Speichere die API-Antwort für spätere Nodes
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <Card className="p-4 bg-blue-50 border-blue-200">
+        <p className="text-xs font-medium text-blue-900 mb-2">📘 Beispiele</p>
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs font-medium text-blue-800">Slack Webhook:</p>
+            <pre className="text-xs text-blue-700 overflow-x-auto whitespace-pre-wrap mt-1">
+{`URL: {{ env.SLACK_WEBHOOK_URL }}
+Methode: POST
+Body: { "text": "Neuer Mitarbeiter: {{ employeeName }}" }`}
+            </pre>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-blue-800">OAuth2 API Call (Spotify):</p>
+            <pre className="text-xs text-blue-700 overflow-x-auto whitespace-pre-wrap mt-1">
+{`URL: https://api.spotify.com/v1/me
+Auth: OAuth2
+Client ID: {{ env.SPOTIFY_CLIENT_ID }}
+Client Secret: {{ env.SPOTIFY_CLIENT_SECRET }}
+Token URL: https://accounts.spotify.com/api/token`}
+            </pre>
+          </div>
+        </div>
       </Card>
     </div>
   );

@@ -21,7 +21,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-import { Save, ArrowLeft, CheckCircle2, XCircle, Clock, FileText, Edit3, Play, AlertCircle, CheckCheck } from '../../components/icons/BrowoKoIcons';
+import { Save, ArrowLeft, CheckCircle2, XCircle, Clock, FileText, Edit3, Play, AlertCircle, CheckCheck, Key } from '../../components/icons/BrowoKoIcons';
 import { Workflow as WorkflowIcon } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
@@ -34,11 +34,15 @@ import { projectId, publicAnonKey } from '../../utils/supabase/info';
 // Custom Nodes
 import TriggerNode from '../../components/workflows/nodes/TriggerNode';
 import ActionNode from '../../components/workflows/nodes/ActionNode';
+import { HttpRequestNode } from '../../components/workflows/nodes/HttpRequestNode';
 import NodeConfigPanel from '../../components/workflows/NodeConfigPanel';
+
+
 
 const nodeTypes = {
   trigger: TriggerNode,
   action: ActionNode,
+  httpRequest: HttpRequestNode,
 };
 
 const INITIAL_NODES: Node[] = [
@@ -64,18 +68,21 @@ interface WorkflowExecution {
 let id = 1;
 const getId = () => `dndnode_${id++}`;
 
-const DraggableItem = ({ type, actionType, label, icon }: any) => {
-  const onDragStart = (event: React.DragEvent, nodeType: string, actionType: string) => {
+const DraggableItem = ({ type, actionType, label, icon, category }: any) => {
+  const onDragStart = (event: React.DragEvent, nodeType: string, actionType: string, category?: string) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.setData('application/actionType', actionType);
     event.dataTransfer.setData('application/label', label);
+    if (category) {
+      event.dataTransfer.setData('application/category', category);
+    }
     event.dataTransfer.effectAllowed = 'move';
   };
 
   return (
     <div
       className="p-3 bg-white border border-gray-200 rounded-lg cursor-move hover:shadow-md hover:border-blue-400 transition-all"
-      onDragStart={(event) => onDragStart(event, type, actionType)}
+      onDragStart={(event) => onDragStart(event, type, actionType, category)}
       draggable
     >
       <div className="flex items-center gap-2">
@@ -103,6 +110,9 @@ const WorkflowDetailScreen = () => {
   const [actionSearch, setActionSearch] = useState('');
   const [showConfigPanel, setShowConfigPanel] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  
+  // ========== SIDEBAR TAB STATE ==========
+  const [sidebarTab, setSidebarTab] = useState<'actions' | 'triggers'>('actions');
   
   // Determine active tab from URL query params
   const defaultTab = searchParams.get('tab') || 'editor';
@@ -149,6 +159,7 @@ const WorkflowDetailScreen = () => {
     { type: "action", actionType: "ASSIGN_BENEFITS", label: "Benefits zuweisen", icon: "🎁", tags: ["benefit", "vorteil", "zuweisen", "vergütung"] },
     { type: "action", actionType: "DISTRIBUTE_COINS", label: "Coins verteilen", icon: "🪙", tags: ["coins", "punkte", "belohnung", "gamification"] },
     { type: "action", actionType: "DELAY", label: "Warten (Delay)", icon: "⏱️", tags: ["warten", "delay", "pause", "zeit"] },
+    { type: "httpRequest", actionType: "HTTP_REQUEST", label: "HTTP Request", icon: "🌐", tags: ["http", "api", "webhook", "request", "n8n", "integration", "extern"] },
     { type: "action", actionType: "CREATE_NOTIFICATION", label: "Benachrichtigung senden", icon: "🔔", tags: ["notification", "benachrichtigung", "alarm", "push"] },
     { type: "action", actionType: "ADD_TO_TEAM", label: "Zu Team hinzufügen", icon: "👥", tags: ["team", "gruppe", "hinzufügen", "mitglied"] },
     { type: "action", actionType: "ASSIGN_TRAINING", label: "Schulung zuweisen", icon: "📚", tags: ["schulung", "training", "kurs", "weiterbildung"] },
@@ -236,6 +247,7 @@ const WorkflowDetailScreen = () => {
       const type = event.dataTransfer.getData('application/reactflow');
       const actionType = event.dataTransfer.getData('application/actionType');
       const label = event.dataTransfer.getData('application/label');
+      const category = event.dataTransfer.getData('application/category');
 
       if (typeof type === 'undefined' || !type) {
         return;
@@ -250,7 +262,13 @@ const WorkflowDetailScreen = () => {
         id: getId(),
         type,
         position,
-        data: { 
+        data: type === 'trigger' ? {
+          label: label || 'Neue Aktion',
+          triggerType: actionType,
+          triggerLabel: label,
+          category: category || 'Manual',
+          config: {},
+        } : { 
           label: label || 'Neue Aktion',
           actionType: actionType,
           type: actionType,
@@ -264,8 +282,8 @@ const WorkflowDetailScreen = () => {
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
-    // Open config panel for action nodes
-    if (node.type === 'action') {
+    // Open config panel for action and trigger nodes
+    if (node.type === 'action' || node.type === 'trigger' || node.type === 'httpRequest') {
       setShowConfigPanel(true);
     }
   }, []);
@@ -361,7 +379,7 @@ const WorkflowDetailScreen = () => {
         edges: flow.edges,
         updated_at: new Date().toISOString(),
         is_active: true,
-        trigger_type: 'MANUAL',
+        trigger_type: 'MANUAL', // Will be determined from the trigger node
       };
 
       const toastId = toast.loading('Speichere Workflow...');
@@ -485,45 +503,113 @@ const WorkflowDetailScreen = () => {
           <div className="flex-1 flex overflow-hidden">
             
             {/* Sidebar / Library */}
-            <div className="w-64 border-r bg-gray-50 p-4 overflow-y-auto flex flex-col gap-4">
-              <div>
-                <div className="text-xs font-semibold text-gray-500 uppercase mb-3">Aktionen</div>
-                
-                {/* Search Input */}
-                <div className="mb-3">
-                  <Input 
-                    placeholder="Suche Aktionen..." 
-                    value={actionSearch}
-                    onChange={(e) => setActionSearch(e.target.value)}
-                    className="text-sm"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  {filteredActions.length === 0 ? (
-                    <div className="text-sm text-gray-500 text-center py-4">
-                      Keine Aktionen gefunden
-                    </div>
-                  ) : (
-                    filteredActions.map((action) => (
-                      <DraggableItem 
-                        key={action.actionType}
-                        type={action.type}
-                        actionType={action.actionType}
-                        label={action.label}
-                        icon={action.icon}
-                      />
-                    ))
-                  )}
+            <div className="w-64 border-r bg-gray-50 flex flex-col overflow-hidden">
+              {/* Tabs: Aktionen | Trigger */}
+              <div className="border-b bg-white">
+                <div className="grid grid-cols-2">
+                  <button
+                    onClick={() => setSidebarTab('actions')}
+                    className={`px-4 py-3 text-sm font-medium transition-colors ${
+                      sidebarTab === 'actions'
+                        ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    Aktionen
+                  </button>
+                  <button
+                    onClick={() => setSidebarTab('triggers')}
+                    className={`px-4 py-3 text-sm font-medium transition-colors ${
+                      sidebarTab === 'triggers'
+                        ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    Trigger
+                  </button>
                 </div>
               </div>
               
-              <Card className="p-3 bg-blue-50 border-blue-100">
-                <div className="text-xs text-blue-800">
-                  <AlertCircle className="w-3 h-3 inline mr-1" />
-                  Drag & Drop die Aktionen auf den Canvas.
-                </div>
-              </Card>
+              {/* Tab Content */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {sidebarTab === 'actions' ? (
+                  <>
+                    {/* Search Input */}
+                    <div>
+                      <Input 
+                        placeholder="Suche Aktionen..." 
+                        value={actionSearch}
+                        onChange={(e) => setActionSearch(e.target.value)}
+                        className="text-sm"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {filteredActions.length === 0 ? (
+                        <div className="text-sm text-gray-500 text-center py-4">
+                          Keine Aktionen gefunden
+                        </div>
+                      ) : (
+                        filteredActions.map((action) => (
+                          <DraggableItem 
+                            key={action.actionType}
+                            type={action.type}
+                            actionType={action.actionType}
+                            label={action.label}
+                            icon={action.icon}
+                          />
+                        ))
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Trigger Nodes */}
+                    <div className="space-y-3">
+                      <DraggableItem type="trigger" actionType="HR_TRIGGER" label="HR/Mitarbeiter" icon="👤" category="HR" />
+                      <DraggableItem type="trigger" actionType="LEARNING_TRIGGER" label="Learning" icon="🎓" category="LEARNING" />
+                      <DraggableItem type="trigger" actionType="GAMIFICATION_TRIGGER" label="Gamification" icon="🏆" category="GAMIFICATION" />
+                      <DraggableItem type="trigger" actionType="SHOP_TRIGGER" label="Shop/Benefits" icon="🛒" category="SHOP" />
+                      <DraggableItem type="trigger" actionType="TASKS_TRIGGER" label="Tasks" icon="✅" category="TASKS" />
+                      <DraggableItem type="trigger" actionType="REQUESTS_TRIGGER" label="Anträge" icon="📄" category="REQUESTS" />
+                      <DraggableItem type="trigger" actionType="TIME_TRIGGER" label="Zeitbasiert" icon="⏰" category="TIME" />
+                      <DraggableItem type="trigger" actionType="MANUAL_TRIGGER" label="Manueller Start" icon="▶️" category="MANUAL" />
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              {/* Help Cards */}
+              <div className="p-4 space-y-3 border-t bg-white">
+                <Card className="p-3 bg-blue-50 border-blue-100">
+                  <div className="text-xs text-blue-800">
+                    <AlertCircle className="w-3 h-3 inline mr-1" />
+                    {sidebarTab === 'actions' 
+                      ? 'Drag & Drop die Aktionen auf den Canvas.'
+                      : 'Drag & Drop einen Trigger auf den Canvas.'}
+                  </div>
+                </Card>
+
+                {sidebarTab === 'actions' && (
+                  <Card className="p-3 bg-purple-50 border-purple-200">
+                    <div className="text-xs">
+                      <p className="font-medium text-purple-900 mb-2">🔐 Environment Variables</p>
+                      <p className="text-purple-700 mb-2">
+                        Verwalte API Keys und Secrets sicher für deine Workflows.
+                      </p>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full text-purple-700 hover:text-purple-900 hover:bg-purple-100 justify-start h-8 px-2"
+                        onClick={() => window.open('/admin/workflows/env-vars', '_blank')}
+                      >
+                        <Key className="w-3 h-3 mr-2" />
+                        Env Vars verwalten →
+                      </Button>
+                    </div>
+                  </Card>
+                )}
+              </div>
             </div>
 
             {/* Canvas */}
