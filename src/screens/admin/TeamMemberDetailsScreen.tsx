@@ -62,6 +62,7 @@ import { EmergencyContactCard } from '../../components/admin/BrowoKo_EmergencyCo
 import { LanguageSkillsCard } from '../../components/admin/BrowoKo_LanguageSkillsCard';
 import { TeamMemberLearningTab } from '../../components/admin/BrowoKo_TeamMemberLearningTab';
 import { TeamMemberLogsTab } from '../../components/admin/BrowoKo_TeamMemberLogsTab';
+import { TeamMemberPerformanceReviewsTab } from '../../components/admin/BrowoKo_TeamMemberPerformanceReviewsTab';
 import { DocumentsTabContent } from '../../components/BrowoKo_DocumentsTabContent';
 import { ImageCropDialog } from '../../components/ImageCropDialog';
 import { EditWarningDialog } from '../../components/BrowoKo_EditWarningDialog';
@@ -241,14 +242,15 @@ export default function TeamMemberDetailsScreen() {
 
       {/* Tabs - v4.7.3: Renamed to "Personalakte (Admin)" */}
       <Tabs defaultValue="personalakte" className="space-y-4 md:space-y-6">
-        {/* Desktop: 5-column grid in one row */}
-        <TabsList className="hidden md:grid w-full grid-cols-5 h-auto">
+        {/* Desktop: 6-column grid in one row */}
+        <TabsList className="hidden md:grid w-full grid-cols-6 h-auto">
           <TabsTrigger value="personalakte">
             <User className="w-4 h-4 mr-2" />
             Personalakte (Admin)
           </TabsTrigger>
           <TabsTrigger value="lernfortschritt">Lernfortschritt</TabsTrigger>
           <TabsTrigger value="logs">Logs</TabsTrigger>
+          <TabsTrigger value="gespraeche">Gespräche</TabsTrigger>
           <TabsTrigger value="permissions">Berechtigungen</TabsTrigger>
           <TabsTrigger value="documents">Dokumente</TabsTrigger>
         </TabsList>
@@ -263,6 +265,9 @@ export default function TeamMemberDetailsScreen() {
           </TabsTrigger>
           <TabsTrigger value="logs" className="flex flex-col items-center gap-1 py-3 text-xs">
             <span>Logs</span>
+          </TabsTrigger>
+          <TabsTrigger value="gespraeche" className="flex flex-col items-center gap-1 py-3 text-xs">
+            <span>Gespräche</span>
           </TabsTrigger>
           <TabsTrigger value="permissions" className="flex flex-col items-center gap-1 py-3 text-xs">
             <span>Rechte</span>
@@ -398,6 +403,14 @@ export default function TeamMemberDetailsScreen() {
         {/* Logs Tab */}
         <TabsContent value="logs">
           <TeamMemberLogsTab
+            userId={user.id}
+            userName={`${user.first_name} ${user.last_name}`}
+          />
+        </TabsContent>
+
+        {/* Performance Reviews / Gespräche Tab */}
+        <TabsContent value="gespraeche">
+          <TeamMemberPerformanceReviewsTab
             userId={user.id}
             userName={`${user.first_name} ${user.last_name}`}
           />

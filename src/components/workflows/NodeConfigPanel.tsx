@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
+import { supabase } from '../../utils/supabase/client';
 import { TriggerConfigForm } from './TriggerConfigForm';
 
 interface NodeConfigPanelProps {
@@ -90,21 +91,38 @@ export default function NodeConfigPanel({ node, onClose, onUpdateNode }: NodeCon
   const loadEmployees = async () => {
     setLoading(true);
     try {
+      // Get authenticated user session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error('[NodeConfigPanel] No active session:', sessionError);
+        setEmployees([]);
+        setLoading(false);
+        return;
+      }
+      
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Personalakte/employees`,
         {
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
           }
         }
       );
       
       if (response.ok) {
         const { employees: data } = await response.json();
+        console.log('[NodeConfigPanel] ✅ Loaded employees:', data?.length || 0);
         setEmployees(data || []);
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('[NodeConfigPanel] ❌ Failed to load employees:', response.status, errorData);
+        setEmployees([]);
       }
     } catch (error) {
-      console.error('Failed to load employees:', error);
+      console.error('[NodeConfigPanel] ❌ Error loading employees:', error);
+      setEmployees([]);
     } finally {
       setLoading(false);
     }
@@ -113,21 +131,35 @@ export default function NodeConfigPanel({ node, onClose, onUpdateNode }: NodeCon
   const loadBenefits = async () => {
     setLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error('[NodeConfigPanel] No session for benefits');
+        setBenefits([]);
+        setLoading(false);
+        return;
+      }
+      
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Benefits/browse`,
         {
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
           }
         }
       );
       
       if (response.ok) {
         const { benefits: data } = await response.json();
+        console.log('[NodeConfigPanel] ✅ Loaded benefits:', data?.length || 0);
         setBenefits(data || []);
+      } else {
+        console.error('[NodeConfigPanel] ❌ Failed to load benefits:', response.status);
+        setBenefits([]);
       }
     } catch (error) {
-      console.error('Failed to load benefits:', error);
+      console.error('[NodeConfigPanel] ❌ Error loading benefits:', error);
+      setBenefits([]);
     } finally {
       setLoading(false);
     }
@@ -136,21 +168,35 @@ export default function NodeConfigPanel({ node, onClose, onUpdateNode }: NodeCon
   const loadDocuments = async () => {
     setLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error('[NodeConfigPanel] No session for documents');
+        setDocuments([]);
+        setLoading(false);
+        return;
+      }
+      
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Dokumente/documents`,
         {
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
           }
         }
       );
       
       if (response.ok) {
         const { documents: data } = await response.json();
+        console.log('[NodeConfigPanel] ✅ Loaded documents:', data?.length || 0);
         setDocuments(data || []);
+      } else {
+        console.error('[NodeConfigPanel] ❌ Failed to load documents:', response.status);
+        setDocuments([]);
       }
     } catch (error) {
-      console.error('Failed to load documents:', error);
+      console.error('[NodeConfigPanel] ❌ Error loading documents:', error);
+      setDocuments([]);
     } finally {
       setLoading(false);
     }
@@ -159,21 +205,35 @@ export default function NodeConfigPanel({ node, onClose, onUpdateNode }: NodeCon
   const loadEmailTemplates = async () => {
     setLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error('[NodeConfigPanel] No session for email templates');
+        setEmailTemplates([]);
+        setLoading(false);
+        return;
+      }
+      
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-EmailTemplates/templates`,
         {
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
           }
         }
       );
       
       if (response.ok) {
         const { templates: data } = await response.json();
+        console.log('[NodeConfigPanel] ✅ Loaded email templates:', data?.length || 0);
         setEmailTemplates(data || []);
+      } else {
+        console.error('[NodeConfigPanel] ❌ Failed to load email templates:', response.status);
+        setEmailTemplates([]);
       }
     } catch (error) {
-      console.error('Failed to load email templates:', error);
+      console.error('[NodeConfigPanel] ❌ Error loading email templates:', error);
+      setEmailTemplates([]);
     } finally {
       setLoading(false);
     }

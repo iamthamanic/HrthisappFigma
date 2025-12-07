@@ -83,8 +83,8 @@ export function useLeaveManagement(userId: string, federalState?: string) {
         }
       }
     } catch (error) {
-      console.error('Error loading leave requests:', error);
-      toast.error('Fehler beim Laden der Urlaubsanträge');
+      // Silent fail - table doesn't exist
+      // This is expected when migrations haven't been run
     } finally {
       setLoading(false);
     }

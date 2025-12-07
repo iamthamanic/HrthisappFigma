@@ -1,6 +1,38 @@
-import { useMemo } from 'react';
+/**
+ * USE PERMISSIONS HOOK V2
+ * =======================
+ * Enhanced permission system with database-backed permissions
+ * 
+ * Features:
+ * - Role-based default permissions (from ROLE_PERMISSION_MATRIX)
+ * - Individual GRANT/REVOKE overrides (from effective_user_permissions)
+ * - Backward compatible with old 'can' object API
+ * - Automatic fallback to role-based permissions if DB permissions unavailable
+ * 
+ * Usage:
+ * ```typescript
+ * const { can, hasPermission } = usePermissions(profile?.role);
+ * 
+ * if (can.createUser) {
+ *   // Show create user button
+ * }
+ * 
+ * if (hasPermission('manage_employees')) {
+ *   // Show employee management
+ * }
+ * ```
+ */
 
-export type UserRole = 'USER' | 'EMPLOYEE' | 'HR' | 'TEAMLEAD' | 'ADMIN' | 'SUPERADMIN' | 'EXTERN';
+import { useMemo } from 'react';
+import { useAuthStore } from '../stores/BrowoKo_authStore';
+import { 
+  ROLE_PERMISSION_MATRIX, 
+  PERMISSION_TO_CAN_MAP,
+  type UserRole,
+  type PermissionKey 
+} from '../config/permissions';
+
+export type { UserRole, PermissionKey };
 
 export interface Permission {
   name: string;
@@ -14,76 +46,153 @@ export interface PermissionCategory {
 }
 
 /**
- * Hook to check and manage permissions based on user role
- * Can be used throughout the app for authorization checks
+ * Permission Can Object
+ * This maintains backward compatibility with the old usePermissions API
+ */
+export interface PermissionCan {
+  // Dashboard & Profile
+  viewDashboard: boolean;
+  editOwnProfile: boolean;
+  uploadProfilePicture: boolean;
+  customizeAvatar: boolean;
+  
+  // Time & Leave
+  trackTime: boolean;
+  submitLeaveRequest: boolean;
+  approveLeaveRequests: boolean;
+  
+  // Learning
+  viewCourses: boolean;
+  takeCourses: boolean;
+  takeQuizzes: boolean;
+  useLearningShop: boolean;
+  createCourses: boolean;
+  editCourses: boolean;
+  deleteCourses: boolean;
+  
+  // Gamification
+  earnXP: boolean;
+  earnCoins: boolean;
+  unlockAchievements: boolean;
+  levelUp: boolean;
+  
+  // Benefits & Documents
+  viewBenefits: boolean;
+  requestBenefits: boolean;
+  uploadDocuments: boolean;
+  viewOwnDocuments: boolean;
+  manageBenefits: boolean;
+  
+  // Team & Organization
+  viewTeamMembers: boolean;
+  viewOrganigram: boolean;
+  addEmployees: boolean;
+  editEmployees: boolean;
+  deactivateEmployees: boolean;
+  deleteEmployees: boolean;
+  assignRoles: boolean;
+  createUser: boolean;
+  createAdmin: boolean;
+  createHR: boolean;
+  createSuperadmin: boolean;
+  createExtern: boolean;
+  
+  // Administration
+  accessAdminArea: boolean;
+  editCompanySettings: boolean;
+  manageLocations: boolean;
+  manageDashboardInfo: boolean;
+  manageAvatarSystem: boolean;
+  accessSystemSettings: boolean;
+}
+
+/**
+ * Hook to check and manage permissions based on user role and DB overrides
  */
 export function usePermissions(role: UserRole | undefined) {
   const normalizedRole = (role || 'USER') as UserRole;
   
-  // EXTERN role has very limited permissions
-  const isExtern = normalizedRole === 'EXTERN';
-  const isAdmin = normalizedRole === 'HR' || normalizedRole === 'TEAMLEAD' || normalizedRole === 'ADMIN' || normalizedRole === 'SUPERADMIN';
-
-  // Permission checks
-  const can = useMemo(() => ({
+  // Get effective permissions from store (loaded from backend)
+  const { effectivePermissions } = useAuthStore();
+  
+  // Determine which permission source to use
+  const useDbPermissions = effectivePermissions && effectivePermissions.length > 0;
+  
+  // Get permissions based on source
+  const effectiveKeys: PermissionKey[] = useMemo(() => {
+    if (useDbPermissions) {
+      // Use DB permissions (includes role defaults + user overrides)
+      return effectivePermissions as PermissionKey[];
+    } else {
+      // Fallback to role-based permissions from matrix
+      return ROLE_PERMISSION_MATRIX[normalizedRole] ?? [];
+    }
+  }, [normalizedRole, effectivePermissions, useDbPermissions]);
+  
+  // Helper function to check if a permission is granted
+  const hasPermission = (permissionKey: PermissionKey): boolean => {
+    return effectiveKeys.includes(permissionKey);
+  };
+  
+  // Build 'can' object for backward compatibility
+  const can: PermissionCan = useMemo(() => ({
     // Dashboard & Profile
-    viewDashboard: true, // Everyone can see dashboard
-    editOwnProfile: !isExtern, // EXTERN cannot edit profile
-    uploadProfilePicture: !isExtern,
-    customizeAvatar: !isExtern,
-
-    // Leave
-    submitLeaveRequest: !isExtern,
-    approveLeaveRequests: isAdmin,
-
-    // Learning
-    viewCourses: !isExtern, // EXTERN cannot access learning
-    takeCourses: !isExtern,
-    takeQuizzes: !isExtern,
-    useLearningShop: !isExtern,
-    createCourses: isAdmin,
-    editCourses: isAdmin,
-    deleteCourses: isAdmin,
-
-    // Gamification
-    earnXP: !isExtern, // EXTERN cannot earn XP
-    earnCoins: !isExtern,
-    unlockAchievements: !isExtern,
-    levelUp: !isExtern,
-
-    // Benefits & Documents
-    viewBenefits: !isExtern, // EXTERN cannot access benefits
-    requestBenefits: !isExtern,
-    uploadDocuments: true, // EXTERN CAN upload documents
-    viewOwnDocuments: true, // EXTERN CAN view documents
-    manageBenefits: isAdmin,
-
-    // Team Management
-    viewTeamMembers: !isExtern,
-    viewOrganigram: !isExtern,
-    addEmployees: isAdmin,
-    editEmployees: isAdmin,
-    deactivateEmployees: isAdmin,
-    assignRoles: normalizedRole === 'SUPERADMIN',
-    deleteEmployees: normalizedRole === 'SUPERADMIN',
+    viewDashboard: hasPermission('view_dashboard'),
+    editOwnProfile: hasPermission('edit_own_profile'),
+    uploadProfilePicture: hasPermission('upload_profile_picture'),
+    customizeAvatar: hasPermission('customize_avatar'),
     
-    // ✅ UPDATED: Granular Role Creation Permissions (2025-01-14 - v4.0.6)
-    createUser: normalizedRole === 'HR' || normalizedRole === 'ADMIN' || normalizedRole === 'SUPERADMIN',
-    createAdmin: normalizedRole === 'HR' || normalizedRole === 'SUPERADMIN',
-    createHR: normalizedRole === 'SUPERADMIN',
-    createSuperadmin: normalizedRole === 'SUPERADMIN',
-    createExtern: normalizedRole === 'HR' || normalizedRole === 'ADMIN' || normalizedRole === 'SUPERADMIN',
-
+    // Time & Leave
+    trackTime: hasPermission('track_time'),
+    submitLeaveRequest: hasPermission('submit_leave_request'),
+    approveLeaveRequests: hasPermission('approve_leave_requests'),
+    
+    // Learning
+    viewCourses: hasPermission('view_courses'),
+    takeCourses: hasPermission('take_courses'),
+    takeQuizzes: hasPermission('take_quizzes'),
+    useLearningShop: hasPermission('use_learning_shop'),
+    createCourses: hasPermission('create_courses'),
+    editCourses: hasPermission('edit_courses'),
+    deleteCourses: hasPermission('delete_courses'),
+    
+    // Gamification
+    earnXP: hasPermission('earn_xp'),
+    earnCoins: hasPermission('earn_coins'),
+    unlockAchievements: hasPermission('unlock_achievements'),
+    levelUp: hasPermission('level_up'),
+    
+    // Benefits & Documents
+    viewBenefits: hasPermission('view_benefits'),
+    requestBenefits: hasPermission('request_benefits'),
+    uploadDocuments: hasPermission('upload_documents'),
+    viewOwnDocuments: hasPermission('view_own_documents'),
+    manageBenefits: hasPermission('manage_benefits'),
+    
+    // Team & Organization
+    viewTeamMembers: hasPermission('view_team_members'),
+    viewOrganigram: hasPermission('view_organigram'),
+    addEmployees: hasPermission('add_employees'),
+    editEmployees: hasPermission('edit_employees'),
+    deactivateEmployees: hasPermission('deactivate_employees'),
+    deleteEmployees: hasPermission('delete_employees'),
+    assignRoles: hasPermission('assign_roles'),
+    createUser: hasPermission('create_user'),
+    createAdmin: hasPermission('create_admin'),
+    createHR: hasPermission('create_hr'),
+    createSuperadmin: hasPermission('create_superadmin'),
+    createExtern: hasPermission('create_extern'),
+    
     // Administration
-    accessAdminArea: isAdmin,
-    editCompanySettings: isAdmin,
-    manageLocations: isAdmin,
-    manageDashboardInfo: isAdmin,
-    manageAvatarSystem: isAdmin,
-    accessSystemSettings: normalizedRole === 'SUPERADMIN',
-  }), [normalizedRole, isExtern, isAdmin]);
-
-  // Get all permissions with details
+    accessAdminArea: hasPermission('access_admin_area'),
+    editCompanySettings: hasPermission('edit_company_settings'),
+    manageLocations: hasPermission('manage_locations'),
+    manageDashboardInfo: hasPermission('manage_dashboard_info'),
+    manageAvatarSystem: hasPermission('manage_avatar_system'),
+    accessSystemSettings: hasPermission('access_system_settings'),
+  }), [effectiveKeys]); // Re-compute when permissions change
+  
+  // Get all permissions with details (for UI display)
   const getAllPermissions = useMemo((): PermissionCategory[] => {
     return [
       {
@@ -308,7 +417,7 @@ export function usePermissions(role: UserRole | undefined) {
       },
     ];
   }, [can]);
-
+  
   // Get role info
   const getRoleInfo = useMemo(() => {
     switch (normalizedRole) {
@@ -344,7 +453,15 @@ export function usePermissions(role: UserRole | undefined) {
           borderColor: 'border-orange-200',
           description: 'Teamleitung - Vollzugriff auf Team- und Personalverwaltung',
         };
-      case 'EMPLOYEE':
+      case 'EXTERN':
+        return {
+          name: 'Extern',
+          color: 'text-gray-600',
+          bgColor: 'bg-gray-50',
+          borderColor: 'border-gray-200',
+          description: 'Externer Mitarbeiter - Eingeschränkter Zugriff',
+        };
+      case 'USER':
       default:
         return {
           name: 'Mitarbeiter',
@@ -355,10 +472,13 @@ export function usePermissions(role: UserRole | undefined) {
         };
     }
   }, [normalizedRole]);
-
+  
   return {
     role: normalizedRole,
     can,
+    hasPermission,
+    effectiveKeys,
+    useDbPermissions,
     getAllPermissions,
     roleInfo: getRoleInfo,
   };

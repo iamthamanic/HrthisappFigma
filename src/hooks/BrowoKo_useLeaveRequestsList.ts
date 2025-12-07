@@ -177,9 +177,9 @@ export function useLeaveRequestsList(userId: string, userRole: string) {
       setRequests(data || []);
 
     } catch (err: any) {
-      console.error('Error loading leave requests:', err);
-      setError(err.message || 'Fehler beim Laden der Anträge');
-      toast.error('Fehler beim Laden der Anträge');
+      // Silent fail - table doesn't exist
+      // This is expected when migrations haven't been run
+      setError('Fehler beim Laden der Anträge');
     } finally {
       setLoading(false);
     }

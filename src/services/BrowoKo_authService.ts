@@ -30,6 +30,7 @@ import { ApiService } from './base/ApiService';
 import { AuthenticationError, ValidationError, NotFoundError } from './base/ApiError';
 import type { User as AuthUser, Session } from '@supabase/supabase-js';
 import type { User, UserWithAvatar, Organization } from '../types/database';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 /**
  * SIGN IN RESPONSE
@@ -490,6 +491,66 @@ export class AuthService extends ApiService {
         throw error;
       }
       this.handleError(error, 'AuthService.refreshSession');
+    }
+  }
+
+  /**
+   * GET PERMISSIONS
+   * ===============
+   * Get effective permissions for a user from the backend
+   * This calls the BrowoKoordinator-Server API to get permissions
+   * from the effective_user_permissions view
+   */
+  async getPermissions(userId: string): Promise<string[]> {
+    this.logRequest('getPermissions', 'AuthService', { userId });
+
+    if (!userId) {
+      throw new ValidationError(
+        'User ID ist erforderlich',
+        'AuthService.getPermissions',
+        { userId: 'User ID ist erforderlich' }
+      );
+    }
+
+    try {
+      // Get current session token for authentication
+      const { data: { session } } = await this.supabase.auth.getSession();
+      
+      if (!session) {
+        console.warn('⚠️ No session found, returning empty permissions');
+        return [];
+      }
+
+      // Call the BrowoKoordinator-Server API
+      const url = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/me/permissions`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Permissions fetch failed:', response.status, errorText);
+        throw new Error(`Failed to fetch permissions: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      this.logResponse('AuthService.getPermissions', { 
+        permissionCount: data.permissions?.length || 0 
+      });
+      
+      return data.permissions || [];
+    } catch (error: any) {
+      console.error('❌ Error fetching permissions:', error);
+      
+      // Don't throw - return empty array as fallback
+      // This allows the app to continue working with role-based permissions
+      return [];
     }
   }
 }

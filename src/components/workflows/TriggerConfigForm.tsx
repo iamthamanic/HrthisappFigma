@@ -11,8 +11,9 @@ import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Checkbox } from '../ui/checkbox';
 import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
-import { ChevronDown, Building2, MapPin, UserCog } from 'lucide-react';
+import { ChevronDown, Building2, MapPin, UserCog, RefreshCw, Database } from 'lucide-react';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
 interface TriggerConfigFormProps {
@@ -44,6 +45,8 @@ export function TriggerConfigForm({ node, config, updateConfig }: TriggerConfigF
   const [locations, setLocations] = useState<Location[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Load data from backend
   useEffect(() => {
@@ -56,6 +59,29 @@ export function TriggerConfigForm({ node, config, updateConfig }: TriggerConfigF
   
   const loadEntities = async () => {
     try {
+      setError(null);
+      console.log('📥 Loading entities from backend...');
+      
+      // HEALTH CHECK FIRST
+      console.log('🏥 Checking if server is alive...');
+      try {
+        const healthResponse = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/health`,
+          {
+            headers: { Authorization: `Bearer ${publicAnonKey}` }
+          }
+        );
+        console.log('🏥 Health check status:', healthResponse.status);
+        if (!healthResponse.ok) {
+          throw new Error(`Server nicht erreichbar! Health check failed with status ${healthResponse.status}`);
+        }
+        const healthData = await healthResponse.json();
+        console.log('✅ Server is alive:', healthData);
+      } catch (healthError: any) {
+        console.error('💀 Server is DOWN:', healthError);
+        throw new Error(`BrowoKoordinator-Server ist nicht erreichbar. Bitte prüfe die Edge Function Logs in Supabase! Error: ${healthError.message}`);
+      }
+      
       // Load Departments
       const deptResponse = await fetch(
         `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/departments`,
@@ -63,9 +89,25 @@ export function TriggerConfigForm({ node, config, updateConfig }: TriggerConfigF
           headers: { Authorization: `Bearer ${publicAnonKey}` }
         }
       );
-      if (deptResponse.ok) {
-        const deptData = await deptResponse.json();
-        setDepartments(deptData.departments || []);
+      
+      console.log('📦 Departments response status:', deptResponse.status);
+      
+      if (!deptResponse.ok) {
+        const errorText = await deptResponse.text();
+        console.error('❌ Departments fetch failed:', errorText);
+        throw new Error(`Departments API error: ${deptResponse.status} - ${errorText}`);
+      }
+      
+      const deptData = await deptResponse.json();
+      console.log('✅ Departments loaded:', deptData);
+      const depts = deptData.departments || [];
+      setDepartments(depts);
+      
+      // Auto-seed if empty (FIXED: removed !loading check)
+      if (depts.length === 0) {
+        console.log('⚠️ No departments found, triggering auto-seed...');
+        await seedEntitiesIfEmpty();
+        return; // Will reload after seeding
       }
       
       // Load Locations
@@ -75,8 +117,12 @@ export function TriggerConfigForm({ node, config, updateConfig }: TriggerConfigF
           headers: { Authorization: `Bearer ${publicAnonKey}` }
         }
       );
+      
+      console.log('📍 Locations response status:', locResponse.status);
+      
       if (locResponse.ok) {
         const locData = await locResponse.json();
+        console.log('✅ Locations loaded:', locData);
         setLocations(locData.locations || []);
       }
       
@@ -87,15 +133,59 @@ export function TriggerConfigForm({ node, config, updateConfig }: TriggerConfigF
           headers: { Authorization: `Bearer ${publicAnonKey}` }
         }
       );
+      
+      console.log('👔 Roles response status:', roleResponse.status);
+      
       if (roleResponse.ok) {
         const roleData = await roleResponse.json();
+        console.log('✅ Roles loaded:', roleData);
         setRoles(roleData.roles || []);
       }
       
       setLoading(false);
-    } catch (error) {
-      console.error('Error loading entities:', error);
+    } catch (error: any) {
+      console.error('❌ Error loading entities:', error);
+      setError(error.message || 'Failed to load data');
       setLoading(false);
+    }
+  };
+  
+  // Auto-seed entities if database is empty
+  const seedEntitiesIfEmpty = async () => {
+    if (seeding) return; // Prevent duplicate seeding
+    
+    try {
+      setSeeding(true);
+      console.log('🌱 Auto-seeding entities...');
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/seed-entities`,
+        {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${publicAnonKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Auto-seed completed:', result);
+        
+        // Wait 1 second and reload
+        setTimeout(() => {
+          loadEntities();
+        }, 1000);
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Auto-seed failed:', errorText);
+        setError(`Seed failed: ${response.status} - ${errorText}`);
+      }
+    } catch (error: any) {
+      console.error('❌ Error seeding entities:', error);
+      setError(error.message || 'Seed failed');
+    } finally {
+      setSeeding(false);
     }
   };
   
@@ -273,6 +363,35 @@ export function TriggerConfigForm({ node, config, updateConfig }: TriggerConfigF
             </div>
           </Collapsible>
         </div>
+      </div>
+      
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-500 text-red-900 p-4 rounded mt-4">
+          <Database className="h-5 w-5 inline-block mr-2" />
+          {error}
+        </div>
+      )}
+      
+      {/* Refresh Button */}
+      <div className="mt-4">
+        <Button
+          variant="outline"
+          onClick={loadEntities}
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+              Lade...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Daten aktualisieren
+            </>
+          )}
+        </Button>
       </div>
     </div>
   );

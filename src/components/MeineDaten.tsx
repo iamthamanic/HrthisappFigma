@@ -17,11 +17,12 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar as CalendarComponent } from './ui/calendar';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { 
-  Upload, User, Calendar, Timer, FileText, Shield, ArrowLeft, Plus, CheckCircle2, XCircle, Clock
+  Upload, User, Calendar, Timer, FileText, Shield, ArrowLeft, Plus, CheckCircle2, XCircle, Clock, MessageSquare
 } from './icons/BrowoKoIcons';
 import { toast } from 'sonner@2.0.3';
 import PermissionsView from './PermissionsView';
 import { DocumentsTabContent } from './BrowoKo_DocumentsTabContent';
+import { PerformanceReviewsTabContent } from './BrowoKo_PerformanceReviewsTabContent';
 import { ImageCropDialog } from './ImageCropDialog';
 import { EditWarningDialog } from './BrowoKo_EditWarningDialog';
 import { AuditLogsView } from './BrowoKo_AuditLogsView';
@@ -74,6 +75,12 @@ const TABS: TabConfig[] = [
     label: 'Meine Dokumente',
     mobileLabel: 'Docs',
     icon: FileText
+  },
+  { 
+    value: 'performance', 
+    label: 'Mitarbeitergespräche',
+    mobileLabel: 'Gespräche',
+    icon: MessageSquare
   },
 ];
 
@@ -312,14 +319,35 @@ export default function MeineDaten() {
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-6">
         <Tabs value={activeTab} onValueChange={changeTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          {/* Desktop: Auto layout with wrap */}
+          <TabsList className="hidden md:flex md:flex-wrap md:h-auto md:gap-2 md:p-2 w-full">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               return (
-                <TabsTrigger key={tab.value} value={tab.value}>
+                <TabsTrigger 
+                  key={tab.value} 
+                  value={tab.value}
+                  className="flex-shrink-0"
+                >
                   {Icon && <Icon className="w-4 h-4 mr-2" />}
-                  <span className="hidden md:inline">{tab.label}</span>
-                  <span className="md:hidden">{tab.mobileLabel || tab.label}</span>
+                  {tab.label}
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+
+          {/* Mobile: 3 columns grid */}
+          <TabsList className="md:hidden grid grid-cols-3 gap-2 h-auto p-2">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <TabsTrigger 
+                  key={tab.value} 
+                  value={tab.value}
+                  className="flex flex-col items-center gap-1 py-3 text-xs"
+                >
+                  {Icon && <Icon className="w-4 h-4" />}
+                  <span>{tab.mobileLabel || tab.label}</span>
                 </TabsTrigger>
               );
             })}
@@ -588,6 +616,11 @@ export default function MeineDaten() {
           {/* DOCUMENTS TAB */}
           <TabsContent value="documents">
             <DocumentsTabContent userId={profile?.id} userName={`${profile?.first_name} ${profile?.last_name}`} />
+          </TabsContent>
+
+          {/* PERFORMANCE REVIEWS TAB */}
+          <TabsContent value="performance">
+            <PerformanceReviewsTabContent />
           </TabsContent>
         </Tabs>
       </div>

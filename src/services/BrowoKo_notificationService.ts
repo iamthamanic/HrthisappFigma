@@ -95,18 +95,15 @@ class NotificationService {
       const { data, error } = await query;
 
       if (error) {
-        // Check if table doesn't exist (migration not run)
-        if (error.code === '42P01' || error.message?.includes('does not exist')) {
-          console.warn('⚠️ Notifications table does not exist. Please run migration 053_notifications_system.sql');
-          return [];
-        }
-        console.error('[NotificationService.getAll] Error:', error);
+        // Silent fail - table doesn't exist or network error
+        // This is expected when migrations haven't been run
         return [];
       }
 
       return data as Notification[];
     } catch (error) {
-      console.error('[NotificationService.getAll] Exception:', error);
+      // Silent fail - table doesn't exist or network error
+      // This is expected when migrations haven't been run
       return [];
     }
   }

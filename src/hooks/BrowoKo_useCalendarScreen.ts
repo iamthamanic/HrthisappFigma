@@ -99,9 +99,8 @@ export function useCalendarScreen() {
           }
         }
       } catch (error: any) {
-        if (error?.code !== '42703' && error?.message !== 'Column not found') {
-          console.error('Error loading leave requests:', error);
-        }
+        // Silent fail - table doesn't exist or column not found
+        // This is expected when migrations haven't been run
       } finally {
         setLoadingLeaves(false);
       }

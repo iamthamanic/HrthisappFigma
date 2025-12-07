@@ -18,6 +18,46 @@ export class ApiError extends Error {
 }
 
 /**
+ * Unauthorized Error (401)
+ */
+export class UnauthorizedError extends ApiError {
+  constructor(message: string = 'Authentication required', context?: Record<string, any>) {
+    super(401, message, context);
+    this.name = 'UnauthorizedError';
+  }
+}
+
+/**
+ * Forbidden Error (403)
+ */
+export class ForbiddenError extends ApiError {
+  constructor(message: string = 'Insufficient permissions', context?: Record<string, any>) {
+    super(403, message, context);
+    this.name = 'ForbiddenError';
+  }
+}
+
+/**
+ * Not Found Error (404)
+ */
+export class NotFoundError extends ApiError {
+  constructor(message: string = 'Resource not found', context?: Record<string, any>) {
+    super(404, message, context);
+    this.name = 'NotFoundError';
+  }
+}
+
+/**
+ * Bad Request Error (400)
+ */
+export class BadRequestError extends ApiError {
+  constructor(message: string = 'Invalid request', context?: Record<string, any>) {
+    super(400, message, context);
+    this.name = 'BadRequestError';
+  }
+}
+
+/**
  * Format error response
  */
 export function errorResponse(

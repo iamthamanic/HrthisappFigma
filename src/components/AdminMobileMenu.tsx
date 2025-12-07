@@ -11,7 +11,7 @@ import {
   Package,
   Activity
 } from './icons/BrowoKoIcons';
-import { Zap, Workflow } from 'lucide-react';
+import { Zap, Workflow, MessageSquare } from 'lucide-react';
 import { useAdminMenuRouting } from '../hooks/BrowoKo_useAdminMenuRouting';
 
 interface AdminMobileMenuProps {
@@ -73,6 +73,12 @@ export default function AdminMobileMenu({ onClose }: AdminMobileMenuProps) {
       icon: GraduationCap, 
       description: 'Videos, Tests & Lerneinheiten',
       customRoute: '/admin/learning-management'
+    },
+    { 
+      label: 'Mitarbeitergespräche', 
+      icon: MessageSquare, 
+      description: 'Halbjahresgespräche & Feedbackbögen',
+      customRoute: '/admin/performance-reviews'
     },
     { 
       label: 'Workflows', 

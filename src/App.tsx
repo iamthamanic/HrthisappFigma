@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, Suspense, lazy } from 'react';
 import { Toaster } from 'sonner@2.0.3';
 import { useAuthStore } from './stores/BrowoKo_authStore';
+import { usePermissions } from './hooks/usePermissions';
 import { applySecurityHeaders } from './utils/security/BrowoKo_securityHeaders';
 import './utils/supabase/diagnostics'; // Auto-run diagnostics in dev mode
 import Login from './components/Login';
@@ -59,6 +60,9 @@ const SystemHealthScreen = lazy(() => import('./screens/admin/SystemHealthScreen
 const WorkflowsScreen = lazy(() => import('./screens/admin/WorkflowsScreen'));
 const WorkflowDetailScreen = lazy(() => import('./screens/admin/WorkflowDetailScreen'));
 const EmailTemplatesScreen = lazy(() => import('./screens/admin/EmailTemplatesScreen'));
+const PerformanceReviewManagementScreen = lazy(() => import('./screens/admin/PerformanceReviewManagementScreen'));
+const PerformanceReviewTemplateBuilderScreen = lazy(() => import('./screens/admin/PerformanceReviewTemplateBuilderScreen'));
+const EmployeePerformanceReviewScreen = lazy(() => import('./screens/EmployeePerformanceReviewScreen'));
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -88,16 +92,17 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Admin Route Component - Only HR, ADMIN, and SUPERADMIN have admin access
-// TEAMLEAD is now only a team-specific role (team_members.role)
-function AdminRoute({ children }: { children: React.ReactNode }) {
+// Admin Route Component - Uses new Permission System with fallback
+// Checks 'access_admin_area' permission instead of hardcoded roles
+type AdminRouteProps = {
+  children: React.ReactNode;
+};
+
+export function AdminRoute({ children }: AdminRouteProps) {
   const { profile, initialized, connectionError } = useAuthStore();
+  const { hasPermission, useDbPermissions } = usePermissions(profile?.role);
 
-  // Show connection error immediately if detected
-  if (connectionError) {
-    return <ConnectionError onRetry={() => window.location.reload()} />;
-  }
-
+  // Auth noch nicht initialisiert → nichts rendern oder optional Loader
   if (!initialized) {
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center">
@@ -110,12 +115,26 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Only ADMIN, HR, and SUPERADMIN have access to admin area
-  const isAdmin = profile?.role === 'HR' || 
-                  profile?.role === 'ADMIN' || 
-                  profile?.role === 'SUPERADMIN';
+  // Optional: spezieller Screen bei Verbindungsfehler
+  if (connectionError) {
+    return <ConnectionError onRetry={() => window.location.reload()} />;
+  }
 
-  if (!isAdmin) {
+  // Primär über Permissions steuern
+  const canAccessAdminArea =
+    hasPermission('access_admin_area') ||
+    (
+      // Fallback: falls aus irgendeinem Grund keine DB-Permissions genutzt werden,
+      // weiterhin die alten Rollen-Checks verwenden.
+      !useDbPermissions &&
+      (
+        profile?.role === 'ADMIN' ||
+        profile?.role === 'HR' ||
+        profile?.role === 'SUPERADMIN'
+      )
+    );
+
+  if (!canAccessAdminArea) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -355,6 +374,12 @@ export default function App() {
               <ChatScreen />
             </Suspense>
           } />
+          {/* NEW: Employee Performance Review Screen (für Mitarbeiter) */}
+          <Route path="employee-performance-review/:reviewId" element={
+            <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
+              <EmployeePerformanceReviewScreen />
+            </Suspense>
+          } />
         </Route>
 
         {/* Admin Routes with Admin Layout */}
@@ -508,6 +533,18 @@ export default function App() {
           <Route path="email-templates" element={
             <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
               <EmailTemplatesScreen />
+            </Suspense>
+          } />
+          {/* NEW: Performance Review Management System */}
+          <Route path="performance-reviews" element={
+            <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
+              <PerformanceReviewManagementScreen />
+            </Suspense>
+          } />
+          {/* NEW: Performance Review Template Builder System */}
+          <Route path="performance-reviews/template-builder/:templateId" element={
+            <Suspense fallback={<LoadingState loading={true} type="spinner" />}>
+              <PerformanceReviewTemplateBuilderScreen />
             </Suspense>
           } />
         </Route>

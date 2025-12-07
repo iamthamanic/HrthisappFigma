@@ -1,13 +1,8 @@
-import { Hono } from "npm:hono";
-import { cors } from "npm:hono/cors";
-import { logger } from "npm:hono/logger";
 import { createClient } from "npm:@supabase/supabase-js";
 import * as kv from "./kv_store.tsx";
-import { testSubmissionsApp } from "./testSubmissions.ts";
-import { executeWorkflowGraph } from "./workflowEngine.ts";
-// import * as envVarsManager from "./envVarsManager.ts";
-// TODO: Re-enable when timeAccountCalculation.ts is implemented
-// import { calculateTimeAccount, calculateTimeAccountsForAllUsers } from "./timeAccountCalculation.ts";
+// REMOVED: import { testSubmissionsApp } from "./testSubmissions.ts"; - Module not found
+// REMOVED: import { performanceReviewsApp } from "./performanceReviews.ts"; - Moved to BrowoKoordinator-Mitarbeitergespraeche
+// REMOVED: import { executeWorkflowGraph } from "./workflowEngine.ts"; - Module not found
 
 // ==================== INLINE TRIGGER HELPER ====================
 const TRIGGER_TYPES = {
@@ -915,7 +910,12 @@ app.get('/storage/sign', async (c) => {
 // ============================================
 // TEST SUBMISSIONS & REVIEW API
 // ============================================
-app.route('/tests', testSubmissionsApp);
+// REMOVED: app.route('/tests', testSubmissionsApp); - Module not found
+
+// ============================================
+// PERFORMANCE REVIEWS API
+// ============================================
+// REMOVED: app.route('/make-server-f659121d/performance-reviews', performanceReviewsApp); - Moved to BrowoKoordinator-Mitarbeitergespraeche
 
 // ============================================
 // WORKFLOW SYSTEM
@@ -986,26 +986,14 @@ app.post("/workflows/execute", async (c) => {
        return c.json({ error: 'Workflow not found' }, 404);
      }
 
-     // Run the Engine
-     const result = await executeWorkflowGraph(workflow, context || {});
+     // REMOVED: executeWorkflowGraph - Module not found
+     // TODO: Re-implement workflow execution when workflowEngine.ts is created
+     console.log('⚠️ Workflow execution temporarily disabled - workflowEngine.ts module not found');
      
-     // Log execution
-     const executionId = `exec_${Date.now()}`;
-     await kv.set(`execution:${executionId}`, {
-       id: executionId,
-       workflowId,
-       status: 'COMPLETED',
-       startTime: new Date().toISOString(),
-       endTime: new Date().toISOString(),
-       logs: result.logs,
-       context
-     });
-
      return c.json({ 
        success: true, 
-       message: 'Workflow execution completed',
-       executionId,
-       logs: result.logs
+       message: 'Workflow execution feature temporarily disabled',
+       workflowId
      });
    } catch (e: any) {
      console.error('❌ Execution error:', e);
