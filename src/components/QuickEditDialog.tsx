@@ -67,7 +67,7 @@ export default function QuickEditDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="form-card">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Edit className="w-5 h-5" />
@@ -78,12 +78,13 @@ export default function QuickEditDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="form-grid">
           {/* Position */}
-          <div className="space-y-2">
-            <Label htmlFor="position">Position</Label>
+          <div className="form-field">
+            <Label htmlFor="position" className="form-label">Position</Label>
             <Input
               id="position"
+              className="form-input"
               value={formData.position}
               onChange={(e) => setFormData({ ...formData, position: e.target.value })}
               placeholder="z.B. Software Developer"
@@ -91,8 +92,8 @@ export default function QuickEditDialog({
           </div>
 
           {/* Department */}
-          <div className="space-y-2">
-            <Label htmlFor="department">Abteilung</Label>
+          <div className="form-field">
+            <Label htmlFor="department" className="form-label">Abteilung</Label>
             {departments.length > 0 ? (
               <Select 
                 value={formData.department} 
@@ -112,6 +113,7 @@ export default function QuickEditDialog({
             ) : (
               <Input
                 id="department"
+                className="form-input"
                 value={formData.department}
                 onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                 placeholder="z.B. IT"
@@ -120,8 +122,8 @@ export default function QuickEditDialog({
           </div>
 
           {/* Location */}
-          <div className="space-y-2">
-            <Label htmlFor="location">Standort</Label>
+          <div className="form-field">
+            <Label htmlFor="location" className="form-label">Standort</Label>
             <Select 
               value={formData.location_id} 
               onValueChange={(value) => setFormData({ ...formData, location_id: value })}
@@ -141,10 +143,11 @@ export default function QuickEditDialog({
           </div>
 
           {/* Weekly Hours */}
-          <div className="space-y-2">
-            <Label htmlFor="weekly_hours">Wochenstunden</Label>
+          <div className="form-field">
+            <Label htmlFor="weekly_hours" className="form-label">Wochenstunden</Label>
             <Input
               id="weekly_hours"
+              className="form-input"
               type="number"
               min="0"
               max="60"
@@ -154,10 +157,11 @@ export default function QuickEditDialog({
           </div>
 
           {/* Vacation Days */}
-          <div className="space-y-2">
-            <Label htmlFor="vacation_days">Urlaubstage</Label>
+          <div className="form-field">
+            <Label htmlFor="vacation_days" className="form-label">Urlaubstage</Label>
             <Input
               id="vacation_days"
+              className="form-input"
               type="number"
               min="0"
               max="50"
@@ -177,7 +181,7 @@ export default function QuickEditDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
+        <div className="form-footer">
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Abbrechen
           </Button>
@@ -185,7 +189,7 @@ export default function QuickEditDialog({
             {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Speichern
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

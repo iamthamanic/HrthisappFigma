@@ -54,15 +54,18 @@ export default function HRTHIS_CoinStatsDialog({ open, onOpenChange }: CoinStats
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="form-card max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Coin Statistiken</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Coins className="w-5 h-5 text-yellow-600" />
+            Coin-Verlauf für {profile?.first_name} {profile?.last_name}
+          </DialogTitle>
           <DialogDescription>
-            Deine vollständige Coin-Übersicht
+            Gesamter Transaktionsverlauf und Statistiken
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="form-grid">
           {/* Current Balance - Hero Card */}
           <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-orange-200 rounded-lg p-6">
             <div className="flex items-center justify-between">

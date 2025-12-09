@@ -216,7 +216,7 @@ export default function RequestLeaveDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="form-card max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isAdmin && selectedUserId !== profile?.id
@@ -230,11 +230,11 @@ export default function RequestLeaveDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="form-grid">
           {/* User Selector - Only for Admins */}
           {isAdmin && (
-            <div className="space-y-2">
-              <Label htmlFor="user-select">
+            <div className="form-field">
+              <Label htmlFor="user-select" className="form-label">
                 Mitarbeiter <span className="text-red-500">*</span>
               </Label>
               <Select value={selectedUserId} onValueChange={setSelectedUserId}>
@@ -265,54 +265,56 @@ export default function RequestLeaveDialog({
           )}
 
           {/* Leave Type */}
-          <div className="space-y-2">
-            <Label>Art der Abwesenheit</Label>
+          <div className="form-field">
+            <Label className="form-label">Art der Abwesenheit</Label>
             <div className="grid grid-cols-3 gap-3">
               <Button
                 type="button"
                 variant={leaveType === 'VACATION' ? 'default' : 'outline'}
-                className="h-20 flex flex-col gap-2"
+                className="w-full min-h-[80px] px-3 py-3 flex flex-col gap-2 items-center justify-center whitespace-normal"
                 onClick={() => setLeaveType('VACATION')}
               >
-                <Umbrella className="w-6 h-6" />
-                <span className="text-sm">Urlaub</span>
+                <Umbrella className="w-6 h-6 flex-shrink-0" />
+                <span className="text-sm text-center leading-snug">Urlaub</span>
               </Button>
               <Button
                 type="button"
                 variant={leaveType === 'SICK' ? 'default' : 'outline'}
-                className="h-20 flex flex-col gap-2"
+                className="w-full min-h-[80px] px-3 py-3 flex flex-col gap-2 items-center justify-center whitespace-normal"
                 onClick={() => setLeaveType('SICK')}
               >
-                <Heart className="w-6 h-6" />
-                <span className="text-sm">Krankmeldung</span>
+                <Heart className="w-6 h-6 flex-shrink-0" />
+                <span className="text-sm text-center leading-snug">Krankmeldung</span>
               </Button>
               <Button
                 type="button"
                 variant={leaveType === 'UNPAID_LEAVE' ? 'default' : 'outline'}
-                className="h-20 flex flex-col gap-2"
+                className="w-full min-h-[80px] px-3 py-3 flex flex-col gap-2 items-center justify-center whitespace-normal"
                 onClick={() => setLeaveType('UNPAID_LEAVE')}
               >
-                <Calendar className="w-6 h-6" />
-                <span className="text-sm">Unbezahlte Abwesenheit</span>
+                <Calendar className="w-6 h-6 flex-shrink-0" />
+                <span className="text-sm text-center leading-snug">Unbezahlte Abwesenheit</span>
               </Button>
             </div>
           </div>
 
           {/* Date Range */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Startdatum</Label>
+            <div className="form-field">
+              <Label className="form-label">Startdatum</Label>
               <Input
                 type="date"
+                className="form-input [&::-webkit-calendar-picker-indicator]:brightness-0"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
               />
             </div>
-            <div className="space-y-2">
-              <Label>Enddatum</Label>
+            <div className="form-field">
+              <Label className="form-label">Enddatum</Label>
               <Input
                 type="date"
+                className="form-input [&::-webkit-calendar-picker-indicator]:brightness-0"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 min={startDate || new Date().toISOString().split('T')[0]}
@@ -408,7 +410,7 @@ export default function RequestLeaveDialog({
           <input type="hidden" value={federalState} />
         </div>
 
-        <DialogFooter>
+        <div className="form-footer">
           <Button
             type="button"
             variant="outline"
@@ -425,7 +427,7 @@ export default function RequestLeaveDialog({
           >
             {submitting || uploading ? 'Wird gespeichert...' : 'Antrag einreichen'}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

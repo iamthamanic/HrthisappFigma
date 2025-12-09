@@ -62,7 +62,7 @@ export default function BenefitPurchaseDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="form-card sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-orange-500" />
@@ -73,7 +73,7 @@ export default function BenefitPurchaseDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="form-grid">
           {/* Benefit Info */}
           <div className="p-4 bg-gradient-to-br from-orange-50 to-yellow-50 rounded-lg border border-orange-200">
             <div className="flex items-start gap-3">

@@ -56,7 +56,7 @@ export default function QuickNoteDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="form-card">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
@@ -67,18 +67,18 @@ export default function QuickNoteDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="form-grid">
           {/* Note Text */}
-          <div className="space-y-2">
-            <Label htmlFor="note">Notiz *</Label>
+          <div className="form-field">
+            <Label htmlFor="note" className="form-label">Notiz *</Label>
             <Textarea
               id="note"
+              className="form-input resize-none"
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
               placeholder="Schreibe eine Notiz über diesen Mitarbeiter..."
               rows={6}
               disabled={saving}
-              className="resize-none"
             />
             <p className="text-xs text-gray-500">
               {noteText.length} Zeichen
@@ -111,7 +111,7 @@ export default function QuickNoteDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
+        <div className="form-footer">
           <Button variant="outline" onClick={handleClose} disabled={saving}>
             Abbrechen
           </Button>
@@ -122,7 +122,7 @@ export default function QuickNoteDialog({
             {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Notiz speichern
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

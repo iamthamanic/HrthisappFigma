@@ -88,7 +88,7 @@ export default function ExportDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="form-card max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Download className="w-5 h-5" />
@@ -99,10 +99,10 @@ export default function ExportDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 flex-1 overflow-hidden">
+        <div className="form-grid flex-1 overflow-hidden">
           {/* Format Selection */}
-          <div className="space-y-3">
-            <Label>Export-Format</Label>
+          <div className="form-field">
+            <Label className="form-label">Export-Format</Label>
             <RadioGroup value={format} onValueChange={(value: 'csv' | 'excel') => setFormat(value)}>
               <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
                 <RadioGroupItem value="excel" id="excel" />
@@ -128,10 +128,11 @@ export default function ExportDialog({
           </div>
 
           {/* Filename */}
-          <div className="space-y-2">
-            <Label htmlFor="filename">Dateiname</Label>
+          <div className="form-field">
+            <Label htmlFor="filename" className="form-label">Dateiname</Label>
             <Input
               id="filename"
+              className="form-input"
               value={filename}
               onChange={(e) => setFilename(e.target.value)}
               placeholder="mitarbeiter_export"
@@ -139,9 +140,9 @@ export default function ExportDialog({
           </div>
 
           {/* Column Selection */}
-          <div className="space-y-2 flex-1 overflow-hidden flex flex-col">
+          <div className="form-field flex-1 overflow-hidden flex flex-col">
             <div className="flex items-center justify-between">
-              <Label>Zu exportierende Spalten ({selectedColumns.length}/{EXPORT_COLUMNS.length})</Label>
+              <Label className="form-label">Zu exportierende Spalten ({selectedColumns.length}/{EXPORT_COLUMNS.length})</Label>
               <div className="flex gap-2">
                 <Button
                   variant="ghost"
@@ -191,7 +192,7 @@ export default function ExportDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
+        <div className="form-footer">
           <Button variant="outline" onClick={onClose}>
             Abbrechen
           </Button>
@@ -203,7 +204,7 @@ export default function ExportDialog({
             <Download className="w-4 h-4" />
             Exportieren
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

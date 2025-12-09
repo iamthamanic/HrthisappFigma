@@ -83,14 +83,15 @@ export default function DepartmentManager({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+        <div className="card-header-with-actions">
+          <div className="card-header-title">
             <Building2 className="w-5 h-5" />
-            Abteilungen
-          </CardTitle>
+            <CardTitle>Abteilungen</CardTitle>
+          </div>
           <Button
+            type="button"
             variant="outline"
-            size="sm"
+            className="card-header-action"
             onClick={() => setShowForm(!showForm)}
           >
             {showForm ? (

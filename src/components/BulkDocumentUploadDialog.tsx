@@ -174,7 +174,7 @@ export default function BulkDocumentUploadDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="form-card sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Dokument an mehrere Mitarbeiter senden</DialogTitle>
           <DialogDescription>
@@ -183,10 +183,10 @@ export default function BulkDocumentUploadDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+        <div className="form-grid max-h-[60vh] overflow-y-auto">
           {/* Selected Users */}
-          <div className="space-y-2">
-            <Label>Ausgewählte Mitarbeiter ({selectedUsers.length})</Label>
+          <div className="form-field">
+            <Label className="form-label">Ausgewählte Mitarbeiter ({selectedUsers.length})</Label>
             <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 max-h-24 overflow-y-auto">
               {selectedUsers.slice(0, 10).map((user) => (
                 <Badge key={user.id} variant="secondary" className="text-xs">
@@ -202,9 +202,9 @@ export default function BulkDocumentUploadDialog({
           </div>
 
           {/* Documents List */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label>Dokumente ({documents.length})</Label>
+          <div className="form-field">
+            <div className="flex items-center justify-between mb-2">
+              <Label className="form-label">Dokumente ({documents.length})</Label>
               <Button
                 type="button"
                 variant="outline"
@@ -369,7 +369,7 @@ export default function BulkDocumentUploadDialog({
           </div>
         </div>
 
-        <DialogFooter>
+        <div className="form-footer">
           <Button variant="outline" onClick={handleClose} disabled={isUploading}>
             Abbrechen
           </Button>
@@ -393,7 +393,7 @@ export default function BulkDocumentUploadDialog({
               </>
             )}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

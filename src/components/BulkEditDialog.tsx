@@ -68,7 +68,7 @@ export default function BulkEditDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="form-card">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {icon}
@@ -79,11 +79,11 @@ export default function BulkEditDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="form-grid">
           {/* Location Edit */}
           {editType === 'location' && (
-            <div className="space-y-2">
-              <Label htmlFor="location">Neuer Standort *</Label>
+            <div className="form-field">
+              <Label htmlFor="location" className="form-label">Neuer Standort *</Label>
               <Select value={locationId} onValueChange={setLocationId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Standort wählen" />
@@ -102,8 +102,8 @@ export default function BulkEditDialog({
 
           {/* Department Edit */}
           {editType === 'department' && (
-            <div className="space-y-2">
-              <Label htmlFor="department">Neue Abteilung *</Label>
+            <div className="form-field">
+              <Label htmlFor="department" className="form-label">Neue Abteilung *</Label>
               {departments.length > 0 ? (
                 <Select value={department} onValueChange={setDepartment}>
                   <SelectTrigger>
@@ -150,7 +150,7 @@ export default function BulkEditDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
+        <div className="form-footer">
           <Button variant="outline" onClick={handleClose} disabled={saving}>
             Abbrechen
           </Button>
@@ -164,7 +164,7 @@ export default function BulkEditDialog({
             {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Für {selectedUsers.length} Mitarbeiter speichern
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

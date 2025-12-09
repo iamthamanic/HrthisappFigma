@@ -121,7 +121,7 @@ export function EquipmentAddDialog({ open, onClose, onSave }: EquipmentAddDialog
 
   return (
     <Dialog open={open} onOpenChange={handleCancel}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="form-card max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="w-5 h-5" />
@@ -129,15 +129,16 @@ export function EquipmentAddDialog({ open, onClose, onSave }: EquipmentAddDialog
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="form-grid">
           {/* Equipment Name */}
-          <div className="space-y-2">
-            <Label htmlFor="name" className="flex items-center gap-2">
+          <div className="form-field">
+            <Label htmlFor="name" className="form-label flex items-center gap-2">
               <Package className="w-4 h-4" />
               Equipment Name *
             </Label>
             <Input
               id="name"
+              className="form-input"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="z.B. Werkzeugkoffer, Erste-Hilfe-Set, Warndreieck..."
@@ -146,13 +147,14 @@ export function EquipmentAddDialog({ open, onClose, onSave }: EquipmentAddDialog
           </div>
 
           {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description" className="flex items-center gap-2">
+          <div className="form-field">
+            <Label htmlFor="description" className="form-label flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Beschreibung
             </Label>
             <Textarea
               id="description"
+              className="form-input"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Zusätzliche Informationen zum Equipment..."
@@ -161,13 +163,14 @@ export function EquipmentAddDialog({ open, onClose, onSave }: EquipmentAddDialog
           </div>
 
           {/* Serial Number */}
-          <div className="space-y-2">
-            <Label htmlFor="serial_number" className="flex items-center gap-2">
+          <div className="form-field">
+            <Label htmlFor="serial_number" className="form-label flex items-center gap-2">
               <Hash className="w-4 h-4" />
               Seriennummer / ID
             </Label>
             <Input
               id="serial_number"
+              className="form-input"
               value={formData.serial_number}
               onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
               placeholder="z.B. EQ-2024-001"
@@ -177,13 +180,14 @@ export function EquipmentAddDialog({ open, onClose, onSave }: EquipmentAddDialog
           {/* Dates Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Purchase Date */}
-            <div className="space-y-2">
-              <Label htmlFor="purchase_date" className="flex items-center gap-2">
+            <div className="form-field">
+              <Label htmlFor="purchase_date" className="form-label flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 Anschaffungsdatum
               </Label>
               <Input
                 id="purchase_date"
+                className="form-input"
                 type="date"
                 value={formData.purchase_date}
                 onChange={(e) => setFormData({ ...formData, purchase_date: e.target.value })}
@@ -191,13 +195,14 @@ export function EquipmentAddDialog({ open, onClose, onSave }: EquipmentAddDialog
             </div>
 
             {/* Next Maintenance */}
-            <div className="space-y-2">
-              <Label htmlFor="next_maintenance" className="flex items-center gap-2">
+            <div className="form-field">
+              <Label htmlFor="next_maintenance" className="form-label flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 Nächste Wartung
               </Label>
               <Input
                 id="next_maintenance"
+                className="form-input"
                 type="date"
                 value={formData.next_maintenance}
                 onChange={(e) => setFormData({ ...formData, next_maintenance: e.target.value })}
@@ -206,7 +211,7 @@ export function EquipmentAddDialog({ open, onClose, onSave }: EquipmentAddDialog
           </div>
 
           {/* Status */}
-          <div className="space-y-2">
+          <div className="form-field">
             <Label htmlFor="status">Status</Label>
             <Select
               value={formData.status}
@@ -226,8 +231,8 @@ export function EquipmentAddDialog({ open, onClose, onSave }: EquipmentAddDialog
           </div>
 
           {/* Images Upload */}
-          <div className="space-y-2">
-            <Label htmlFor="images" className="flex items-center gap-2">
+          <div className="form-field">
+            <Label htmlFor="images" className="form-label flex items-center gap-2">
               <ImageIcon className="w-4 h-4" />
               Bilder
             </Label>

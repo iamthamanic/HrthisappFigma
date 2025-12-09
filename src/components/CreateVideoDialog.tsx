@@ -164,7 +164,7 @@ export default function CreateVideoDialog({ open, onOpenChange, onCreateVideo }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="form-card max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Video className="w-5 h-5" />
@@ -175,12 +175,13 @@ export default function CreateVideoDialog({ open, onOpenChange, onCreateVideo }:
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="form-grid">
           {/* Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title">Titel *</Label>
+          <div className="form-field">
+            <Label htmlFor="title" className="form-label">Titel *</Label>
             <Input
               id="title"
+              className="form-input"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="z.B. Einführung in GDPR"
@@ -189,10 +190,11 @@ export default function CreateVideoDialog({ open, onOpenChange, onCreateVideo }:
           </div>
 
           {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Beschreibung</Label>
+          <div className="form-field">
+            <Label htmlFor="description" className="form-label">Beschreibung</Label>
             <Textarea
               id="description"
+              className="form-input"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Was lernt man in diesem Video?"
@@ -201,11 +203,12 @@ export default function CreateVideoDialog({ open, onOpenChange, onCreateVideo }:
           </div>
 
           {/* YouTube URL */}
-          <div className="space-y-2">
-            <Label htmlFor="video_url">YouTube URL *</Label>
+          <div className="form-field">
+            <Label htmlFor="video_url" className="form-label">YouTube URL *</Label>
             <div className="relative">
               <Input
                 id="video_url"
+                className="form-input"
                 value={formData.video_url}
                 onChange={(e) => handleUrlChange(e.target.value)}
                 placeholder="https://www.youtube.com/watch?v=..."
@@ -227,8 +230,8 @@ export default function CreateVideoDialog({ open, onOpenChange, onCreateVideo }:
 
           {/* Category and Duration */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="category">Kategorie *</Label>
+            <div className="form-field">
+              <Label htmlFor="category" className="form-label">Kategorie *</Label>
               <Select
                 value={formData.category}
                 onValueChange={(value) => setFormData({ ...formData, category: value })}
@@ -246,10 +249,11 @@ export default function CreateVideoDialog({ open, onOpenChange, onCreateVideo }:
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="duration_minutes">Dauer (Minuten) *</Label>
+            <div className="form-field">
+              <Label htmlFor="duration_minutes" className="form-label">Dauer (Minuten) *</Label>
               <Input
                 id="duration_minutes"
+                className="form-input"
                 type="number"
                 min="1"
                 value={formData.duration_minutes}
@@ -263,7 +267,7 @@ export default function CreateVideoDialog({ open, onOpenChange, onCreateVideo }:
             </div>
           </div>
 
-          <DialogFooter>
+          <div className="form-footer">
             <Button
               type="button"
               variant="outline"
@@ -276,7 +280,7 @@ export default function CreateVideoDialog({ open, onOpenChange, onCreateVideo }:
               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Video erstellen
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

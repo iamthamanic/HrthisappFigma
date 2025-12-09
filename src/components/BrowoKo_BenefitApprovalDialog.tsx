@@ -73,14 +73,14 @@ export default function HRTHIS_BenefitApprovalDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="form-card sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {mode === 'approve' ? 'Benefit genehmigen' : 'Benefit ablehnen'}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="py-4 space-y-4">
+        <div className="form-grid">
           {/* User Info */}
           <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
             <Avatar className="h-12 w-12">
@@ -187,7 +187,7 @@ export default function HRTHIS_BenefitApprovalDialog({
           )}
         </div>
 
-        <DialogFooter>
+        <div className="form-footer">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>
             Abbrechen
           </Button>
@@ -210,7 +210,7 @@ export default function HRTHIS_BenefitApprovalDialog({
               ? 'Jetzt genehmigen'
               : 'Jetzt ablehnen'}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

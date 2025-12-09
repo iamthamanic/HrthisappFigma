@@ -437,51 +437,55 @@ export default function PerformanceReviewManagementScreen() {
 
       {/* Create Template Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
+        <DialogContent className="form-card">
           <DialogHeader>
             <DialogTitle>Neues Template erstellen</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Titel *</Label>
+          <div className="form-grid">
+            <div className="form-field">
+              <Label htmlFor="template-title" className="form-label">Titel *</Label>
               <Input
+                id="template-title"
+                className="form-input"
                 value={newTemplateTitle}
                 onChange={(e) => setNewTemplateTitle(e.target.value)}
                 placeholder="z.B. Halbjahresgespräch 2024"
               />
             </div>
-            <div>
-              <Label>Beschreibung</Label>
+            <div className="form-field">
+              <Label htmlFor="template-description" className="form-label">Beschreibung</Label>
               <Textarea
+                id="template-description"
+                className="form-input"
                 value={newTemplateDescription}
                 onChange={(e) => setNewTemplateDescription(e.target.value)}
                 placeholder="Optionale Beschreibung..."
                 rows={3}
               />
             </div>
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                Abbrechen
-              </Button>
-              <Button onClick={handleCreateTemplate} disabled={creating}>
-                {creating ? 'Erstelle...' : 'Template erstellen'}
-              </Button>
-            </div>
+          </div>
+          <div className="form-footer">
+            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              Abbrechen
+            </Button>
+            <Button onClick={handleCreateTemplate} disabled={creating}>
+              {creating ? 'Erstelle...' : 'Template erstellen'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Send Review Dialog */}
       <Dialog open={isSendDialogOpen} onOpenChange={setIsSendDialogOpen}>
-        <DialogContent>
+        <DialogContent className="form-card">
           <DialogHeader>
             <DialogTitle>Gespräch versenden</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Template *</Label>
+          <div className="form-grid">
+            <div className="form-field">
+              <Label htmlFor="select-template" className="form-label">Template *</Label>
               <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                <SelectTrigger>
+                <SelectTrigger id="select-template">
                   <SelectValue placeholder="Template auswählen" />
                 </SelectTrigger>
                 <SelectContent>
@@ -493,10 +497,10 @@ export default function PerformanceReviewManagementScreen() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Mitarbeiter *</Label>
+            <div className="form-field">
+              <Label htmlFor="select-employee" className="form-label">Mitarbeiter *</Label>
               <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
-                <SelectTrigger>
+                <SelectTrigger id="select-employee">
                   <SelectValue placeholder="Mitarbeiter auswählen" />
                 </SelectTrigger>
                 <SelectContent>
@@ -508,22 +512,24 @@ export default function PerformanceReviewManagementScreen() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Frist (optional)</Label>
+            <div className="form-field">
+              <Label htmlFor="due-date" className="form-label">Frist (optional)</Label>
               <Input
+                id="due-date"
+                className="form-input"
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
               />
             </div>
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setIsSendDialogOpen(false)}>
-                Abbrechen
-              </Button>
-              <Button onClick={handleSendReview} disabled={sending}>
-                {sending ? 'Versende...' : 'Gespräch versenden'}
-              </Button>
-            </div>
+          </div>
+          <div className="form-footer">
+            <Button variant="outline" onClick={() => setIsSendDialogOpen(false)}>
+              Abbrechen
+            </Button>
+            <Button onClick={handleSendReview} disabled={sending}>
+              {sending ? 'Versende...' : 'Gespräch versenden'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

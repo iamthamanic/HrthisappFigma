@@ -419,7 +419,7 @@ export default function EmailTemplatesScreen() {
 
         {/* Create Dialog */}
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="form-card max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Neues E-Mail-Template erstellen</DialogTitle>
               <DialogDescription>
@@ -427,24 +427,25 @@ export default function EmailTemplatesScreen() {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4 py-4">
+            <div className="form-grid">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Template Name *</Label>
+                <div className="form-field">
+                  <Label htmlFor="name" className="form-label">Template Name *</Label>
                   <Input
                     id="name"
+                    className="form-input"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="z.B. Willkommens-Email"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="category">Kategorie</Label>
+                <div className="form-field">
+                  <Label htmlFor="category" className="form-label">Kategorie</Label>
                   <select
                     id="category"
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full h-9 px-3 rounded-md border border-gray-200 bg-white"
+                    className="form-input"
                   >
                     {TEMPLATE_CATEGORIES.map((cat) => (
                       <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -453,43 +454,25 @@ export default function EmailTemplatesScreen() {
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="subject">Betreff *</Label>
+              <div className="form-field">
+                <Label htmlFor="subject" className="form-label">Betreff *</Label>
                 <Input
                   id="subject"
+                  className="form-input"
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                   placeholder="z.B. Willkommen bei {{ organizationName }}, {{ employeeName }}!"
                 />
               </div>
 
-              <div>
-                <Label>E-Mail Inhalt *</Label>
+              <div className="form-field">
+                <Label className="form-label">E-Mail Inhalt *</Label>
                 <RichTextEditor
                   value={formData.body_html}
                   onChange={(html) => setFormData({ ...formData, body_html: html })}
                   variables={AVAILABLE_VARIABLES}
                 />
               </div>
-
-              {/* Available Variables */}
-              <Card className="bg-blue-50 border-blue-200">
-                <CardHeader>
-                  <CardTitle className="text-sm">💡 Verfügbare Variablen</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    {AVAILABLE_VARIABLES.map((v) => (
-                      <div key={v.key} className="flex items-center gap-2">
-                        <code className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
-                          {`{{ ${v.key} }}`}
-                        </code>
-                        <span className="text-gray-600">→ {v.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
             </div>
 
             <DialogFooter>
@@ -506,7 +489,7 @@ export default function EmailTemplatesScreen() {
 
         {/* Edit Dialog */}
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="form-card max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Template bearbeiten</DialogTitle>
               <DialogDescription>
@@ -514,23 +497,24 @@ export default function EmailTemplatesScreen() {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4 py-4">
+            <div className="form-grid">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-name">Template Name *</Label>
+                <div className="form-field">
+                  <Label htmlFor="edit-name" className="form-label">Template Name *</Label>
                   <Input
                     id="edit-name"
+                    className="form-input"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="edit-category">Kategorie</Label>
+                <div className="form-field">
+                  <Label htmlFor="edit-category" className="form-label">Kategorie</Label>
                   <select
                     id="edit-category"
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full h-9 px-3 rounded-md border border-gray-200 bg-white"
+                    className="form-input"
                   >
                     {TEMPLATE_CATEGORIES.map((cat) => (
                       <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -539,17 +523,18 @@ export default function EmailTemplatesScreen() {
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="edit-subject">Betreff *</Label>
+              <div className="form-field">
+                <Label htmlFor="edit-subject" className="form-label">Betreff *</Label>
                 <Input
                   id="edit-subject"
+                  className="form-input"
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                 />
               </div>
 
-              <div>
-                <Label>E-Mail Inhalt *</Label>
+              <div className="form-field">
+                <Label className="form-label">E-Mail Inhalt *</Label>
                 <RichTextEditor
                   value={formData.body_html}
                   onChange={(html) => setFormData({ ...formData, body_html: html })}
@@ -558,7 +543,7 @@ export default function EmailTemplatesScreen() {
               </div>
             </div>
 
-            <DialogFooter>
+            <div className="form-footer">
               <Button variant="outline" onClick={() => setShowEditDialog(false)}>
                 Abbrechen
               </Button>
@@ -566,7 +551,7 @@ export default function EmailTemplatesScreen() {
                 <Save className="w-4 h-4 mr-2" />
                 Speichern
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 

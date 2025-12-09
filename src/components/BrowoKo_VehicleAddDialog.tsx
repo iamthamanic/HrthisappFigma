@@ -164,7 +164,7 @@ export function VehicleAddDialog({ open, onOpenChange, onSave }: VehicleAddDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="form-card max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-900">
@@ -175,10 +175,10 @@ export function VehicleAddDialog({ open, onOpenChange, onSave }: VehicleAddDialo
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="form-grid">
           {/* Images Upload */}
-          <div>
-            <Label className="text-sm font-medium text-gray-700 mb-2 block">
+          <div className="form-field">
+            <Label className="form-label">
               Bilder (erstes Bild = Vorschaubild)
             </Label>
             
@@ -229,36 +229,36 @@ export function VehicleAddDialog({ open, onOpenChange, onSave }: VehicleAddDialo
           </div>
 
           {/* Kennzeichen */}
-          <div>
-            <Label htmlFor="kennzeichen" className="text-sm font-medium text-gray-700 mb-2 block">
+          <div className="form-field">
+            <Label htmlFor="kennzeichen" className="form-label">
               Kennzeichen *
             </Label>
             <Input
               id="kennzeichen"
+              className="form-input text-base"
               value={kennzeichen}
               onChange={(e) => setKennzeichen(e.target.value.toUpperCase())}
               placeholder="z.B. B-HR-1234"
-              className="text-base"
             />
           </div>
 
           {/* Modell */}
-          <div>
-            <Label htmlFor="modell" className="text-sm font-medium text-gray-700 mb-2 block">
+          <div className="form-field">
+            <Label htmlFor="modell" className="form-label">
               Modell *
             </Label>
             <Input
               id="modell"
+              className="form-input text-base"
               value={modell}
               onChange={(e) => setModell(e.target.value)}
               placeholder="z.B. Mercedes Sprinter 316 CDI"
-              className="text-base"
             />
           </div>
 
           {/* Fahrzeugtyp */}
-          <div>
-            <Label className="text-sm font-medium text-gray-700 mb-2 block">
+          <div className="form-field">
+            <Label className="form-label">
               Fahrzeugtyp *
             </Label>
             <Select value={fahrzeugtyp} onValueChange={setFahrzeugtyp}>
@@ -276,87 +276,87 @@ export function VehicleAddDialog({ open, onOpenChange, onSave }: VehicleAddDialo
           </div>
 
           {/* Ladekapazität */}
-          <div>
-            <Label htmlFor="ladekapazitaet" className="text-sm font-medium text-gray-700 mb-2 block">
+          <div className="form-field">
+            <Label htmlFor="ladekapazitaet" className="form-label">
               Ladekapazität (kg) *
             </Label>
             <Input
               id="ladekapazitaet"
               type="number"
+              className="form-input text-base"
               value={ladekapazitaet}
               onChange={(e) => setLadekapazitaet(e.target.value)}
               placeholder="z.B. 1000"
               min="0"
               step="100"
-              className="text-base"
             />
           </div>
 
           {/* Standort */}
-          <div>
-            <Label htmlFor="standort" className="text-sm font-medium text-gray-700 mb-2 block">
+          <div className="form-field">
+            <Label htmlFor="standort" className="form-label">
               Standort (optional)
             </Label>
             <Input
               id="standort"
+              className="form-input text-base"
               value={standort}
               onChange={(e) => setStandort(e.target.value)}
               placeholder="z.B. Berlin Mitte"
-              className="text-base"
             />
           </div>
 
           {/* Notizen */}
-          <div>
-            <Label htmlFor="notizen" className="text-sm font-medium text-gray-700 mb-2 block">
+          <div className="form-field">
+            <Label htmlFor="notizen" className="form-label">
               Notizen (optional)
             </Label>
             <Input
               id="notizen"
+              className="form-input text-base"
               value={notizen}
               onChange={(e) => setNotizen(e.target.value)}
               placeholder="z.B. Hauptfahrzeug für Lieferungen"
-              className="text-base"
             />
           </div>
 
           {/* Dienst Start */}
-          <div>
-            <Label htmlFor="dienst_start" className="text-sm font-medium text-gray-700 mb-2 block">
+          <div className="form-field">
+            <Label htmlFor="dienst_start" className="form-label">
               Dienst Start (optional)
             </Label>
             <div className="relative">
               <Input
                 id="dienst_start"
                 type="date"
+                className="form-input text-base"
                 value={dienstStart}
                 onChange={(e) => setDienstStart(e.target.value)}
-                className="text-base"
               />
               <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
 
           {/* Letzte Wartung */}
-          <div>
-            <Label htmlFor="letzte_wartung" className="text-sm font-medium text-gray-700 mb-2 block">
+          <div className="form-field">
+            <Label htmlFor="letzte_wartung" className="form-label">
               Letzte Wartung (optional)
             </Label>
             <div className="relative">
               <Input
                 id="letzte_wartung"
                 type="date"
+                className="form-input text-base"
                 value={letzteWartung}
                 onChange={(e) => setLetzteWartung(e.target.value)}
-                className="text-base"
               />
               <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
 
           {/* Documents Upload */}
-          <div>
-            <Label className="text-sm font-medium text-gray-700 mb-2 block">
+          <div className="form-field">
+            <Label className="form-label">
               Dokumente (optional)
             </Label>
             

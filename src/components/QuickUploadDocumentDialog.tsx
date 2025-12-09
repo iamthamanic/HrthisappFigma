@@ -91,7 +91,7 @@ export default function QuickUploadDocumentDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="form-card">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="w-5 h-5" />
@@ -102,19 +102,18 @@ export default function QuickUploadDocumentDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="form-grid">
           {/* File Upload */}
-          <div className="space-y-2">
-            <Label htmlFor="file">Datei auswählen</Label>
-            <div className="relative">
-              <Input
-                id="file"
-                type="file"
-                onChange={handleFileChange}
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                disabled={uploading}
-              />
-            </div>
+          <div className="form-field">
+            <Label htmlFor="file" className="form-label">Datei auswählen</Label>
+            <Input
+              id="file"
+              className="form-input"
+              type="file"
+              onChange={handleFileChange}
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              disabled={uploading}
+            />
             {file && (
               <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
                 <FileText className="w-4 h-4" />
@@ -127,10 +126,11 @@ export default function QuickUploadDocumentDialog({
           </div>
 
           {/* Title */}
-          <div className="space-y-2">
-            <Label htmlFor="title">Dokumenttitel *</Label>
+          <div className="form-field">
+            <Label htmlFor="title" className="form-label">Dokumenttitel *</Label>
             <Input
               id="title"
+              className="form-input"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="z.B. Arbeitsvertrag 2024"
@@ -139,8 +139,8 @@ export default function QuickUploadDocumentDialog({
           </div>
 
           {/* Category */}
-          <div className="space-y-2">
-            <Label htmlFor="category">Kategorie</Label>
+          <div className="form-field">
+            <Label htmlFor="category" className="form-label">Kategorie</Label>
             <Select 
               value={category} 
               onValueChange={(value: DocumentCategory) => setCategory(value)}
@@ -186,7 +186,7 @@ export default function QuickUploadDocumentDialog({
           )}
         </div>
 
-        <DialogFooter className="gap-2">
+        <div className="form-footer">
           <Button variant="outline" onClick={handleClose} disabled={uploading}>
             Abbrechen
           </Button>
@@ -206,7 +206,7 @@ export default function QuickUploadDocumentDialog({
               </>
             )}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

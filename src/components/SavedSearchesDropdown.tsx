@@ -124,7 +124,7 @@ export default function SavedSearchesDropdown({
 
       {/* Save Search Dialog */}
       <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="form-card">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Save className="w-5 h-5" />
@@ -135,11 +135,12 @@ export default function SavedSearchesDropdown({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
+          <div className="form-grid">
+            <div className="form-field">
+              <Label htmlFor="name" className="form-label">Name *</Label>
               <Input
                 id="name"
+                className="form-input"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="z.B. Aktive IT-Mitarbeiter"
@@ -147,10 +148,11 @@ export default function SavedSearchesDropdown({
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Beschreibung (optional)</Label>
+            <div className="form-field">
+              <Label htmlFor="description" className="form-label">Beschreibung (optional)</Label>
               <Textarea
                 id="description"
+                className="form-input"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Kurze Beschreibung der Suche..."
@@ -193,7 +195,7 @@ export default function SavedSearchesDropdown({
             </div>
           </div>
 
-          <DialogFooter className="gap-2">
+          <div className="form-footer">
             <Button 
               variant="outline" 
               onClick={() => setShowSaveDialog(false)}
@@ -209,7 +211,7 @@ export default function SavedSearchesDropdown({
               <Save className="w-4 h-4 mr-2" />
               Speichern
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </>

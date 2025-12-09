@@ -164,7 +164,7 @@ export default function AssignEmployeesDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="form-card max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
             <div>
@@ -187,18 +187,18 @@ export default function AssignEmployeesDialog({
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-6">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
               </div>
             ) : (
-              <>
+              <div className="form-grid">
                 {/* Primary User */}
-                <div className="space-y-3">
+                <div className="form-field">
                   <div className="flex items-center gap-2">
                     <User className="w-5 h-5 text-blue-600" />
-                    <Label className="text-base font-semibold">
+                    <Label className="form-label">
                       Hauptverantwortlicher (Primary)
                     </Label>
                   </div>
@@ -210,7 +210,7 @@ export default function AssignEmployeesDialog({
                     <select
                       value={primaryUserId || ''}
                       onChange={(e) => setPrimaryUserId(e.target.value || undefined)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="form-input"
                     >
                       <option value="">Nicht zugewiesen</option>
                       {employees.map((employee) => (
@@ -223,10 +223,10 @@ export default function AssignEmployeesDialog({
                 </div>
 
                 {/* Backup User */}
-                <div className="space-y-3">
+                <div className="form-field">
                   <div className="flex items-center gap-2">
                     <User className="w-5 h-5 text-orange-600" />
-                    <Label className="text-base font-semibold">
+                    <Label className="form-label">
                       Standard-Vertretung (Backup)
                     </Label>
                   </div>
@@ -238,7 +238,7 @@ export default function AssignEmployeesDialog({
                     <select
                       value={backupUserId || ''}
                       onChange={(e) => setBackupUserId(e.target.value || undefined)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      className="form-input"
                     >
                       <option value="">Nicht zugewiesen</option>
                       {employees.map((employee) => (
@@ -251,10 +251,10 @@ export default function AssignEmployeesDialog({
                 </div>
 
                 {/* Backup Backup User */}
-                <div className="space-y-3">
+                <div className="form-field">
                   <div className="flex items-center gap-2">
                     <User className="w-5 h-5 text-purple-600" />
-                    <Label className="text-base font-semibold">
+                    <Label className="form-label">
                       Vertretung der Vertretung (Backup Backup)
                     </Label>
                   </div>
@@ -266,7 +266,7 @@ export default function AssignEmployeesDialog({
                     <select
                       value={backupBackupUserId || ''}
                       onChange={(e) => setBackupBackupUserId(e.target.value || undefined)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      className="form-input"
                     >
                       <option value="">Nicht zugewiesen</option>
                       {employees.map((employee) => (
@@ -280,10 +280,10 @@ export default function AssignEmployeesDialog({
 
                 {/* Team Lead (nur für Department & Specialization) */}
                 {supportsTeamLead && (
-                  <div className="space-y-3 border-t pt-6">
+                  <div className="form-field border-t pt-6">
                     <div className="flex items-center gap-2">
                       <UserPlus className="w-5 h-5 text-green-600" />
-                      <Label className="text-base font-semibold">
+                      <Label className="form-label">
                         Team Lead (Abteilungsleiter)
                       </Label>
                       <span className="text-xs text-gray-500 ml-2">
@@ -299,7 +299,7 @@ export default function AssignEmployeesDialog({
                         <select
                           value={teamLeadId || ''}
                           onChange={(e) => setTeamLeadId(e.target.value || undefined)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                          className="form-input"
                         >
                           <option value="">Kein Team Lead zugewiesen</option>
                           {teamLeads.length === 0 ? (
@@ -323,10 +323,10 @@ export default function AssignEmployeesDialog({
                 )}
 
                 {/* All Employees (Multi-Select or View-Only List) */}
-                <div className="space-y-3 border-t pt-6">
+                <div className="form-field border-t pt-6">
                   <div className="flex items-center gap-2">
                     <Users className="w-5 h-5 text-gray-600" />
-                    <Label className="text-base font-semibold">
+                    <Label className="form-label">
                       Alle zugewiesenen Mitarbeiter
                     </Label>
                   </div>
@@ -439,7 +439,7 @@ export default function AssignEmployeesDialog({
                     {selectedEmployeeIds.length} Mitarbeiter {readOnly ? 'zugewiesen' : 'ausgewählt'}
                   </div>
                 </div>
-              </>
+              </div>
             )}
           </div>
 

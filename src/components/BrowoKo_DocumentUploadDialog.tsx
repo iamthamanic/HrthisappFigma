@@ -87,84 +87,102 @@ export function DocumentUploadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="form-card">
         <DialogHeader>
-          <DialogTitle>Dokument hochladen</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Upload className="w-5 h-5 text-blue-600" />
+            Dokument hochladen
+          </DialogTitle>
           <DialogDescription>
-            Lade ein neues Dokument in deinen persönlichen Bereich hoch
+            Lade ein neues Dokument hoch. Unterstützte Formate: PDF, Word, Excel, Bilder (max. 10 MB)
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="title">Titel *</Label>
+        <div className="form-grid">
+          <div className="form-field">
+            <Label htmlFor="file" className="form-label">Datei auswählen *</Label>
+            <Input
+              id="file"
+              type="file"
+              className="form-input"
+              onChange={handleFileChange}
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+              disabled={uploading}
+            />
+            {file && (
+              <div className="flex items-center gap-2 mt-2 p-2 bg-gray-50 rounded-lg">
+                <FileText className="w-4 h-4 text-gray-600" />
+                <span className="text-sm text-gray-700 flex-1">{file.name}</span>
+                <span className="text-xs text-gray-500">
+                  ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="form-field">
+            <Label htmlFor="title" className="form-label">Dokumenttitel *</Label>
             <Input
               id="title"
+              className="form-input"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
               placeholder="z.B. Arbeitsvertrag 2024"
-              value={uploadTitle}
-              onChange={(e) => setUploadTitle(e.target.value)}
+              disabled={uploading}
             />
           </div>
 
-          <div>
-            <Label htmlFor="category">Kategorie *</Label>
-            <Select
-              value={uploadCategory}
-              onValueChange={(value) => setUploadCategory(value as 'LOHN' | 'VERTRAG' | 'ZERTIFIKAT' | 'SONSTIGES')}
-            >
-              <SelectTrigger>
+          <div className="form-field">
+            <Label htmlFor="category" className="form-label">Kategorie *</Label>
+            <Select value={category} onValueChange={(value: any) => setCategory(value)}>
+              <SelectTrigger id="category">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem key="browoko-upload-vertrag" value="VERTRAG">Verträge</SelectItem>
-                <SelectItem key="browoko-upload-zertifikat" value="ZERTIFIKAT">Zertifikate</SelectItem>
-                <SelectItem key="browoko-upload-lohn" value="LOHN">Gehaltsabrechnungen</SelectItem>
-                <SelectItem key="browoko-upload-sonstiges" value="SONSTIGES">Sonstiges</SelectItem>
+                <SelectItem value="VERTRAG">Vertrag</SelectItem>
+                <SelectItem value="ZEUGNIS">Zeugnis</SelectItem>
+                <SelectItem value="ZERTIFIKAT">Zertifikat</SelectItem>
+                <SelectItem value="ABMAHNUNG">Abmahnung</SelectItem>
+                <SelectItem value="KRANKSCHREIBUNG">Krankschreibung</SelectItem>
+                <SelectItem value="SONSTIGES">Sonstiges</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div>
-            <Label htmlFor="file">Datei auswählen *</Label>
-            <Input
-              id="file"
-              type="file"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  setUploadFile(file);
-                  if (!uploadTitle) {
-                    setUploadTitle(file.name.split('.')[0]);
-                  }
-                }
-              }}
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Erlaubte Formate: PDF, Word, Bilder (max. 10 MB)
-            </p>
-          </div>
+          {uploadProgress > 0 && uploadProgress < 100 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Upload-Fortschritt</span>
+                <span className="font-medium text-blue-600">{uploadProgress}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-blue-600 h-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
 
-          {uploadFile && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-sm text-blue-900">
-                <strong>Ausgewählt:</strong> {uploadFile.name}
-              </p>
-              <p className="text-xs text-blue-700 mt-1">
-                Größe: {(uploadFile.size / 1024 / 1024).toFixed(2)} MB
-              </p>
+          {uploadComplete && (
+            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <CheckCircle2 className="w-5 h-5 text-green-600" />
+              <span className="text-sm text-green-800">Dokument erfolgreich hochgeladen!</span>
             </div>
           )}
         </div>
 
-        <DialogFooter>
+        <div className="form-footer">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={uploading}>
-            Abbrechen
+            {uploadComplete ? 'Schließen' : 'Abbrechen'}
           </Button>
-          <Button onClick={handleSubmit} disabled={!uploadFile || !uploadTitle || uploading}>
+          <Button 
+            onClick={handleUpload}
+            disabled={uploading || !file || !title || uploadComplete}
+          >
             {uploading ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Wird hochgeladen...
               </>
             ) : (
@@ -174,7 +192,7 @@ export function DocumentUploadDialog({
               </>
             )}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

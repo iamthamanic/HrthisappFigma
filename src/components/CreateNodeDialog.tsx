@@ -107,7 +107,7 @@ export default function CreateNodeDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="form-card max-w-2xl">
         <DialogHeader>
           <DialogTitle>Neuen Node hinzufügen</DialogTitle>
           <DialogDescription>
@@ -115,11 +115,11 @@ export default function CreateNodeDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="form-grid">
           {/* Node Type Selection */}
-          <div>
-            <Label>Node-Typ auswählen</Label>
-            <div className="grid grid-cols-2 gap-3 mt-2">
+          <div className="form-field">
+            <Label className="form-label">Node-Typ auswählen</Label>
+            <div className="grid grid-cols-2 gap-3">
               {NODE_TYPES.map((option) => {
                 const Icon = option.icon;
                 const isSelected = selectedType === option.type;
@@ -165,33 +165,33 @@ export default function CreateNodeDialog({
           </div>
 
           {/* Title Input */}
-          <div>
-            <Label htmlFor="title">Titel *</Label>
+          <div className="form-field">
+            <Label htmlFor="title" className="form-label">Titel *</Label>
             <Input
               id="title"
+              className="form-input"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="z.B. HR-Abteilung, Hauptsitz Berlin, CEO, etc."
               required
-              className="mt-1"
             />
           </div>
 
           {/* Description Input */}
-          <div>
-            <Label htmlFor="description">Beschreibung (optional)</Label>
+          <div className="form-field">
+            <Label htmlFor="description" className="form-label">Beschreibung (optional)</Label>
             <Textarea
               id="description"
+              className="form-input"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Zusätzliche Informationen..."
               rows={3}
-              className="mt-1"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
+          <div className="form-footer">
             <Button type="button" variant="outline" onClick={handleClose}>
               Abbrechen
             </Button>

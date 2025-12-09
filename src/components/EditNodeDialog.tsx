@@ -24,6 +24,7 @@ interface NodeTypeOption {
   icon: typeof MapPin;
   color: string;
   displayName: string;
+  description: string;
 }
 
 const NODE_TYPES: NodeTypeOption[] = [
@@ -32,24 +33,28 @@ const NODE_TYPES: NodeTypeOption[] = [
     icon: MapPin,
     color: '#3B82F6',
     displayName: 'Standort',
+    description: 'Ein physischer Standort oder eine Adresse.',
   },
   {
     type: 'executive',
     icon: UserCog,
     color: '#8B5CF6',
     displayName: 'Geschäftsführung',
+    description: 'Eine führende Position in der Organisation.',
   },
   {
     type: 'department',
     icon: Building2,
     color: '#6B7280',
     displayName: 'Abteilung',
+    description: 'Eine spezifische Abteilung innerhalb der Organisation.',
   },
   {
     type: 'specialization',
     icon: Layers,
     color: '#10B981',
     displayName: 'Spezialisierung',
+    description: 'Eine spezifische Fachrichtung oder Kompetenzbereich.',
   },
 ];
 
@@ -107,90 +112,73 @@ export default function EditNodeDialog({
     return null;
   }
 
+  const currentNode = node;
+  const typeOption = NODE_TYPES.find((t) => t.type === selectedType);
+  const Icon = typeOption?.icon;
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="form-card max-w-2xl">
         <DialogHeader>
           <DialogTitle>Node bearbeiten</DialogTitle>
           <DialogDescription>
-            Bearbeiten Sie die Details dieses Organigram-Elements.
+            Bearbeiten Sie die Details für {currentNode.data.title}.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Node Type Selection */}
-          <div>
-            <Label>Node-Typ</Label>
-            <div className="grid grid-cols-2 gap-3 mt-2">
-              {NODE_TYPES.map((option) => {
-                const Icon = option.icon;
-                const isSelected = selectedType === option.type;
-
-                return (
-                  <button
-                    key={option.type}
-                    type="button"
-                    onClick={() => setSelectedType(option.type)}
-                    className={cn(
-                      'p-3 rounded-lg border-2 transition-all duration-200 text-left',
-                      'hover:shadow-md hover:scale-[1.02]',
-                      isSelected
-                        ? 'border-current shadow-lg ring-2 ring-offset-2'
-                        : 'border-gray-200 hover:border-gray-300'
-                    )}
-                    style={{
-                      borderColor: isSelected ? option.color : undefined,
-                      color: isSelected ? option.color : '#6B7280',
-                    }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="p-2 rounded-lg"
-                        style={{
-                          backgroundColor: `${option.color}20`,
-                        }}
-                      >
-                        <Icon
-                          className="w-4 h-4"
-                          style={{ color: option.color }}
-                        />
-                      </div>
-                      <div className="font-medium text-sm">{option.displayName}</div>
-                    </div>
-                  </button>
-                );
-              })}
+        <form onSubmit={handleSubmit} className="form-grid">
+          {/* Node Type Display (Read-only) */}
+          <div className="form-field">
+            <Label className="form-label">Node-Typ</Label>
+            <div className="p-4 rounded-lg border-2 bg-gray-50">
+              <div className="flex items-start gap-3">
+                <div
+                  className="p-2 rounded-lg"
+                  style={{
+                    backgroundColor: `${typeOption.color}20`,
+                  }}
+                >
+                  <Icon
+                    className="w-5 h-5"
+                    style={{ color: typeOption.color }}
+                  />
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium mb-0.5">{typeOption.displayName}</div>
+                  <div className="text-xs text-gray-500">{typeOption.description}</div>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Title Input */}
-          <div>
-            <Label htmlFor="edit-title">Titel *</Label>
+          <div className="form-field">
+            <Label htmlFor="title" className="form-label">Titel *</Label>
             <Input
-              id="edit-title"
+              id="title"
+              className="form-input"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="z.B. HR-Abteilung, Hauptsitz Berlin, CEO, etc."
               required
-              className="mt-1"
             />
           </div>
 
           {/* Description Input */}
-          <div>
-            <Label htmlFor="edit-description">Beschreibung (optional)</Label>
+          <div className="form-field">
+            <Label htmlFor="description" className="form-label">Beschreibung (optional)</Label>
             <Textarea
-              id="edit-description"
+              id="description"
+              className="form-input"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Zusätzliche Informationen..."
               rows={3}
-              className="mt-1"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
+          <div className="form-footer">
             <Button type="button" variant="outline" onClick={handleClose}>
               Abbrechen
             </Button>
@@ -198,11 +186,11 @@ export default function EditNodeDialog({
               type="submit"
               disabled={!title.trim()}
               style={{
-                backgroundColor: NODE_TYPES.find((t) => t.type === selectedType)?.color,
+                backgroundColor: typeOption.color,
               }}
               className="text-white hover:opacity-90"
             >
-              Speichern
+              Änderungen speichern
             </Button>
           </div>
         </form>

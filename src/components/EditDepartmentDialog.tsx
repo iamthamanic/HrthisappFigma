@@ -85,7 +85,7 @@ export default function EditDepartmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="form-card max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Abteilung bearbeiten</DialogTitle>
           <DialogDescription>
@@ -93,11 +93,12 @@ export default function EditDepartmentDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 pt-4">
+        <div className="form-grid">
           {/* Name */}
-          <div>
-            <Label>Name *</Label>
+          <div className="form-field">
+            <Label className="form-label">Name *</Label>
             <Input
+              className="form-input"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="z.B. HR, Marketing, IT"
@@ -105,9 +106,10 @@ export default function EditDepartmentDialog({
           </div>
 
           {/* Description */}
-          <div>
-            <Label>Beschreibung</Label>
+          <div className="form-field">
+            <Label className="form-label">Beschreibung</Label>
             <Input
+              className="form-input"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Optional: Kurze Beschreibung"
@@ -115,8 +117,8 @@ export default function EditDepartmentDialog({
           </div>
 
           {/* Parent Department */}
-          <div>
-            <Label>Übergeordnete Abteilung</Label>
+          <div className="form-field">
+            <Label className="form-label">Übergeordnete Abteilung</Label>
             <Select value={parentDepartmentId} onValueChange={setParentDepartmentId}>
               <SelectTrigger>
                 <SelectValue placeholder="Keine (Root-Abteilung)" />
@@ -150,8 +152,8 @@ export default function EditDepartmentDialog({
           </div>
 
           {/* Primary User */}
-          <div>
-            <Label>Primärer Verantwortlicher</Label>
+          <div className="form-field">
+            <Label className="form-label">Primärer Verantwortlicher</Label>
             <Select value={primaryUserId} onValueChange={setPrimaryUserId}>
               <SelectTrigger>
                 <SelectValue placeholder="Nicht zugewiesen" />
@@ -168,8 +170,8 @@ export default function EditDepartmentDialog({
           </div>
 
           {/* Backup User */}
-          <div>
-            <Label>Backup Verantwortlicher</Label>
+          <div className="form-field">
+            <Label className="form-label">Backup Verantwortlicher</Label>
             <Select value={backupUserId} onValueChange={setBackupUserId}>
               <SelectTrigger>
                 <SelectValue placeholder="Kein Backup" />
@@ -187,9 +189,10 @@ export default function EditDepartmentDialog({
 
           {/* Position */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>X-Position (px)</Label>
+            <div className="form-field">
+              <Label className="form-label">X-Position (px)</Label>
               <Input
+                className="form-input"
                 type="number"
                 value={xPosition}
                 onChange={(e) => setXPosition(e.target.value)}
@@ -199,9 +202,10 @@ export default function EditDepartmentDialog({
                 Optional: Position wird beim Drag & Drop automatisch gespeichert
               </p>
             </div>
-            <div>
-              <Label>Y-Position (px)</Label>
+            <div className="form-field">
+              <Label className="form-label">Y-Position (px)</Label>
               <Input
+                className="form-input"
                 type="number"
                 value={yPosition}
                 onChange={(e) => setYPosition(e.target.value)}
@@ -209,18 +213,18 @@ export default function EditDepartmentDialog({
               />
             </div>
           </div>
+        </div>
 
-          {/* Buttons */}
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              <X className="w-4 h-4 mr-2" />
-              Abbrechen
-            </Button>
-            <Button onClick={handleSave}>
-              <Save className="w-4 h-4 mr-2" />
-              Speichern
-            </Button>
-          </div>
+        {/* Buttons */}
+        <div className="form-footer">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <X className="w-4 h-4 mr-2" />
+            Abbrechen
+          </Button>
+          <Button onClick={handleSave}>
+            <Save className="w-4 h-4 mr-2" />
+            Speichern
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

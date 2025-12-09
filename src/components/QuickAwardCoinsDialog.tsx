@@ -48,7 +48,7 @@ export default function QuickAwardCoinsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="form-card">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Coins className="w-5 h-5 text-yellow-600" />
@@ -59,11 +59,11 @@ export default function QuickAwardCoinsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="form-grid">
           {/* Coins Amount */}
-          <div className="space-y-4">
+          <div className="form-field">
             <div className="flex items-center justify-between">
-              <Label>Anzahl Coins</Label>
+              <Label className="form-label">Anzahl Coins</Label>
               <div className="flex items-center gap-2 text-2xl font-semibold text-yellow-600">
                 <Coins className="w-6 h-6" />
                 {amount}
@@ -81,7 +81,7 @@ export default function QuickAwardCoinsDialog({
             />
 
             {/* Quick Select Buttons */}
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-4 gap-2 mt-2">
               {[50, 100, 200, 500].map((value) => (
                 <Button
                   key={value}
@@ -97,16 +97,16 @@ export default function QuickAwardCoinsDialog({
           </div>
 
           {/* Reason */}
-          <div className="space-y-2">
-            <Label htmlFor="reason">Grund (optional)</Label>
+          <div className="form-field">
+            <Label htmlFor="reason" className="form-label">Grund (optional)</Label>
             <Textarea
               id="reason"
+              className="form-input resize-none"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="z.B. Tolle Arbeit im Projekt X, Hilfe für Kollegen..."
               rows={4}
               disabled={awarding}
-              className="resize-none"
             />
           </div>
 
@@ -133,7 +133,7 @@ export default function QuickAwardCoinsDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
+        <div className="form-footer">
           <Button variant="outline" onClick={handleClose} disabled={awarding}>
             Abbrechen
           </Button>
@@ -146,7 +146,7 @@ export default function QuickAwardCoinsDialog({
             <Coins className="w-4 h-4 mr-2" />
             {amount} Coins vergeben
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
