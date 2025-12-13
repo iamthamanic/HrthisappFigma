@@ -31,6 +31,11 @@ export async function getDefaultOrganizationId(): Promise<string | null> {
         .maybeSingle();
       
       if (firstOrgError) {
+        // Silently fail if organizations table doesn't exist
+        if (firstOrgError.code === '42P01') {
+          console.warn('Organizations table not found - skipping organization check');
+          return null;
+        }
         console.error('Error fetching first organization:', firstOrgError);
         return null;
       }
@@ -39,12 +44,27 @@ export async function getDefaultOrganizationId(): Promise<string | null> {
     }
 
     if (defaultOrgError) {
+      // Silently fail if organizations table doesn't exist
+      if (defaultOrgError.code === '42P01') {
+        console.warn('Organizations table not found - skipping organization check');
+        return null;
+      }
+      // Silently fail on network errors (Failed to fetch)
+      if (defaultOrgError.message?.includes('Failed to fetch') || defaultOrgError.message?.includes('fetch')) {
+        console.warn('Network error while fetching organization - app will continue');
+        return null;
+      }
       console.error('Error fetching default organization:', defaultOrgError);
       return null;
     }
 
     return defaultOrgData?.id || null;
-  } catch (error) {
+  } catch (error: any) {
+    // Silently fail on network errors
+    if (error?.message?.includes('Failed to fetch') || error?.message?.includes('fetch')) {
+      console.warn('Network error in getDefaultOrganizationId - app will continue');
+      return null;
+    }
     console.error('Error in getDefaultOrganizationId:', error);
     return null;
   }

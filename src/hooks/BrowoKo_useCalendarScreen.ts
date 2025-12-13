@@ -6,23 +6,41 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWithinInterval } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWithinInterval, startOfWeek, endOfWeek, addWeeks, subWeeks } from 'date-fns';
 import { useAuthStore } from '../stores/BrowoKo_authStore';
 import { useAdminStore } from '../stores/BrowoKo_adminStore';
 import { LeaveRequest, User } from '../types/database';
 import { supabase } from '../utils/supabase/client';
 
-export function useCalendarScreen() {
+// Shift type (same as in ShiftPlanningTab)
+interface Shift {
+  id: string;
+  user_id: string;
+  date: string; // "2025-01-20"
+  shift_type: string;
+  start_time: string; // "08:00"
+  end_time: string; // "17:00"
+  location_id?: string;
+  department_id?: string;
+  specialization?: string;
+  notes?: string;
+}
+
+export function useCalendarScreen(selectedLocationId?: string | null) {
   const { profile } = useAuthStore();
   const { users } = useAdminStore();
   
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-  const [viewMode, setViewMode] = useState<'personal' | 'specialization' | 'team' | 'location' | 'company'>('personal');
+  const [viewMode, setViewMode] = useState<'personal' | 'specialization' | 'team' | 'location' | 'company' | 'shifts'>('personal');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [loadingLeaves, setLoadingLeaves] = useState(false);
   const [teamUsers, setTeamUsers] = useState<Map<string, User>>(new Map());
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  
+  // 🔥 NEW: Week state for shift calendar
+  const [selectedWeek, setSelectedWeek] = useState(new Date());
 
   const isAdmin = profile?.role === 'ADMIN' || profile?.role === 'SUPERADMIN' || profile?.role === 'HR' || profile?.role === 'TEAMLEAD';
 
@@ -43,6 +61,26 @@ export function useCalendarScreen() {
 
         if (viewMode === 'personal') {
           query = query.eq('user_id', profile.id);
+        } else if (viewMode === 'location' && selectedLocationId) {
+          // 🔥 NEW: Filter by location
+          // First, get all users from this location
+          const { data: locationUsers, error: locationError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('location_id', selectedLocationId);
+
+          if (locationError) throw locationError;
+          
+          if (locationUsers && locationUsers.length > 0) {
+            const locationUserIds = locationUsers.map(u => u.id);
+            query = query.in('user_id', locationUserIds);
+          } else {
+            // No users at this location - return empty
+            setLeaveRequests([]);
+            setTeamUsers(new Map());
+            setLoadingLeaves(false);
+            return;
+          }
         } else {
           query = query.eq('status', 'APPROVED');
         }
@@ -59,7 +97,7 @@ export function useCalendarScreen() {
           setLeaveRequests(data || []);
           
           // 🔥 PERFORMANCE FIX: Load all unique users ONCE
-          if (viewMode === 'team' && data && data.length > 0) {
+          if ((viewMode === 'team' || viewMode === 'location') && data && data.length > 0) {
             const uniqueUserIds = [...new Set(data.map(leave => leave.user_id))];
             const { data: usersData, error: usersError } = await supabase
               .from('users')
@@ -80,7 +118,7 @@ export function useCalendarScreen() {
             setLeaveRequests(data || []);
             
             // Load team users for fallback too
-            if (viewMode === 'team' && data && data.length > 0) {
+            if ((viewMode === 'team' || viewMode === 'location') && data && data.length > 0) {
               const uniqueUserIds = [...new Set(data.map(leave => leave.user_id))];
               const { data: usersData, error: usersError } = await supabase
                 .from('users')
@@ -107,7 +145,44 @@ export function useCalendarScreen() {
     };
 
     loadLeaveRequests();
-  }, [profile?.id, currentDate, viewMode, refreshTrigger]);
+  }, [profile?.id, currentDate, viewMode, refreshTrigger, selectedLocationId]);
+
+  // Load shifts (🔥 FOR WEEK - not month!)
+  useEffect(() => {
+    const loadShifts = async () => {
+      if (!profile?.id || viewMode !== 'shifts') return;
+
+      try {
+        // Use selectedWeek for shift loading
+        const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 }); // Monday
+        const weekEnd = endOfWeek(selectedWeek, { weekStartsOn: 1 }); // Sunday
+        const start = format(weekStart, 'yyyy-MM-dd');
+        const end = format(weekEnd, 'yyyy-MM-dd');
+
+        // Load shifts for the current week
+        const { data, error } = await supabase
+          .from('shifts')
+          .select('*')
+          .gte('date', start)
+          .lte('date', end)
+          .eq('user_id', profile.id) // Only current user's shifts
+          .order('date', { ascending: true });
+
+        if (error) {
+          console.error('[useCalendarScreen] Error loading shifts:', error);
+          throw error;
+        }
+        
+        setShifts(data || []);
+      } catch (error: any) {
+        console.error('[useCalendarScreen] Failed to load shifts:', error);
+        // Silent fail - table might not exist
+        setShifts([]);
+      }
+    };
+
+    loadShifts();
+  }, [profile?.id, selectedWeek, viewMode, refreshTrigger]);
 
   // Generate calendar days
   const calendarDays = useMemo(() => {
@@ -130,6 +205,12 @@ export function useCalendarScreen() {
       const day = new Date(dateStr);
       return isWithinInterval(day, { start, end });
     });
+  };
+
+  // Get shifts for a specific day
+  const getShiftsForDay = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return (shifts || []).filter(shift => shift.date === dateStr);
   };
 
   // Navigation
@@ -179,6 +260,7 @@ export function useCalendarScreen() {
     teamUsers,
     getRecordsForDay,
     getLeaveRequestsForDay,
+    getShiftsForDay,
     previousMonth,
     nextMonth,
     today,
@@ -186,5 +268,8 @@ export function useCalendarScreen() {
     handleExportCSV,
     handleExportPDF,
     handleExportICal,
+    selectedWeek,
+    setSelectedWeek,
+    shifts, // 🔥 NEW: Export shifts for WeeklyShiftCalendar
   };
 }

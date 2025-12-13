@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, Coffee } from '../components/icons/BrowoKoIcons';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -13,14 +13,33 @@ import RequestLeaveDialog from '../components/RequestLeaveDialog';
 import { CalendarDayCell } from '../components/BrowoKo_CalendarDayCell';
 import { CalendarExportMenu } from '../components/BrowoKo_CalendarExportMenu';
 import { TeamAbsenceAvatar } from '../components/TeamAbsenceAvatar';
+import { BrowoKo_WeeklyShiftCalendar } from '../components/BrowoKo_WeeklyShiftCalendar';
 import { useCalendarScreen } from '../hooks/BrowoKo_useCalendarScreen';
 import { useAuthStore } from '../stores/BrowoKo_authStore';
+import { useAdminStore } from '../stores/BrowoKo_adminStore';
 
 export default function CalendarScreen() {
   const { profile } = useAuthStore();
+  const { locations, departments, loadLocations, loadDepartments } = useAdminStore();
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [detailDialogDay, setDetailDialogDay] = useState<Date | null>(null);
   const [requestLeaveDialogOpen, setRequestLeaveDialogOpen] = useState(false);
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
+    locations.length > 0 ? locations[0].id : null
+  ); // 🔥 NEW: Track selected location for location view
+
+  // 🔥 NEW: Load locations on mount
+  useEffect(() => {
+    loadLocations().catch(err => console.warn('Failed to load locations:', err));
+    loadDepartments().catch(err => console.warn('Failed to load departments:', err));
+  }, []);
+
+  // 🔥 NEW: Update selectedLocationId when locations are loaded
+  useEffect(() => {
+    if (locations.length > 0 && !selectedLocationId) {
+      setSelectedLocationId(locations[0].id);
+    }
+  }, [locations, selectedLocationId]);
 
   const {
     currentDate,
@@ -30,12 +49,12 @@ export default function CalendarScreen() {
     viewMode,
     setViewMode,
     setRefreshTrigger,
-    isAdmin,
     calendarDays,
     users,
     teamUsers, // 🔥 NEW: Pre-loaded user map
     getRecordsForDay,
     getLeaveRequestsForDay,
+    getShiftsForDay,
     previousMonth,
     nextMonth,
     today,
@@ -43,7 +62,22 @@ export default function CalendarScreen() {
     handleExportCSV,
     handleExportPDF,
     handleExportICal,
-  } = useCalendarScreen();
+    selectedWeek,
+    setSelectedWeek,
+    shifts,
+  } = useCalendarScreen(selectedLocationId); // 🔥 Pass selectedLocationId to hook
+
+  // Helper: Get color for specialization (for shift calendar)
+  const getSpecializationColor = (spec: string): string => {
+    const colors: Record<string, string> = {
+      'Baustelle': '#FB923C', // orange-400
+      'BACKSTUBE': '#F97316', // orange-500
+      'GEMÜSE': '#C084FC', // purple-400
+      'SCHUMIBÄCKER ZONE': '#FACC15', // yellow-400
+      'NETZWERKRAUM-APPLE': '#60A5FA', // blue-400
+    };
+    return colors[spec] || '#9CA3AF'; // gray-400 default
+  };
 
   // Month/Year Picker Hook
   const monthYearPicker = useMonthYearPicker({
@@ -155,6 +189,16 @@ export default function CalendarScreen() {
             >
               Firma
             </button>
+            <button
+              onClick={() => setViewMode('shifts')}
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                viewMode === 'shifts'
+                  ? 'bg-blue-50 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Schichten
+            </button>
           </div>
           
           <Button onClick={() => setRequestLeaveDialogOpen(true)}>
@@ -175,7 +219,7 @@ export default function CalendarScreen() {
         
         {/* Mobile Actions */}
         <div className="space-y-2">
-          {/* VIEW MODE TOGGLE - 3x2 Grid on Mobile (5 tabs) */}
+          {/* VIEW MODE TOGGLE - 3x2 Grid on Mobile (6 tabs) */}
           <div className="grid grid-cols-3 gap-2 bg-white border border-gray-200 rounded-lg p-1">
             <button
               onClick={() => setViewMode('personal')}
@@ -226,6 +270,16 @@ export default function CalendarScreen() {
               }`}
             >
               Firma
+            </button>
+            <button
+              onClick={() => setViewMode('shifts')}
+              className={`px-2 py-2 text-sm rounded-md transition-colors ${
+                viewMode === 'shifts'
+                  ? 'bg-blue-50 text-blue-600'
+                  : 'text-gray-600'
+              }`}
+            >
+              Schichten
             </button>
           </div>
           
@@ -290,6 +344,28 @@ export default function CalendarScreen() {
             </div>
           </div>
 
+          {/* 🔥 NEW: Location Tabs (Desktop) */}
+          {viewMode === 'location' && locations.length > 0 && (
+            <div className="hidden md:flex items-center gap-2 mt-4 border-t border-gray-200 pt-4">
+              <span className="text-sm text-gray-600 font-medium mr-2">Standorte:</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                {locations.map((location) => (
+                  <button
+                    key={location.id}
+                    onClick={() => setSelectedLocationId(location.id)}
+                    className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                      selectedLocationId === location.id
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {location.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Mobile Header */}
           <div className="md:hidden space-y-3">
             <div className="flex items-center justify-between">
@@ -323,6 +399,28 @@ export default function CalendarScreen() {
                 </Button>
               </div>
             </div>
+
+            {/* 🔥 NEW: Location Tabs (Mobile) */}
+            {viewMode === 'location' && locations.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <span className="text-sm text-gray-600 font-medium">Standorte:</span>
+                <div className="grid grid-cols-2 gap-2">
+                  {locations.map((location) => (
+                    <button
+                      key={location.id}
+                      onClick={() => setSelectedLocationId(location.id)}
+                      className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                        selectedLocationId === location.id
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-white border border-gray-200 text-gray-700'
+                      }`}
+                    >
+                      {location.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -330,7 +428,26 @@ export default function CalendarScreen() {
           <div className="mb-4 p-3 bg-gray-50 rounded-lg">
             <span className="font-medium text-gray-700 text-sm block mb-2">Legende:</span>
             <div className="grid grid-cols-2 md:flex md:flex-wrap gap-2 md:gap-3 text-xs md:text-sm">
-              {(viewMode === 'personal' || viewMode === 'specialization') ? (
+              {viewMode === 'shifts' ? (
+                <>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 md:w-4 md:h-4 rounded bg-yellow-100 border border-yellow-300"></div>
+                    <span className="text-gray-600">Frühschicht</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 md:w-4 md:h-4 rounded bg-orange-100 border border-orange-300"></div>
+                    <span className="text-gray-600">Spätschicht</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 md:w-4 md:h-4 rounded bg-indigo-100 border border-indigo-300"></div>
+                    <span className="text-gray-600">Nachtschicht</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 md:w-4 md:h-4 rounded bg-blue-100 border border-blue-300"></div>
+                    <span className="text-gray-600">Tagschicht</span>
+                  </div>
+                </>
+              ) : (viewMode === 'personal' || viewMode === 'specialization') ? (
                 <>
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 md:w-4 md:h-4 rounded bg-green-100 border border-green-300"></div>
@@ -371,111 +488,121 @@ export default function CalendarScreen() {
             </div>
           </div>
 
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-0.5 md:gap-1">
-            {/* Weekday Headers */}
-            {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day) => (
-              <div
-                key={day}
-                className="text-center text-xs md:text-sm font-medium text-gray-500 py-1 md:py-2"
-              >
-                {day}
-              </div>
-            ))}
+          {/* Conditional Rendering: Shifts View or Normal Calendar */}
+          {viewMode === 'shifts' ? (
+            <BrowoKo_WeeklyShiftCalendar
+              selectedWeek={selectedWeek}
+              shifts={shifts}
+              users={[profile].filter(Boolean)} // Only current user
+              onWeekChange={setSelectedWeek}
+              getSpecializationColor={getSpecializationColor}
+            />
+          ) : (
+            <div className="grid grid-cols-7 gap-0.5 md:gap-1">
+              {/* Weekday Headers */}
+              {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day) => (
+                <div
+                  key={day}
+                  className="text-center text-xs md:text-sm font-medium text-gray-500 py-1 md:py-2"
+                >
+                  {day}
+                </div>
+              ))}
 
-            {/* Calendar Days */}
-            {calendarDays.map((day) => {
-              const dayRecords = getRecordsForDay(day);
-              const dayLeaves = getLeaveRequestsForDay(day);
-              const totalHours = dayRecords.reduce((sum, r) => sum + (r.total_hours || 0), 0);
-              const totalBreakMinutes = dayRecords.reduce((sum, r) => sum + (r.break_minutes || 0), 0);
-              const isSelected = selectedDay && format(day, 'yyyy-MM-dd') === format(selectedDay, 'yyyy-MM-dd');
-              const hasRecords = dayRecords.length > 0;
-              const hasLeaves = dayLeaves.length > 0;
-              const hasContent = hasRecords || hasLeaves;
+              {/* Calendar Days */}
+              {calendarDays.map((day) => {
+                const dayRecords = getRecordsForDay(day);
+                const dayLeaves = getLeaveRequestsForDay(day);
+                const totalHours = dayRecords.reduce((sum, r) => sum + (r.total_hours || 0), 0);
+                const totalBreakMinutes = dayRecords.reduce((sum, r) => sum + (r.break_minutes || 0), 0);
+                const isSelected = selectedDay && format(day, 'yyyy-MM-dd') === format(selectedDay, 'yyyy-MM-dd');
+                const hasRecords = dayRecords.length > 0;
+                const hasLeaves = dayLeaves.length > 0;
+                const hasContent = hasRecords || hasLeaves;
 
-              // For Team View: Show team member absences
-              if (viewMode === 'team' && hasLeaves) {
-                return (
-                  <div
-                    key={day.toString()}
-                    className={`
-                      min-h-[80px] md:min-h-[120px] p-1 md:p-2 border border-gray-200 bg-white text-xs md:text-sm
-                      ${format(day, 'M') !== format(currentDate, 'M') ? 'bg-gray-50' : ''}
-                    `}
-                  >
-                    <div className="text-xs md:text-sm font-medium text-gray-900 mb-1 md:mb-2">
-                      {format(day, 'd', { locale: de })}
-                    </div>
-                    <div className="space-y-0.5 md:space-y-1">
-                      {dayLeaves.slice(0, 2).map((leave, idx) => {
-                        const user = teamUsers.get(leave.user_id);
-                        if (!user) return null;
-                        
-                        return (
-                          <TeamAbsenceAvatar
-                            key={`${leave.user_id}-${idx}`}
-                            user={user}
-                            leaveType={leave.type}
-                            startDate={leave.start_date}
-                            endDate={leave.end_date}
-                          />
-                        );
-                      })}
-                      {dayLeaves.length > 2 && (
-                        <div className="text-[10px] md:text-xs text-gray-500 px-1 md:px-2">
-                          +{dayLeaves.length - 2}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              }
-
-              // Personal View or Team View without leaves
-              return (
-                <TooltipProvider key={day.toString()}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div>
-                        <CalendarDayCell
-                          day={day}
-                          currentDate={currentDate}
-                          records={dayRecords}
-                          leaveRequests={dayLeaves}
-                          viewMode={viewMode}
-                          onClick={() => handleDayClick(day)}
-                        />
+                // For Team View: Show team member absences
+                if ((viewMode === 'team' || viewMode === 'location') && hasLeaves) {
+                  return (
+                    <div
+                      key={day.toString()}
+                      className={`
+                        min-h-[80px] md:min-h-[120px] p-1 md:p-2 border border-gray-200 bg-white text-xs md:text-sm
+                        ${format(day, 'M') !== format(currentDate, 'M') ? 'bg-gray-50' : ''}
+                      `}
+                    >
+                      <div className="text-xs md:text-sm font-medium text-gray-900 mb-1 md:mb-2">
+                        {format(day, 'd', { locale: de })}
                       </div>
-                    </TooltipTrigger>
-                    {hasContent && (
-                      <TooltipContent className="bg-gray-900 text-white p-3 rounded-lg">
-                        <div className="space-y-2 text-sm">
-                          {hasRecords && (
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <Clock className="w-3 h-3" />
-                                <span>{formatHoursMinutes(totalHours)}</span>
-                              </div>
-                              {totalBreakMinutes > 0 && (
-                                <div className="flex items-center gap-2 text-xs text-gray-400">
-                                  <Coffee className="w-3 h-3" />
-                                  <span>{totalBreakMinutes} Min Pause</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          <p className="text-xs text-gray-400 mt-2 border-t border-gray-700 pt-1">
-                            Klicken für Details
-                          </p>
+                      <div className="space-y-0.5 md:space-y-1">
+                        {dayLeaves.slice(0, 2).map((leave, idx) => {
+                          const user = teamUsers.get(leave.user_id);
+                          if (!user) return null;
+                          
+                          return (
+                            <TeamAbsenceAvatar
+                              key={`${leave.user_id}-${idx}`}
+                              user={user}
+                              leaveType={leave.type}
+                              startDate={leave.start_date}
+                              endDate={leave.end_date}
+                            />
+                          );
+                        })}
+                        {dayLeaves.length > 2 && (
+                          <div className="text-[10px] md:text-xs text-gray-500 px-1 md:px-2">
+                            +{dayLeaves.length - 2}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Personal View or Team View without leaves
+                return (
+                  <TooltipProvider key={day.toString()}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <CalendarDayCell
+                            day={day}
+                            currentDate={currentDate}
+                            records={dayRecords}
+                            leaveRequests={dayLeaves}
+                            viewMode={viewMode}
+                            onClick={() => handleDayClick(day)}
+                          />
                         </div>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
-              );
-            })}
-          </div>
+                      </TooltipTrigger>
+                      {hasContent && (
+                        <TooltipContent className="bg-gray-900 text-white p-3 rounded-lg">
+                          <div className="space-y-2 text-sm">
+                            {hasRecords && (
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Clock className="w-3 h-3" />
+                                  <span>{formatHoursMinutes(totalHours)}</span>
+                                </div>
+                                {totalBreakMinutes > 0 && (
+                                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                                    <Coffee className="w-3 h-3" />
+                                    <span>{totalBreakMinutes} Min Pause</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            <p className="text-xs text-gray-400 mt-2 border-t border-gray-700 pt-1">
+                              Klicken für Details
+                            </p>
+                          </div>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
 

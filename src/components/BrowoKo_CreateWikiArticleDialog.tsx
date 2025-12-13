@@ -29,7 +29,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from './ui/collapsible';
-import { BrowoKo_RichTextEditor } from './BrowoKo_RichTextEditor';
+import { RichTextEditor } from './BrowoKo_RichTextEditor';
 import { Upload, X, FileText, File, Database, Globe, Headphones, ChevronDown, Building2, MapPin, Award } from 'lucide-react';
 import { supabase } from '../utils/supabase/client';
 import { toast } from 'sonner@2.0.3';
@@ -248,7 +248,7 @@ export function BrowoKo_CreateWikiArticleDialog({
           {/* Rich Text Editor */}
           <div className="space-y-2">
             <Label>Inhalt *</Label>
-            <BrowoKo_RichTextEditor
+            <RichTextEditor
               value={contentHtml}
               onChange={(html, text) => {
                 setContentHtml(html);

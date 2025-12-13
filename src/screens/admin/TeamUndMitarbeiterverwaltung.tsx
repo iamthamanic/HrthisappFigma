@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/button';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { AlertTriangle, Users, Plus, Download } from '../../components/icons/BrowoKoIcons';
+import { AlertTriangle, Users, Plus, Download, Briefcase } from '../../components/icons/BrowoKoIcons';
 import { useAdminStore } from '../../stores/BrowoKo_adminStore';
 import { useAuthStore } from '../../stores/BrowoKo_authStore';
 import { useTeamManagement } from '../../hooks/BrowoKo_useTeamManagement';
@@ -21,6 +21,7 @@ import SavedSearchesDropdown from '../../components/SavedSearchesDropdown';
 import EmployeesList from '../../components/admin/BrowoKo_EmployeesList';
 import TeamsList from '../../components/admin/BrowoKo_TeamsList';
 import TeamDialog from '../../components/admin/BrowoKo_TeamDialog';
+import { PositionsTab } from '../../components/positions/BrowoKo_PositionsTab';
 import { exportToCSV, exportToExcel, formatUserDataForExport } from '../../utils/exportUtils';
 import { toast } from 'sonner@2.0.3';
 import type { BulkActionType } from '../../components/BulkActionsBar';
@@ -68,7 +69,7 @@ export default function TeamUndMitarbeiterverwaltung() {
   );
 
   // UI States
-  const [activeTab, setActiveTab] = useState<'employees' | 'teams'>('employees');
+  const [activeTab, setActiveTab] = useState<'employees' | 'teams' | 'positions'>('employees');
   const [showMigrationAlert, setShowMigrationAlert] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
   
@@ -539,8 +540,8 @@ export default function TeamUndMitarbeiterverwaltung() {
         </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'employees' | 'teams')} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'employees' | 'teams' | 'positions')} className="w-full">
+        <TabsList className="grid w-full max-w-2xl grid-cols-3">
           <TabsTrigger value="employees">
             <Users className="w-4 h-4 mr-2" />
             Mitarbeiter
@@ -548,6 +549,10 @@ export default function TeamUndMitarbeiterverwaltung() {
           <TabsTrigger value="teams">
             <Users className="w-4 h-4 mr-2" />
             Teams
+          </TabsTrigger>
+          <TabsTrigger value="positions">
+            <Briefcase className="w-4 h-4 mr-2" />
+            Positionen
           </TabsTrigger>
         </TabsList>
 
@@ -671,6 +676,11 @@ export default function TeamUndMitarbeiterverwaltung() {
             onEditTeam={(team) => handleOpenTeamDialog(team)}
             onDeleteTeam={teamManagement.deleteTeam}
           />
+        </TabsContent>
+
+        {/* Positions Tab */}
+        <TabsContent value="positions" className="space-y-6 mt-6">
+          <PositionsTab />
         </TabsContent>
       </Tabs>
 

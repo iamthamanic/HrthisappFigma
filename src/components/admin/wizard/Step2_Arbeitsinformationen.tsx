@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Checkbox } from '../../ui/checkbox';
 import { Briefcase, Clock, Calendar } from '../../icons/BrowoKoIcons';
+import { usePositionsStore } from '../../../stores/BrowoKo_positionsStore';
+import { useEffect } from 'react';
 
 interface Step2Props {
   formData: any;
@@ -18,6 +20,12 @@ interface Step2Props {
 }
 
 export default function Step2_Arbeitsinformationen({ formData, onUpdate, departments, locations }: Step2Props) {
+  const { positions, loadPositions } = usePositionsStore();
+
+  useEffect(() => {
+    loadPositions();
+  }, [loadPositions]);
+
   return (
     <div className="space-y-6">
       {/* Beschäftigungsdaten */}
@@ -31,14 +39,25 @@ export default function Step2_Arbeitsinformationen({ formData, onUpdate, departm
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="position">Position *</Label>
-              <Input
-                id="position"
-                value={formData.position}
-                onChange={(e) => onUpdate({ position: e.target.value })}
-                placeholder="z.B. Senior Entwickler"
-                required
-              />
+              <Label htmlFor="position_id">Position *</Label>
+              <Select
+                value={formData.position_id || ''}
+                onValueChange={(value) => onUpdate({ position_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Position wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  {positions.map((position) => (
+                    <SelectItem key={position.id} value={position.id}>
+                      {position.name} {position.level ? `(${position.level})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500 mt-1">
+                Position kann im Admin-Bereich unter "Positionen" angelegt werden
+              </p>
             </div>
             <div>
               <Label htmlFor="department">Abteilung *</Label>

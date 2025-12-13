@@ -134,7 +134,7 @@ export default function BenefitsScreen() {
         
         // Show toast for new unlocks
         newUnlocks.forEach((unlock) => {
-          toast.success(`Achievement freigeschaltet: ${unlock.title}!`, {
+          toast.success(`Coin-Achievement freigeschaltet: ${unlock.title}!`, {
             description: `Du hast ${unlock.required_coins} Coins erreicht!`,
           });
         });
@@ -312,7 +312,7 @@ export default function BenefitsScreen() {
 
     try {
       await coinAchievementsService.claimAchievement(user.id, achievementId);
-      toast.success('Achievement erfolgreich eingelöst!');
+      toast.success('Coin-Achievement erfolgreich eingelöst!');
       
       // Reload achievements
       const updatedAchievements = await coinAchievementsService.getCoinAchievementsWithProgress(user.id);
@@ -515,7 +515,7 @@ export default function BenefitsScreen() {
             </TabsTrigger>
             <TabsTrigger value="achievements" className="flex-shrink-0">
               <Trophy className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Achievements</span>
+              <span className="hidden sm:inline">Coin-Achievements</span>
               {achievements.filter((a) => a.is_unlocked && !a.is_claimed).length > 0 && (
                 <Badge className="ml-1 sm:ml-2 bg-orange-600 hover:bg-orange-600 border-0 text-xs">
                   {achievements.filter((a) => a.is_unlocked && !a.is_claimed).length}
@@ -747,29 +747,119 @@ export default function BenefitsScreen() {
         {/* TAB: Admin Management (v3.9.2: + Achievement & Coin Distribution) */}
         {isAdmin && (
           <TabsContent value="management" className="space-y-4 md:space-y-6">
-            {/* Admin Action Buttons - Responsive */}
-            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
-              <Button onClick={handleCreateBenefit} className="w-full sm:w-auto">
-                <Plus className="w-4 h-4 mr-2" />
-                Benefit hinzufügen
-              </Button>
-              <Button onClick={() => handleOpenAchievementDialog()} className="w-full sm:w-auto">
-                <Trophy className="w-4 h-4 mr-2" />
-                Neues Achievement erstellen
-              </Button>
-              <Button onClick={() => setCoinDistributionDialogOpen(true)} className="w-full sm:w-auto">
-                <Coins className="w-4 h-4 mr-2" />
-                Coins verteilen
-              </Button>
-            </div>
+            {/* 🔥 NEW: Admin Subtabs */}
+            <Tabs defaultValue="benefits" className="w-full">
+              <TabsList className="w-full sm:w-auto">
+                <TabsTrigger value="benefits" className="flex-1 sm:flex-initial">
+                  <ShoppingBag className="w-4 h-4 mr-2" />
+                  Benefits
+                </TabsTrigger>
+                <TabsTrigger value="coin-achievements" className="flex-1 sm:flex-initial">
+                  <Trophy className="w-4 h-4 mr-2" />
+                  Coin-Achievements
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Benefits List */}
-            <BrowoKo_AdminBenefitsList
-              benefits={adminBenefits}
-              onEdit={handleEditBenefit}
-              onDelete={handleDeleteBenefit}
-              onCreate={handleCreateBenefit}
-            />
+              {/* SUBTAB: Benefits Management */}
+              <TabsContent value="benefits" className="space-y-4 mt-6">
+                {/* Admin Action Buttons - Responsive */}
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
+                  <Button onClick={handleCreateBenefit} className="w-full sm:w-auto">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Benefit hinzufügen
+                  </Button>
+                  <Button onClick={() => setCoinDistributionDialogOpen(true)} className="w-full sm:w-auto">
+                    <Coins className="w-4 h-4 mr-2" />
+                    Coins verteilen
+                  </Button>
+                </div>
+
+                {/* Benefits List */}
+                <BrowoKo_AdminBenefitsList
+                  benefits={adminBenefits}
+                  onEdit={handleEditBenefit}
+                  onDelete={handleDeleteBenefit}
+                  onCreate={handleCreateBenefit}
+                />
+              </TabsContent>
+
+              {/* SUBTAB: Coin-Achievements Management */}
+              <TabsContent value="coin-achievements" className="space-y-4 mt-6">
+                {/* Admin Action Buttons */}
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
+                  <Button onClick={() => handleOpenAchievementDialog()} className="w-full sm:w-auto">
+                    <Trophy className="w-4 h-4 mr-2" />
+                    Neues Coin-Achievement erstellen
+                  </Button>
+                </div>
+
+                {/* Achievements List */}
+                {adminAchievements.length === 0 ? (
+                  <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+                    <Trophy className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 mb-2">Keine Coin-Achievements vorhanden</p>
+                    <p className="text-sm text-gray-400">
+                      Erstelle dein erstes Coin-Achievement, um Mitarbeiter zu motivieren!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {adminAchievements.map((achievement) => (
+                      <div
+                        key={achievement.id}
+                        className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          {/* Achievement Info */}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="text-3xl">{achievement.icon}</div>
+                              <div>
+                                <h3 className="font-semibold text-gray-900">{achievement.title}</h3>
+                                <p className="text-sm text-gray-600">{achievement.description}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4 mt-3 text-sm">
+                              <div className="flex items-center gap-2">
+                                <Coins className="w-4 h-4 text-yellow-600" />
+                                <span className="font-medium text-gray-700">
+                                  {achievement.required_coins.toLocaleString('de-DE')} Coins benötigt
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Trophy className="w-4 h-4 text-blue-600" />
+                                <span className="font-medium text-gray-700">
+                                  +{achievement.reward_amount} Coins Belohnung
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenAchievementDialog(achievement)}
+                            >
+                              Bearbeiten
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleAchievementDelete(achievement.id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              Löschen
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         )}
 
