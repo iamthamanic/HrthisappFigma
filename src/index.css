@@ -992,10 +992,6 @@
     margin-right: calc(var(--spacing) * 3);
   }
 
-  .-mb-8 {
-    margin-bottom: calc(var(--spacing) * -8);
-  }
-
   .mb-0\.5 {
     margin-bottom: calc(var(--spacing) * .5);
   }
@@ -1298,10 +1294,6 @@
     height: 1.15rem;
   }
 
-  .h-\[16px\] {
-    height: 16px;
-  }
-
   .h-\[20px\] {
     height: 20px;
   }
@@ -1600,10 +1592,6 @@
 
   .w-96 {
     width: calc(var(--spacing) * 96);
-  }
-
-  .w-\[16px\] {
-    width: 16px;
   }
 
   .w-\[90px\] {
@@ -2426,10 +2414,6 @@
     border-color: var(--color-white) !important;
   }
 
-  .border-\[rgba\(0\,0\,0\,0\.1\)\] {
-    border-color: #0000001a;
-  }
-
   .border-amber-200 {
     border-color: var(--color-amber-200);
   }
@@ -2620,10 +2604,6 @@
 
   .\!bg-purple-500 {
     background-color: var(--color-purple-500) !important;
-  }
-
-  .bg-\[\#00a63e\] {
-    background-color: #00a63e;
   }
 
   .bg-\[\#155dfc\] {
@@ -3823,10 +3803,6 @@
     color: #4a5565;
   }
 
-  .text-\[\#6a7282\] {
-    color: #6a7282;
-  }
-
   .text-\[\#155dfc\] {
     color: #155dfc;
   }
@@ -4718,12 +4694,6 @@
   @media (hover: hover) {
     .hover\:bg-\[\#0d4bc9\]:hover {
       background-color: #0d4bc9;
-    }
-  }
-
-  @media (hover: hover) {
-    .hover\:bg-\[\#008a34\]:hover {
-      background-color: #008a34;
     }
   }
 
