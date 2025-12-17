@@ -7,8 +7,8 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
-// Performance Reviews haben eine eigene Edge Function: BrowoKoordinator-Mitarbeitergespraeche
-const EDGE_FUNCTION_URL = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Mitarbeitergespraeche/make-server-f659121d/performance-reviews`;
+// Performance Reviews are served by BrowoKoordinator-Server
+const EDGE_FUNCTION_URL = `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/performance-reviews`;
 
 export interface Question {
   id: string;

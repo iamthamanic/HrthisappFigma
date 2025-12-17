@@ -16,6 +16,7 @@ import { registerWorkflowRoutes } from "./routes-workflows.ts";
 import { registerItEquipmentRoutes } from "./routes-itEquipment.ts";
 import { registerEntityRoutes } from "./routes-entities.ts";
 import { registerPermissionRoutes } from "./routes-permissions.ts";
+import { registerPerformanceReviewRoutes } from "./routes-performanceReviews.ts";
 
 // WICHTIG: basePath = Funktionsname
 const app = new Hono({ strict: false }).basePath(
@@ -133,6 +134,7 @@ registerWorkflowRoutes(app);
 registerItEquipmentRoutes(app);
 registerEntityRoutes(app);
 registerPermissionRoutes(app);
+registerPerformanceReviewRoutes(app);
 
 console.log("🚀 Starting BrowoKoordinator-Server...");
 Deno.serve(app.fetch);
