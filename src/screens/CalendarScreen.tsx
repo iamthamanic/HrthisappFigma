@@ -12,6 +12,7 @@ import { useMonthYearPicker } from '../hooks/useMonthYearPicker';
 import RequestLeaveDialog from '../components/RequestLeaveDialog';
 import { CalendarDayCell } from '../components/BrowoKo_CalendarDayCell';
 import { CalendarExportMenu } from '../components/BrowoKo_CalendarExportMenu';
+import { CalendarExportDialog } from '../components/BrowoKo_CalendarExportDialog';
 import { TeamAbsenceAvatar } from '../components/TeamAbsenceAvatar';
 import { BrowoKo_WeeklyShiftCalendar } from '../components/BrowoKo_WeeklyShiftCalendar';
 import { useCalendarScreen } from '../hooks/BrowoKo_useCalendarScreen';
@@ -65,7 +66,19 @@ export default function CalendarScreen() {
     selectedWeek,
     setSelectedWeek,
     shifts,
+    exportDialogOpen,
+    setExportDialogOpen,
+    exportType,
+    setExportType,
+    userTeams,
+    userSpecializations,
   } = useCalendarScreen(selectedLocationId); // 🔥 Pass selectedLocationId to hook
+
+  // Helper: Get user's full name
+  const getUserFullName = () => {
+    if (!profile) return 'Persönlich';
+    return `${profile.first_name} ${profile.last_name}`;
+  };
 
   // Helper: Get color for specialization (for shift calendar)
   const getSpecializationColor = (spec: string): string => {
@@ -117,6 +130,25 @@ export default function CalendarScreen() {
   // Detail dialog content
   const detailDialogDayRecords = detailDialogDay ? getRecordsForDay(detailDialogDay) : [];
 
+  // Wrapper functions to open dialog before export
+  const handleCSVClick = () => {
+    setExportType('csv');
+    setExportDialogOpen(true);
+  };
+
+  const handlePDFClick = () => {
+    setExportType('pdf');
+    setExportDialogOpen(true);
+  };
+
+  const handleExportWithRange = (startDate: string, endDate: string) => {
+    if (exportType === 'csv') {
+      handleExportCSV(startDate, endDate);
+    } else if (exportType === 'pdf') {
+      handleExportPDF(startDate, endDate);
+    }
+  };
+
   return (
     <div className="min-h-screen pt-20 md:pt-6 px-4 md:px-6">
       {/* ✅ MAX-WIDTH CONTAINER */}
@@ -130,13 +162,6 @@ export default function CalendarScreen() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Export Buttons */}
-          <CalendarExportMenu
-            onExportCSV={handleExportCSV}
-            onExportPDF={handleExportPDF}
-            onExportICal={handleExportICal}
-          />
-          
           {/* VIEW MODE TOGGLE */}
           <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-1">
             <button
@@ -206,6 +231,42 @@ export default function CalendarScreen() {
             Urlaub/Abwesenheit
           </Button>
         </div>
+      </div>
+
+      {/* 🔥 NEW: Sub-Tabs Row (Desktop) - Show details under main tabs */}
+      <div className="hidden md:block">
+        {/* Personal View: Show User Name */}
+        {viewMode === 'personal' && (
+          <div className="inline-flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <span className="text-sm font-medium text-blue-800">
+              {getUserFullName()}
+            </span>
+          </div>
+        )}
+
+        {/* Specialization View: Show All Specializations as Buttons */}
+        {viewMode === 'specialization' && userSpecializations.length > 0 && (
+          <div className="inline-flex items-center gap-2 p-3 bg-purple-50 border border-purple-200 rounded-lg flex-wrap">
+            <span className="text-sm font-medium text-purple-800 mr-2">Spezialisierungen:</span>
+            {userSpecializations.map((spec) => (
+              <Badge key={spec} variant="secondary" className="bg-purple-100 text-purple-700">
+                {spec}
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        {/* Team View: Show All Teams as Buttons */}
+        {viewMode === 'team' && userTeams.length > 0 && (
+          <div className="inline-flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg flex-wrap">
+            <span className="text-sm font-medium text-green-800 mr-2">Teams:</span>
+            {userTeams.map((team) => (
+              <Badge key={team.id} variant="secondary" className="bg-green-100 text-green-700">
+                {team.name}
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Header - Mobile */}
@@ -286,8 +347,8 @@ export default function CalendarScreen() {
           {/* Export Menu - Mobile */}
           <div className="flex justify-end">
             <CalendarExportMenu
-              onExportCSV={handleExportCSV}
-              onExportPDF={handleExportPDF}
+              onExportCSV={handleCSVClick}
+              onExportPDF={handlePDFClick}
               onExportICal={handleExportICal}
             />
           </div>
@@ -328,6 +389,13 @@ export default function CalendarScreen() {
                 goToToday={monthYearPicker.goToToday}
                 onRefresh={handleRefreshCalendar}
               />
+              
+              {/* Export Buttons - Next to MonthYearPicker */}
+              <CalendarExportMenu
+                onExportCSV={handleCSVClick}
+                onExportPDF={handlePDFClick}
+                onExportICal={handleExportICal}
+              />
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={today}>
@@ -344,8 +412,8 @@ export default function CalendarScreen() {
             </div>
           </div>
 
-          {/* 🔥 NEW: Location Tabs (Desktop) */}
-          {viewMode === 'location' && locations.length > 0 && (
+          {/* 🔥 NEW: Location Tabs (Desktop) - for Location and Shifts view */}
+          {(viewMode === 'location' || viewMode === 'shifts') && locations.length > 0 && (
             <div className="hidden md:flex items-center gap-2 mt-4 border-t border-gray-200 pt-4">
               <span className="text-sm text-gray-600 font-medium mr-2">Standorte:</span>
               <div className="flex items-center gap-2 flex-wrap">
@@ -400,8 +468,8 @@ export default function CalendarScreen() {
               </div>
             </div>
 
-            {/* 🔥 NEW: Location Tabs (Mobile) */}
-            {viewMode === 'location' && locations.length > 0 && (
+            {/* 🔥 NEW: Location Tabs (Mobile) - for Location and Shifts view */}
+            {(viewMode === 'location' || viewMode === 'shifts') && locations.length > 0 && (
               <div className="flex flex-col gap-2">
                 <span className="text-sm text-gray-600 font-medium">Standorte:</span>
                 <div className="grid grid-cols-2 gap-2">
@@ -447,7 +515,7 @@ export default function CalendarScreen() {
                     <span className="text-gray-600">Tagschicht</span>
                   </div>
                 </>
-              ) : (viewMode === 'personal' || viewMode === 'specialization') ? (
+              ) : viewMode === 'personal' ? (
                 <>
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 md:w-4 md:h-4 rounded bg-green-100 border border-green-300"></div>
@@ -652,6 +720,15 @@ export default function CalendarScreen() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Export Date Range Dialog */}
+      <CalendarExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        exportType={exportType}
+        onExport={handleExportWithRange}
+      />
+
       </div> {/* ✅ Close max-width container */}
     </div>
   );

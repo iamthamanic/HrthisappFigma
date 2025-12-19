@@ -14,7 +14,8 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { ChevronDown, Building2, MapPin, UserCog, RefreshCw, Database } from 'lucide-react';
-import { projectId, publicAnonKey } from '../../utils/supabase/info';
+import { projectId } from '../../utils/supabase/info';
+import { getAuthHeaders } from '../../utils/authHelpers';
 
 interface TriggerConfigFormProps {
   node: any;
@@ -62,14 +63,14 @@ export function TriggerConfigForm({ node, config, updateConfig }: TriggerConfigF
       setError(null);
       console.log('📥 Loading entities from backend...');
       
-      // HEALTH CHECK FIRST
+      // Get auth headers
+      const headers = await getAuthHeaders();
+      
+      // HEALTH CHECK FIRST (public endpoint - no auth needed)
       console.log('🏥 Checking if server is alive...');
       try {
         const healthResponse = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/health`,
-          {
-            headers: { Authorization: `Bearer ${publicAnonKey}` }
-          }
+          `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/health`
         );
         console.log('🏥 Health check status:', healthResponse.status);
         if (!healthResponse.ok) {
@@ -85,9 +86,7 @@ export function TriggerConfigForm({ node, config, updateConfig }: TriggerConfigF
       // Load Departments
       const deptResponse = await fetch(
         `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/departments`,
-        {
-          headers: { Authorization: `Bearer ${publicAnonKey}` }
-        }
+        { headers }
       );
       
       console.log('📦 Departments response status:', deptResponse.status);
@@ -113,9 +112,7 @@ export function TriggerConfigForm({ node, config, updateConfig }: TriggerConfigF
       // Load Locations
       const locResponse = await fetch(
         `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/locations`,
-        {
-          headers: { Authorization: `Bearer ${publicAnonKey}` }
-        }
+        { headers }
       );
       
       console.log('📍 Locations response status:', locResponse.status);
@@ -129,9 +126,7 @@ export function TriggerConfigForm({ node, config, updateConfig }: TriggerConfigF
       // Load Roles
       const roleResponse = await fetch(
         `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/roles`,
-        {
-          headers: { Authorization: `Bearer ${publicAnonKey}` }
-        }
+        { headers }
       );
       
       console.log('👔 Roles response status:', roleResponse.status);
@@ -157,14 +152,12 @@ export function TriggerConfigForm({ node, config, updateConfig }: TriggerConfigF
     try {
       setSeeding(true);
       console.log('🌱 Auto-seeding entities...');
+      const headers = await getAuthHeaders();
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Server/api/seed-entities`,
         {
           method: 'POST',
-          headers: { 
-            'Authorization': `Bearer ${publicAnonKey}`,
-            'Content-Type': 'application/json'
-          }
+          headers
         }
       );
       

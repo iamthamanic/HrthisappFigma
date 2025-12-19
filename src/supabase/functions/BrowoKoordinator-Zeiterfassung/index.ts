@@ -908,6 +908,247 @@ serve(async (req) => {
       );
     }
 
+    // ==================== FACTORIAL-STYLE TIME TRACKING (time_records_f659121d) ====================
+    
+    // GET /time-records/current-status - Get current clock status
+    if (path === 'time-records/current-status' && method === 'GET') {
+      const today = new Date().toISOString().split('T')[0];
+
+      const { data: runningRecord, error: statusError } = await supabase
+        .from('time_records_f659121d')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .eq('status', 'running')
+        .order('time_in', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (statusError && statusError.code !== 'PGRST116') {
+        console.error('[Zeiterfassung] Error fetching current status:', statusError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch current status' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          is_clocked_in: !!runningRecord,
+          current_record: runningRecord || null,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // POST /time-records/clock-in - Clock in (Factorial style)
+    if (path === 'time-records/clock-in' && method === 'POST') {
+      const body = await req.json();
+      const { work_type, location_id } = body;
+
+      if (!work_type || !['office', 'field', 'extern'].includes(work_type)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid work_type. Must be: office, field, or extern' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check if already clocked in
+      const today = new Date().toISOString().split('T')[0];
+      const { data: existingRunning } = await supabase
+        .from('time_records_f659121d')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .eq('status', 'running')
+        .maybeSingle();
+
+      if (existingRunning) {
+        return new Response(
+          JSON.stringify({ error: 'Already clocked in. Please clock out first.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Create new time record
+      const now = new Date();
+      const timeIn = now.toTimeString().split(' ')[0]; // HH:MM:SS
+
+      const newRecord = {
+        user_id: user.id,
+        date: today,
+        time_in: timeIn,
+        time_out: null,
+        break_minutes: 0,
+        total_hours: null,
+        work_type,
+        location_id: location_id || null,
+        status: 'running',
+      };
+
+      const { data: createdRecord, error: insertError } = await supabase
+        .from('time_records_f659121d')
+        .insert(newRecord)
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('[Zeiterfassung] Error creating time record:', insertError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to clock in' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('[Zeiterfassung] Factorial clock in successful:', { userId: user.id, recordId: createdRecord.id });
+
+      return new Response(
+        JSON.stringify({ success: true, record: createdRecord }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // POST /time-records/clock-out - Clock out (Factorial style)
+    if (path === 'time-records/clock-out' && method === 'POST') {
+      const body = await req.json();
+      const { break_minutes_override } = body;
+
+      // Find running record
+      const today = new Date().toISOString().split('T')[0];
+      const { data: runningRecord, error: findError } = await supabase
+        .from('time_records_f659121d')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .eq('status', 'running')
+        .order('time_in', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (findError || !runningRecord) {
+        return new Response(
+          JSON.stringify({ error: 'No active clock-in found' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Calculate time out
+      const now = new Date();
+      const timeOut = now.toTimeString().split(' ')[0]; // HH:MM:SS
+
+      // Calculate total hours
+      const timeInDate = new Date(`${today}T${runningRecord.time_in}`);
+      const timeOutDate = new Date(`${today}T${timeOut}`);
+      const diffMs = timeOutDate.getTime() - timeInDate.getTime();
+      const totalMinutes = Math.floor(diffMs / 60000);
+
+      // Get user's break settings for automatic break calculation
+      const { data: userProfile } = await supabase
+        .from('profiles_f659121d')
+        .select('break_auto, break_minutes')
+        .eq('user_id', user.id)
+        .single();
+
+      let breakMinutes = 0;
+      if (break_minutes_override !== undefined && break_minutes_override !== null) {
+        // Manual override
+        breakMinutes = break_minutes_override;
+      } else if (userProfile?.break_auto && userProfile?.break_minutes) {
+        // Automatic break calculation based on hours worked
+        const hoursWorked = totalMinutes / 60;
+        if (hoursWorked >= 6) {
+          breakMinutes = userProfile.break_minutes;
+        }
+      }
+
+      const workedMinutes = totalMinutes - breakMinutes;
+      const totalHours = Math.max(0, workedMinutes / 60);
+
+      // Update record
+      const { data: updatedRecord, error: updateError } = await supabase
+        .from('time_records_f659121d')
+        .update({
+          time_out: timeOut,
+          break_minutes: breakMinutes,
+          total_hours: totalHours,
+          status: 'completed',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', runningRecord.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('[Zeiterfassung] Error updating time record:', updateError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to clock out' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('[Zeiterfassung] Factorial clock out successful:', { userId: user.id, recordId: updatedRecord.id });
+
+      return new Response(
+        JSON.stringify({ success: true, record: updatedRecord }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // GET /time-records - Get time records with filter
+    if (path === 'time-records' && method === 'GET') {
+      const filterParam = url.searchParams.get('filter') || 'today';
+      const today = new Date().toISOString().split('T')[0];
+
+      let startDate = today;
+      let endDate = today;
+
+      if (filterParam === 'week') {
+        const now = new Date();
+        const dayOfWeek = now.getDay();
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+        startDate = monday.toISOString().split('T')[0];
+        endDate = today;
+      } else if (filterParam === 'month') {
+        const now = new Date();
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        endDate = today;
+      }
+
+      const { data: records, error: fetchError } = await supabase
+        .from('time_records_f659121d')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date', { ascending: false })
+        .order('time_in', { ascending: false });
+
+      if (fetchError) {
+        console.error('[Zeiterfassung] Error fetching time records:', fetchError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch time records' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Calculate summary
+      const totalHours = records?.reduce((sum, r) => sum + (r.total_hours || 0), 0) || 0;
+      const totalBreakMinutes = records?.reduce((sum, r) => sum + (r.break_minutes || 0), 0) || 0;
+
+      return new Response(
+        JSON.stringify({
+          records: records || [],
+          summary: {
+            total_hours: totalHours,
+            total_break_minutes: totalBreakMinutes,
+            record_count: records?.length || 0,
+          },
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // ==================== 404 NOT FOUND ====================
     return new Response(
       JSON.stringify({ error: 'Route not found', path, method }),

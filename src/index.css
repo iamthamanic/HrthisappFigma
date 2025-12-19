@@ -1430,6 +1430,10 @@
     max-height: 500px;
   }
 
+  .max-h-\[600px\] {
+    max-height: 600px;
+  }
+
   .max-h-full {
     max-height: 100%;
   }
@@ -2580,6 +2584,16 @@
 
   .border-white {
     border-color: var(--color-white);
+  }
+
+  .border-white\/30 {
+    border-color: #ffffff4d;
+  }
+
+  @supports (color: color-mix(in lab, red, red)) {
+    .border-white\/30 {
+      border-color: color-mix(in oklab, var(--color-white) 30%, transparent);
+    }
   }
 
   .border-yellow-200 {
@@ -4436,6 +4450,10 @@
     animation-play-state: paused;
   }
 
+  .running {
+    animation-play-state: running;
+  }
+
   .slide-in-from-top-2 {
     --tw-enter-translate-y: calc(2 * var(--spacing) * -1);
   }
@@ -4906,12 +4924,6 @@
   @media (hover: hover) {
     .hover\:bg-purple-200:hover {
       background-color: var(--color-purple-200);
-    }
-  }
-
-  @media (hover: hover) {
-    .hover\:bg-purple-600:hover {
-      background-color: var(--color-purple-600);
     }
   }
 
@@ -6144,12 +6156,6 @@
   @media (width >= 48rem) {
     .md\:p-6 {
       padding: calc(var(--spacing) * 6);
-    }
-  }
-
-  @media (width >= 48rem) {
-    .md\:p-12 {
-      padding: calc(var(--spacing) * 12);
     }
   }
 

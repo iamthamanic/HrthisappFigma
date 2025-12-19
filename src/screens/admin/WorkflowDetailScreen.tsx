@@ -29,7 +29,8 @@ import { Input } from '../../components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Badge } from '../../components/ui/badge';
 import { toast } from 'sonner@2.0.3';
-import { projectId, publicAnonKey } from '../../utils/supabase/info';
+import { projectId } from '../../utils/supabase/info';
+import { getAuthHeaders } from '../../utils/authHelpers';
 
 // Custom Nodes
 import TriggerNode from '../../components/workflows/nodes/TriggerNode';
@@ -186,13 +187,10 @@ const WorkflowDetailScreen = () => {
 
       try {
         // Fetch workflow definition
+        const headers = await getAuthHeaders();
         const workflowResponse = await fetch(
           `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Workflows/workflows/${workflowId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${publicAnonKey}`,
-            }
-          }
+          { headers }
         );
 
         if (workflowResponse.ok) {
@@ -207,11 +205,7 @@ const WorkflowDetailScreen = () => {
         // Fetch executions for this workflow
         const executionsResponse = await fetch(
           `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Workflows/executions`,
-          {
-            headers: {
-              'Authorization': `Bearer ${publicAnonKey}`,
-            }
-          }
+          { headers }
         );
 
         if (executionsResponse.ok) {
@@ -385,12 +379,10 @@ const WorkflowDetailScreen = () => {
       const toastId = toast.loading('Speichere Workflow...');
 
       try {
+        const headers = await getAuthHeaders();
         const response = await fetch(`https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Workflows/workflows`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${publicAnonKey}`,
-          },
+          headers,
           body: JSON.stringify(workflowData)
         });
 
@@ -417,14 +409,12 @@ const WorkflowDetailScreen = () => {
     const toastId = toast.loading('Führe Workflow aus...');
 
     try {
+      const headers = await getAuthHeaders();
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/BrowoKoordinator-Workflows/workflows/${workflowId}/execute`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${publicAnonKey}`,
-          },
+          headers,
           body: JSON.stringify({
             context: {
               manual: true,
